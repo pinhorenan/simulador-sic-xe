@@ -118,16 +118,12 @@ public class Simulador_SICXE {
                         return;
                     }
 
-                    String address = args[1];
-                    if (address.length() == TAM_BYTE * 2) {
-                        String valor_memoria = this.memoria.getMemoria(address);
-                        if (valor_memoria == null) {
-                            System.out.println("Endereço inválido ou fora do alcance");
-                        } else {
-                            System.out.println(valor_memoria);
-                        }
+                    int address = Integer.parseInt(args[1]);
+                    if (address >= 0 && address < this.memoria.GetMemoria().size()) {
+                        PalavraMemoria valor_memoria = this.memoria.GetMemoria().get(address);
+                        System.out.println(valor_memoria);
                     } else {
-                        System.out.println("Defina um endereço válido");
+                        System.out.println("Endereço inválido ou fora do alcance");
                     }
                     System.out.println("\n");
                     break;
@@ -182,7 +178,7 @@ public class Simulador_SICXE {
                     if (this.memoria == null) {
                         System.out.println("Use \"analisar_arq\" em um arquivo antes de exportar a memória");
                     } else {
-                        this.memoria.mostrarMemoria();
+                        this.memoria.ShowMemoria();
                     }
                     System.out.println("\n");
                     break;
@@ -220,17 +216,14 @@ public class Simulador_SICXE {
                         return;
                     }
 
-                    String addressChange = args[1];
-                    String valueChange = args[2];
+                    int addressChange = Integer.parseInt(args[1]);
+                    PalavraMemoria valueChange = new PalavraMemoria(args[2]);
 
-                    if (valueChange.length() != TAM_BYTE) {
-                        System.out.println("Defina um valor válido");
-                        System.out.println("\n");
-                        return;
-                    }
-
-                    if (!this.memoria.setMemoria(addressChange, valueChange)) {
-                        System.out.println("Valor ou endereço inválido - Falha na alteração da memória");
+                    if (addressChange >= 0 && addressChange < this.memoria.GetMemoria().size()) {
+                        this.memoria.SetMemoria(addressChange, valueChange);
+                        System.out.println("Memória alterada com sucesso");
+                    } else {
+                        System.out.println("Endereço inválido ou fora do alcance");
                     }
                     System.out.println("\n");
                     break;
@@ -279,29 +272,6 @@ public class Simulador_SICXE {
     }
 
     // CLASSES PLACEHOLDER PRA TESTAR O CONSOLE
-    static class Memoria {
-
-        public String getMemoria(String endereco) {
-            return null;
-        }
-
-        public boolean setMemoria(String endereco, String valor) {
-            return false;
-        }
-
-        public void mostrarMemoria() {
-        }
-    }
-
-    static class Registrador {
-        public String getRegistrador(String registrador) {
-            return null;
-        }
-
-        public boolean setRegistrador(String registrador, String valor) {
-            return false;
-        }
-    }
 
     static class Interpretador {
         private String[] vetorInstrucoes;

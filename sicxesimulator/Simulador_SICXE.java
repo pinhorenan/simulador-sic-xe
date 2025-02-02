@@ -1,6 +1,9 @@
 package sicxesimulator;
 
+import java.util.List;
 import java.util.Scanner;
+
+@SuppressWarnings("unused")
 
 public class Simulador_SICXE {
 
@@ -42,6 +45,9 @@ public class Simulador_SICXE {
                 case "comandos":
                     limparConsole();
                     System.out.println("\t------------------------Comandos------------------------\n" +
+                            "Inicie com:\n" +
+                            "\tanalisar_arq\t\tInicia a análise e verificação de sintaxe\n" +
+                    
                             "Comandos do Interpretador:\n" +                
                             "\texec\t\t\tExecuta todo o arquivo de montagem\n" +
                             "\tiniciar\t\t\tInicia o interpretador\n" +
@@ -49,7 +55,6 @@ public class Simulador_SICXE {
                             "\tparar\t\t\tPara o interpretador\n" +
                             
                             "\nComandos de Manipulação de Arquivos:\n" +
-                            "\tanalisar_arq\t\tInicia a análise e verificação de sintaxe\n" +
                             "\tvisualizar_mem\t\tVisualiza a memória de um determinado endereço de memória\n" +
                             "\tvisualizar_reg\t\tVisualiza o valor de um determinado registrador\n" +
                             "\talterar_mem\t\tAltera uma seção da memória\n" +
@@ -79,29 +84,37 @@ public class Simulador_SICXE {
                 case "analisar_arq":
                     System.out.println("\n");
                     if (args.length != 2) {
-                        System.out.println("Uso do comando: analisar_arq [arquivo]");
+                        System.out.println("Uso correto do comando: analisar_arq [arquivo]");
+                        System.out.println("\n");
                         return;
                     }
 
-                    this.vetor_instruçoes = Parser.lerArquivo(args[1]);
-                    if (this.vetor_instruçoes == null) {
+                    List<Instruçoes> instrucoes = Instruçoes.ler_arquivo("sicxesimulator/executaveis/"+args[1]);
+                    if (instrucoes == null) {
                         System.out.println("Falha na leitura do arquivo");
+                        System.out.println("\n");
                         return;
+                    }
+                    else {
+                        System.out.println("Arquivo lido com sucesso");
                     }
 
                     this.memoria = new Memoria();
                     this.registrador = new Registrador();
                     System.out.println("\n");
                     break;
+
                 case "visualizar_mem":
                     System.out.println("\n");
                     if (args.length != 2) {
-                        System.out.println("Uso do comando: visualizar_mem [endereço]");
+                        System.out.println("Uso correto do comando: visualizar_mem [endereço]");
+                        System.out.println("\n");
                         return;
                     }
 
                     if (this.memoria == null) {
                         System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar a memória");
+                        System.out.println("\n");
                         return;
                     }
 
@@ -118,15 +131,18 @@ public class Simulador_SICXE {
                     }
                     System.out.println("\n");
                     break;
+
                 case "visualizar_reg":
                     System.out.println("\n");
                     if (args.length != 2) {
-                        System.out.println("Uso do comando: visualizar_reg [registrador]");
+                        System.out.println("Uso correto do comando: visualizar_reg [registrador]");
+                        System.out.println("\n");
                         return;
                     }
 
                     if (this.registrador == null) {
                         System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar o registrador");
+                        System.out.println("\n");
                         return;
                     }
 
@@ -136,17 +152,20 @@ public class Simulador_SICXE {
                     }
                     System.out.println("\n");
                     break;
+
                 case "iniciar":
                     limparConsole();
                     this.interpretador = new Interpretador(this.vetor_instruçoes, this.memoria, this.registrador);
                     this.interpretador.atribuirEndereco();
                     System.out.println("\n");
                     break;
+
                 case "prox":
                     System.out.println("\n");
                     this.interpretador.executarProximaInstrucao();
                     System.out.println("\n");
                     break;
+
                 case "exec":
                     limparConsole();
                     while (true) {
@@ -157,6 +176,7 @@ public class Simulador_SICXE {
                         }
                     }
                     break;
+
                 case "exportar_mem":
                     System.out.println("\n");
                     if (this.memoria == null) {
@@ -166,10 +186,12 @@ public class Simulador_SICXE {
                     }
                     System.out.println("\n");
                     break;
+
                 case "alterar_reg":
                     System.out.println("\n");
                     if (args.length != 3) {
-                        System.out.println("Uso do comando: alterar_reg [registrador] [valor]");
+                        System.out.println("Uso correto do comando: alterar_reg [registrador] [valor]");
+                        System.out.println("\n");
                         return;
                     }
 
@@ -178,6 +200,7 @@ public class Simulador_SICXE {
 
                     if (value.length() % 2 != 0 || value.length() > 6) {
                         System.out.println("Defina um valor válido");
+                        System.out.println("\n");
                         return;
                     }
 
@@ -188,10 +211,12 @@ public class Simulador_SICXE {
                     }
                     System.out.println("\n");
                     break;
+
                 case "alterar_mem":
                     System.out.println("\n");
                     if (args.length != 3) {
-                        System.out.println("Uso do comando: alterar_mem [endereço] [valor_byte]");
+                        System.out.println("Uso correto do comando: alterar_mem [endereço] [valor_byte]");
+                        System.out.println("\n");
                         return;
                     }
 
@@ -200,6 +225,7 @@ public class Simulador_SICXE {
 
                     if (valueChange.length() != TAM_BYTE) {
                         System.out.println("Defina um valor válido");
+                        System.out.println("\n");
                         return;
                     }
 
@@ -208,11 +234,13 @@ public class Simulador_SICXE {
                     }
                     System.out.println("\n");
                     break;
+
                 case "parar":
                     limparConsole();
                     System.out.println("Parando Interpretador");
                     System.out.println("\n");
                     break;
+
                 case "sair":
                     limparConsole();
                     
@@ -231,6 +259,7 @@ public class Simulador_SICXE {
 
                     System.exit(0);
                     break;
+                    
                 default:
                     limparConsole();
                     System.out.println("Comando Inválido");
@@ -289,12 +318,6 @@ public class Simulador_SICXE {
         }
 
         public String executarProximaInstrucao() {
-            return null;
-        }
-    }
-
-    static class Parser {
-        public static String[] lerArquivo(String nomeArquivo) {
             return null;
         }
     }

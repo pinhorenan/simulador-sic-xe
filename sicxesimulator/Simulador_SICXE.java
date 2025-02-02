@@ -2,9 +2,9 @@ package sicxesimulator;
 
 import java.util.Scanner;
 
-public class SICXE_Simulator {
+public class Simulador_SICXE {
 
-    private static final int TAM_BYTE = 2; // Characters
+    private static final int TAM_BYTE = 2; // Caracteres
     private static final String[] OPÇOES_VALIDAS = {"A", "X", "L", "PC", "B", "S", "T", "F"};
 
     public static void main(String[] args) {
@@ -18,7 +18,7 @@ public class SICXE_Simulator {
             while (true) {
                 System.out.print("> ");
                 String input = scanner.nextLine();
-                prompt.commandHandler(input);
+                prompt.tratarComando(input);
             }
         }
     }
@@ -31,127 +31,143 @@ public class SICXE_Simulator {
 
     static class Console {
         private String[] vetor_instruçoes = null;
-        private Memory memoria = null;
-        private Registery registrador = null;
-        private Interpreter interpretador = null;
+        private Memoria memoria = null;
+        private Registrador registrador = null;
+        private Interpretador interpretador = null;
 
-        public void commandHandler(String command) {
-            String[] args = command.split(" ");
+        public void tratarComando(String comando) {
+            String[] args = comando.split(" ");
 
             switch (args[0]) {
                 case "comandos":
                     limparConsole();
-                    System.out.println("comandos\t\t\tLista de comandos disponíveis:\n" +
-                            "creditos\t\t\tCréditos da execução do trabalho\n" +
-                            "analisar_arq\t\t\tInicia a análise e verificação de sintaxe\n" +
-                            "visualizar_mem\t\t\tExporta a memória atual para um arquivo de texto\n" +
-                            "visualizar_reg\t\t\tVisualiza o valor de um determinado registrador\n" +
-                            "alterar_mem\t\tAltera uma seção da memória\n" +
-                            "alterar_reg\t\tAltera um determinado registrador\n" +
-                            "iniciar\t\t\tInicia o interpretador\n" +
-                            "prox\t\t\tIncrementa o interpretador por uma instrução\n" +
-                            "parar\t\t\tPara o interpretador\n" +
-                            "sair\t\t\tSai do simulador\n" +
-                            "exec\t\t\tExecuta todo o arquivo de montagem\n" +
-                            "exportar_mem\t\t\tExporta a memória atual para um arquivo txt");
+                    System.out.println("\t------------------------Comandos------------------------\n" +
+                            "Comandos do Interpretador:\n" +                
+                            "\texec\t\t\tExecuta todo o arquivo de montagem\n" +
+                            "\tiniciar\t\t\tInicia o interpretador\n" +
+                            "\tprox\t\t\tIncrementa o interpretador por uma instrução\n" +
+                            "\tparar\t\t\tPara o interpretador\n" +
+                            
+                            "\nComandos de Manipulação de Arquivos:\n" +
+                            "\tanalisar_arq\t\tInicia a análise e verificação de sintaxe\n" +
+                            "\tvisualizar_mem\t\tVisualiza a memória de um determinado endereço de memória\n" +
+                            "\tvisualizar_reg\t\tVisualiza o valor de um determinado registrador\n" +
+                            "\talterar_mem\t\tAltera uma seção da memória\n" +
+                            "\talterar_reg\t\tAltera um determinado registrador\n" +
+                            "\texportar_mem\t\tExporta a memória atual para um arquivo txt\n" +
+
+                            "\nOutros Comandos:\n" +
+                            "\tcomandos\t\tLista de comandos disponíveis\n" +
+                            "\tcreditos\t\tCréditos da execução do trabalho\n" +
+                            "\tsair\t\t\tSai do simulador\n" +
+                            "\t-------------------------------------------------------\n");
                     break;
+
                 case "creditos":
                     limparConsole();
-                    System.out.println("\t------------------------Creditos------------------------");
-                    System.out.println("\t\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv");
-                    System.out.println("Arthur Alves (XXX)\t\t - XXX.");
-                    System.out.println("Fabrício (XXX)\t\t\t XXX.");
-                    System.out.println("Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.");
-                    System.out.println("Leonardo Braga(XXX)\t\t - XXX.");
-                    System.out.println("Luis Eduardo Rasch(Neji)\tConstrução do console e analise dos arquivos.");
-                    System.out.println("Renan Pinho (Naruto)\t\t - XXX.");
-                    System.out.println("\t-------------------------------------------------------\n");
+                    System.out.println("\t-----------------------Creditos-----------------------\n" +
+                    "\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv\n" +
+                    "Arthur Alves (XXX)\t\tXXX.\n" +
+                    "Fabrício (XXX)\t\t\tXXX.\n" +
+                    "Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.\n" +
+                    "Leonardo Braga (XXX)\t\tXXX.\n" +
+                    "Luis Eduardo Rasch (Neji)\tConstrução do console e analise dos arquivos.\n" +
+                    "Renan Pinho (Naruto)\t\tXXX.\n" +
+                    "\t-----------------------------------------------------\n");
                     break;
+
                 case "analisar_arq":
-                    limparConsole();
+                    System.out.println("\n");
                     if (args.length != 2) {
                         System.out.println("Uso do comando: analisar_arq [arquivo]");
                         return;
                     }
 
-                    this.vetor_instruçoes = Parser.readFile(args[1]);
+                    this.vetor_instruçoes = Parser.lerArquivo(args[1]);
                     if (this.vetor_instruçoes == null) {
                         System.out.println("Falha na leitura do arquivo");
                         return;
                     }
 
-                    this.memoria = new Memory();
-                    this.registrador = new Registery();
+                    this.memoria = new Memoria();
+                    this.registrador = new Registrador();
+                    System.out.println("\n");
                     break;
                 case "visualizar_mem":
-                    limparConsole();
+                    System.out.println("\n");
                     if (args.length != 2) {
                         System.out.println("Uso do comando: visualizar_mem [endereço]");
                         return;
                     }
 
                     if (this.memoria == null) {
-                        System.out.println("Use analisar_arq em um arquivo antes de visualizar a memória");
+                        System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar a memória");
                         return;
                     }
 
                     String address = args[1];
                     if (address.length() == TAM_BYTE * 2) {
-                        String memoryValue = this.memoria.getMemory(address);
-                        if (memoryValue == null) {
+                        String valor_memoria = this.memoria.getMemoria(address);
+                        if (valor_memoria == null) {
                             System.out.println("Endereço inválido ou fora do alcance");
                         } else {
-                            System.out.println(memoryValue);
+                            System.out.println(valor_memoria);
                         }
                     } else {
                         System.out.println("Defina um endereço válido");
                     }
+                    System.out.println("\n");
                     break;
                 case "visualizar_reg":
-                    limparConsole();
+                    System.out.println("\n");
                     if (args.length != 2) {
                         System.out.println("Uso do comando: visualizar_reg [registrador]");
                         return;
                     }
 
                     if (this.registrador == null) {
-                        System.out.println("Use analisar_arq em um arquivo antes de visualizar o registrador");
+                        System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar o registrador");
                         return;
                     }
 
                     String regChoice = args[1];
                     if (contains(OPÇOES_VALIDAS, regChoice)) {
-                        System.out.println(this.registrador.getRegister(regChoice));
+                        System.out.println(this.registrador.getRegistrador(regChoice));
                     }
+                    System.out.println("\n");
                     break;
                 case "iniciar":
                     limparConsole();
-                    this.interpretador = new Interpreter(this.vetor_instruçoes, this.memoria, this.registrador);
-                    this.interpretador.assignAddress();
+                    this.interpretador = new Interpretador(this.vetor_instruçoes, this.memoria, this.registrador);
+                    this.interpretador.atribuirEndereco();
+                    System.out.println("\n");
                     break;
                 case "prox":
-                    limparConsole();
-                    this.interpretador.executeNextInstruction();
+                    System.out.println("\n");
+                    this.interpretador.executarProximaInstrucao();
+                    System.out.println("\n");
                     break;
                 case "exec":
                     limparConsole();
                     while (true) {
-                        String done = this.interpretador.executeNextInstruction();
+                        String done = this.interpretador.executarProximaInstrucao();
                         if (done != null) {
+                            System.out.println("\n");
                             break;
                         }
                     }
                     break;
                 case "exportar_mem":
-                    limparConsole();
+                    System.out.println("\n");
                     if (this.memoria == null) {
-                        System.out.println("Use analisar_arq em um arquivo antes de exportar a memória");
+                        System.out.println("Use \"analisar_arq\" em um arquivo antes de exportar a memória");
                     } else {
-                        this.memoria.showMem();
+                        this.memoria.mostrarMemoria();
                     }
+                    System.out.println("\n");
                     break;
                 case "alterar_reg":
-                    limparConsole();
+                    System.out.println("\n");
                     if (args.length != 3) {
                         System.out.println("Uso do comando: alterar_reg [registrador] [valor]");
                         return;
@@ -170,9 +186,10 @@ public class SICXE_Simulator {
                     } else {
                         System.out.println("Defina um registrador válido");
                     }
+                    System.out.println("\n");
                     break;
                 case "alterar_mem":
-                    limparConsole();
+                    System.out.println("\n");
                     if (args.length != 3) {
                         System.out.println("Uso do comando: alterar_mem [endereço] [valor_byte]");
                         return;
@@ -186,13 +203,15 @@ public class SICXE_Simulator {
                         return;
                     }
 
-                    if (!this.memoria.setMemory(addressChange, valueChange)) {
+                    if (!this.memoria.setMemoria(addressChange, valueChange)) {
                         System.out.println("Valor ou endereço inválido - Falha na alteração da memória");
                     }
+                    System.out.println("\n");
                     break;
                 case "parar":
                     limparConsole();
                     System.out.println("Parando Interpretador");
+                    System.out.println("\n");
                     break;
                 case "sair":
                     limparConsole();
@@ -208,13 +227,14 @@ public class SICXE_Simulator {
                         "Não julgue alguém pela sua aparência, mas pelo tamanho do seu coração e seus sonhos.\n - Itachi Uchiha",
                     };
                     int randomIndex = (int) (Math.random() * exitMessages.length);
-                    System.out.println(exitMessages[randomIndex] + "\n\n");
+                    System.out.println(exitMessages[randomIndex] + "\n");
 
                     System.exit(0);
                     break;
                 default:
                     limparConsole();
                     System.out.println("Comando Inválido");
+                    System.out.println("\n");
                     break;
             }
         }
@@ -230,59 +250,51 @@ public class SICXE_Simulator {
     }
 
     // CLASSES PLACEHOLDER PRA TESTAR O CONSOLE
-    static class Memory {
+    static class Memoria {
 
-        public String getMemory(String address) {
-            
+        public String getMemoria(String endereco) {
             return null;
         }
 
-        public boolean setMemory(String address, String value) {
-            
+        public boolean setMemoria(String endereco, String valor) {
             return false;
         }
 
-        public void showMem() {
-            
+        public void mostrarMemoria() {
         }
     }
 
-    static class Registery {
-        public String getRegister(String register) {
-            
+    static class Registrador {
+        public String getRegistrador(String registrador) {
             return null;
         }
 
-        public boolean setRegister(String register, String value) {
-            
+        public boolean setRegistrador(String registrador, String valor) {
             return false;
         }
     }
 
-    static class Interpreter {
-        private String[] vetor_instruçoes;
-        private Memory memoria;
-        private Registery registrador;
+    static class Interpretador {
+        private String[] vetorInstrucoes;
+        private Memoria memoria;
+        private Registrador registrador;
 
-        public Interpreter(String[] vetor_instruçoes, Memory memoria, Registery registrador) {
-            this.vetor_instruçoes = vetor_instruçoes;
+        public Interpretador(String[] vetorInstrucoes, Memoria memoria, Registrador registrador) {
+            this.vetorInstrucoes = vetorInstrucoes;
             this.memoria = memoria;
             this.registrador = registrador;
         }
 
-        public void assignAddress() {
-            
+        public void atribuirEndereco() {
         }
 
-        public String executeNextInstruction() {
-            
+        public String executarProximaInstrucao() {
             return null;
         }
     }
 
     static class Parser {
-        public static String[] readFile(String filename) {
-            
+        public static String[] lerArquivo(String nomeArquivo) {
             return null;
         }
     }

@@ -1,16 +1,18 @@
 package sicxesimulator;
 
-public class MemoryWord {
+public class Word {
 
-    // Atributo em inteiro (32 bits) para armazenar a palavra (24 bits).
-    // Uma máscara é aplicada para garantir apenas 24 bits.
+    /**
+     * Atributo em inteiro (32 bits) para armazenar a palavra (24 bits).
+     * Uma máscara é aplicada para garantir apenas 24 bits.
+     */
     private int value;
 
     /**
      * Construtor padrão.
      * Inicializa a palavra com valor 0.
      */
-    public MemoryWord() {
+    public Word() {
         this.value = 0;
     }
 
@@ -22,7 +24,7 @@ public class MemoryWord {
      * @param value O valor inicial em inteiro.
      */
     @SuppressWarnings("unused")
-    public MemoryWord(int value) {
+    public Word(int value) {
         setValue(value);
     }
 
@@ -31,7 +33,7 @@ public class MemoryWord {
      *
      * @param hexValue O valor inicial em hexadecimal.
      */
-    public MemoryWord(String hexValue) {
+    public Word(String hexValue) {
         try {
             int intValue = Integer.parseInt(hexValue, 16);
             setValue(intValue);
@@ -51,7 +53,7 @@ public class MemoryWord {
     }
 
     /**
-     * Seta o valor da palavra
+     * Seta o valor da palavra.
      * O tipo inteiro tem 32 bits, então aplicamos uma máscara para eliminar os 8 bits mais significativos.
      *
      * @param value O novo valor para a palavra.
@@ -67,6 +69,7 @@ public class MemoryWord {
      *
      * @return String hexadecimal.
      */
+    @Override
     public String toString() {
         return String.format("%06X", value);
     }

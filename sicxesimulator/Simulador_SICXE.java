@@ -7,11 +7,11 @@ import java.util.Scanner;
 
 public class Simulador_SICXE {
 
-    private static final int TAM_BYTE = 2; // Caracteres
-    private static final String[] OPÇOES_VALIDAS = {"A", "X", "L", "PC", "B", "S", "T", "F"};
+    private static final int BYTE_SIZE = 2; // Caracteres
+    private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F"};
 
     public static void main(String[] args) {
-        limparConsole();
+        cleanConsole();
         System.out.println("Simulador SIC/XE");
         System.out.println("Digite \"comandos\" para mais informações.\n\n");
 
@@ -21,29 +21,29 @@ public class Simulador_SICXE {
             while (true) {
                 System.out.print("> ");
                 String input = scanner.nextLine();
-                prompt.tratarComando(input);
+                prompt.treatCommand(input);
             }
         }
     }
 
-    public static void limparConsole() {
+    public static void cleanConsole() {
         for (int i = 0; i < 100; i++) {
             System.out.println();
         }
     }
 
     static class Console {
-        private String[] vetor_instruçoes = null;
-        private Memoria memoria = null;
-        private Registrador registrador = null;
-        private Interpretador interpretador = null;
+        private String[] instructions = null;
+        private Memory memory = null;
+        private Register register = null;
+        private Interpreter interpreter = null;
 
-        public void tratarComando(String comando) {
-            String[] args = comando.split(" ");
+        public void treatCommand(String command) {
+            String[] args = command.split(" ");
 
             switch (args[0]) {
                 case "comandos":
-                    limparConsole();
+                    cleanConsole();
                     System.out.println("\t------------------------Comandos------------------------\n" +
                             "Inicie com:\n" +
                             "\tanalisar_arq\t\tInicia a análise e verificação de sintaxe\n" +
@@ -69,7 +69,7 @@ public class Simulador_SICXE {
                     break;
 
                 case "creditos":
-                    limparConsole();
+                    cleanConsole();
                     System.out.println("\t-----------------------Creditos-----------------------\n" +
                     "\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv\n" +
                     "Arthur Alves (XXX)\t\tXXX.\n" +
@@ -77,7 +77,7 @@ public class Simulador_SICXE {
                     "Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.\n" +
                     "Leonardo Braga (XXX)\t\tXXX.\n" +
                     "Luis Eduardo Rasch (Neji)\tConstrução do console e analise dos arquivos.\n" +
-                    "Renan Pinho (Naruto)\t\tXXX.\n" +
+                    "Renan Pinho (Naruto)\t\tUM POUCO DE TUDO? TRADUTOR OFICIAL? MEMORIA? nao sei mexi em td.\n" +
                     "\t-----------------------------------------------------\n");
                     break;
 
@@ -89,8 +89,8 @@ public class Simulador_SICXE {
                         return;
                     }
 
-                    List<Instruçoes> instrucoes = Instruçoes.ler_arquivo("sicxesimulator/executaveis/"+args[1]);
-                    if (instrucoes == null) {
+                    List<Instructions> instructions = Instructions.readFile("sicxesimulator/executaveis/"+args[1]);
+                    if (instructions == null) {
                         System.out.println("Falha na leitura do arquivo");
                         System.out.println("\n");
                         return;
@@ -99,8 +99,8 @@ public class Simulador_SICXE {
                         System.out.println("Arquivo lido com sucesso");
                     }
 
-                    this.memoria = new Memoria();
-                    this.registrador = new Registrador();
+                    this.memory = new Memory();
+                    this.register = new Register();
                     System.out.println("\n");
                     break;
 
@@ -112,16 +112,16 @@ public class Simulador_SICXE {
                         return;
                     }
 
-                    if (this.memoria == null) {
+                    if (this.memory == null) {
                         System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar a memória");
                         System.out.println("\n");
                         return;
                     }
 
                     int address = Integer.parseInt(args[1]);
-                    if (address >= 0 && address < this.memoria.GetMemoria().size()) {
-                        PalavraMemoria valor_memoria = this.memoria.GetMemoria().get(address);
-                        System.out.println(valor_memoria);
+                    if (address >= 0 && address < this.memory.getMemory().size()) {
+                        MemoryWord value = this.memory.getMemory().get(address);
+                        System.out.println(value);
                     } else {
                         System.out.println("Endereço inválido ou fora do alcance");
                     }
@@ -136,36 +136,36 @@ public class Simulador_SICXE {
                         return;
                     }
 
-                    if (this.registrador == null) {
+                    if (this.register == null) {
                         System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar o registrador");
                         System.out.println("\n");
                         return;
                     }
 
                     String regChoice = args[1];
-                    if (contains(OPÇOES_VALIDAS, regChoice)) {
-                        System.out.println(this.registrador.getRegistrador(regChoice));
+                    if (contains(VALID_OPTIONS, regChoice)) {
+                        System.out.println(this.register.getRegister(regChoice));
                     }
                     System.out.println("\n");
                     break;
 
                 case "iniciar":
-                    limparConsole();
-                    this.interpretador = new Interpretador(this.vetor_instruçoes, this.memoria, this.registrador);
-                    this.interpretador.atribuirEndereco();
+                    cleanConsole();
+                    this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
+                    this.interpreter.setAddress();
                     System.out.println("\n");
                     break;
 
                 case "prox":
                     System.out.println("\n");
-                    this.interpretador.executarProximaInstrucao();
+                    this.interpreter.runNextInstruction();
                     System.out.println("\n");
                     break;
 
                 case "exec":
-                    limparConsole();
+                    cleanConsole();
                     while (true) {
-                        String done = this.interpretador.executarProximaInstrucao();
+                        String done = this.interpreter.runNextInstruction();
                         if (done != null) {
                             System.out.println("\n");
                             break;
@@ -175,10 +175,10 @@ public class Simulador_SICXE {
 
                 case "exportar_mem":
                     System.out.println("\n");
-                    if (this.memoria == null) {
+                    if (this.memory == null) {
                         System.out.println("Use \"analisar_arq\" em um arquivo antes de exportar a memória");
                     } else {
-                        this.memoria.ShowMemoria();
+                        this.memory.printMemory();
                     }
                     System.out.println("\n");
                     break;
@@ -200,7 +200,7 @@ public class Simulador_SICXE {
                         return;
                     }
 
-                    if (contains(OPÇOES_VALIDAS, regChoiceChange)) {
+                    if (contains(VALID_OPTIONS, regChoiceChange)) {
                         System.out.println("Ajustando registrador de " + regChoiceChange + " para " + value);
                     } else {
                         System.out.println("Defina um registrador válido");
@@ -217,10 +217,10 @@ public class Simulador_SICXE {
                     }
 
                     int addressChange = Integer.parseInt(args[1]);
-                    PalavraMemoria valueChange = new PalavraMemoria(args[2]);
+                    MemoryWord valueChange = new MemoryWord(args[2]);
 
-                    if (addressChange >= 0 && addressChange < this.memoria.GetMemoria().size()) {
-                        this.memoria.SetMemoria(addressChange, valueChange);
+                    if (addressChange >= 0 && addressChange < this.memory.getMemory().size()) {
+                        this.memory.setMemory(addressChange, valueChange);
                         System.out.println("Memória alterada com sucesso");
                     } else {
                         System.out.println("Endereço inválido ou fora do alcance");
@@ -229,17 +229,21 @@ public class Simulador_SICXE {
                     break;
 
                 case "parar":
-                    limparConsole();
+                    cleanConsole();
                     System.out.println("Parando Interpretador");
                     System.out.println("\n");
                     break;
 
                 case "sair":
-                    limparConsole();
+                    cleanConsole();
                     
                     String[] exitMessages = {
                         "Trabalho duro é inútil para aqueles que não acreditam em si mesmos.\n - Naruto Uzumaki",
+                        "Sou eu, Zabuza Momochi, o Demônio do Gás Oculto.\n - Zabuza Momochi, AKA 'O Demônio do Gás Oculto'",
+                        "Não pode ser, é ele, Zabuza Momochi, O Demônio do Gás Oculto. - Kakashi Hatake",
+                        "Zabuza Momochi, O Demônio do Gás Oculto?\n - Naruto Uzumaki",
                         "Lar é onde tem alguém sempre pensando em você.\n - Naruto Uzumaki",
+                        "O Naruto pode ser duro as vezes.\n - Kakashi Hatake",
                         "Se você não gosta do seu destino, não o aceite. Em vez disso, tenha a coragem de mudá-lo do jeito que você quer que ele seja.\n - Naruto Uzumaki",
                         "Saber o que é certo e escolher ignorá-lo é um ato de covardia.\n - Kakashi Hatake",
                         "Não há vantagem alguma em viver a vida correndo.\n - Shikamaru Nara",
@@ -254,7 +258,7 @@ public class Simulador_SICXE {
                     break;
                     
                 default:
-                    limparConsole();
+                    cleanConsole();
                     System.out.println("Comando Inválido");
                     System.out.println("\n");
                     break;
@@ -273,21 +277,21 @@ public class Simulador_SICXE {
 
     // CLASSES PLACEHOLDER PRA TESTAR O CONSOLE
 
-    static class Interpretador {
-        private String[] vetorInstrucoes;
-        private Memoria memoria;
-        private Registrador registrador;
+    static class Interpreter {
+        private String[] instructions;
+        private Memory memory;
+        private Register register;
 
-        public Interpretador(String[] vetorInstrucoes, Memoria memoria, Registrador registrador) {
-            this.vetorInstrucoes = vetorInstrucoes;
-            this.memoria = memoria;
-            this.registrador = registrador;
+        public Interpreter(String[] instructions, Memory memory, Register register) {
+            this.instructions = instructions;
+            this.memory = memory;
+            this.register = register;
         }
 
-        public void atribuirEndereco() {
+        public void setAddress() {
         }
 
-        public String executarProximaInstrucao() {
+        public String runNextInstruction() {
             return null;
         }
     }

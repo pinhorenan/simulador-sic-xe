@@ -1,5 +1,8 @@
 package sicxesimulator;
 
+/**
+ * Representa uma palavra na memória. Cada palavra tem 24bits e a memória do simulador é um ArrayList desta classe.
+ */
 public class Word {
 
     /**

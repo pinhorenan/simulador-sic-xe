@@ -13,7 +13,7 @@ public class Register {
 	 * HashMap que armazena os registradores.
 	 * A chave representa o nome do registrador e o valor, o seu conteúdo em hexadecimal.
 	 */
-	HashMap<String, String> registers = new HashMap<>();
+	private HashMap<String, String> registers = new HashMap<>();
 
 	/**
 	 * Construtor padrão.

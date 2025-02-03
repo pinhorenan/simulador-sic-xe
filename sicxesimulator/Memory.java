@@ -52,8 +52,8 @@ public class Memory {
 	/**
 	 * Define o valor de uma posição de memória a partir de uma Word de entrada.
 	 *
-	 * @param address o endereço de memória a ser sobrescrito.
-	 * @param value a 'Word' a ser armazenada no endereço especificado.
+	 * @param address O endereço de memória a ser sobrescrito.
+	 * @param value A 'Word' a ser armazenada no endereço especificado.
 	 */
 	public void setMemory(int address, Word value) {
 		if (address >= 0 && address < SIZE) {
@@ -66,7 +66,7 @@ public class Memory {
 	/**
 	 * Lê o valor armazenado no endereço de memória especificado.
 	 *
-	 * @param address o endereço de memória a ser lido.
+	 * @param address O endereço de memória a ser lido.
 	 * @return o valor inteiro armazenado na palavra, ou -1 se o endereço especificado estiver fora dos limites.
 	 */
 	public int read(int address) {
@@ -82,8 +82,8 @@ public class Memory {
 	 * Escreve o valor no endereço especificado a partir de um Integer de entrada.
 	 * O valor é armazenado na memória após a aplicação da máscara de 24bits.
 	 *
-	 * @param address o endereço de memória onde o valor vai ser escrito.
-	 * @param value o valor inteiro a ser escrito.
+	 * @param address O endereço de memória onde o valor vai ser escrito.
+	 * @param value O valor inteiro a ser escrito.
 	 */
 	public void write(int address, int value) {
 		if (address >= 0 && address < SIZE) {

@@ -3,13 +3,28 @@ package sicxesimulator;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+  Classe principal do Simulador SIC/XE.
+  Essa classe inicializa o simulador, processa os comandos do usuário e gerencia as operações do console.
+ */
 @SuppressWarnings("unused")
+public class Simulator {
 
-public class Simulador_SICXE {
-
+    /**
+     * Tamanho em caracteres (bytes) para os registros.
+     */
     private static final int BYTE_SIZE = 2; // Caracteres
+
+    /**
+     * Opções válidas para os registradores.
+     */
     private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F"};
 
+    /**
+     * Inicia o simulador.
+     *
+     * @param args Argumentos de linha de comando (não utilizados).
+     */
     public static void main(String[] args) {
         cleanConsole();
         System.out.println("Simulador SIC/XE");
@@ -26,59 +41,86 @@ public class Simulador_SICXE {
         }
     }
 
+    /**
+     * Limpa o console imprimindo várias linhas em branco.
+     */
     public static void cleanConsole() {
         for (int i = 0; i < 100; i++) {
             System.out.println();
         }
     }
 
+    /**
+     * Classe interna que representa o console do simulador.
+     * Responsável por tratar os comandos do usuário e interagir com os componentes do simulador.
+     */
     static class Console {
+        /**
+         * Array de instruções lidas do arquivo de montagem.
+         */
         private String[] instructions = null;
+        /**
+         * Instância da memória do simulador.
+         */
         private Memory memory = null;
+        /**
+         * Instância dos registradores do simulador.
+         */
         private Register register = null;
+        /**
+         * Instância do interpretador que processa as instruções.
+         */
         private Interpreter interpreter = null;
 
+        /**
+         * Trata o comando digitado pelo usuário.
+         *
+         * @param command O comando a ser digitado.
+         */
         public void treatCommand(String command) {
             String[] args = command.split(" ");
 
             switch (args[0]) {
                 case "comandos":
                     cleanConsole();
-                    System.out.println("\t------------------------Comandos------------------------\n" +
-                            "Inicie com:\n" +
-                            "\tanalisar_arq\t\tInicia a análise e verificação de sintaxe\n" +
-                    
-                            "Comandos do Interpretador:\n" +                
-                            "\texec\t\t\tExecuta todo o arquivo de montagem\n" +
-                            "\tiniciar\t\t\tInicia o interpretador\n" +
-                            "\tprox\t\t\tIncrementa o interpretador por uma instrução\n" +
-                            "\tparar\t\t\tPara o interpretador\n" +
+                    System.out.println("""
+                            \t------------------------Comandos------------------------
+                            Inicie com:
+                            \tanalisar_arq\t\tInicia a análise e verificação de sintaxe
+                            Comandos do Interpretador:
+                            \texec\t\t\tExecuta todo o arquivo de montagem
+                            \tiniciar\t\t\tInicia o interpretador
+                            \tprox\t\t\tIncrementa o interpretador por uma instrução
+                            \tparar\t\t\tPara o interpretador
                             
-                            "\nComandos de Manipulação de Arquivos:\n" +
-                            "\tvisualizar_mem\t\tVisualiza a memória de um determinado endereço de memória\n" +
-                            "\tvisualizar_reg\t\tVisualiza o valor de um determinado registrador\n" +
-                            "\talterar_mem\t\tAltera uma seção da memória\n" +
-                            "\talterar_reg\t\tAltera um determinado registrador\n" +
-                            "\texportar_mem\t\tExporta a memória atual para um arquivo txt\n" +
-
-                            "\nOutros Comandos:\n" +
-                            "\tcomandos\t\tLista de comandos disponíveis\n" +
-                            "\tcreditos\t\tCréditos da execução do trabalho\n" +
-                            "\tsair\t\t\tSai do simulador\n" +
-                            "\t-------------------------------------------------------\n");
+                            Comandos de Manipulação de Arquivos:
+                            \tvisualizar_mem\t\tVisualiza a memória de um determinado endereço de memória
+                            \tvisualizar_reg\t\tVisualiza o valor de um determinado registrador
+                            \talterar_mem\t\tAltera uma seção da memória
+                            \talterar_reg\t\tAltera um determinado registrador
+                            \texportar_mem\t\tExporta a memória atual para um arquivo txt
+                            
+                            Outros Comandos:
+                            \tcomandos\t\tLista de comandos disponíveis
+                            \tcreditos\t\tCréditos da execução do trabalho
+                            \tsair\t\t\tSai do simulador
+                            \t-------------------------------------------------------
+                            """);
                     break;
 
                 case "creditos":
                     cleanConsole();
-                    System.out.println("\t-----------------------Creditos-----------------------\n" +
-                    "\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv\n" +
-                    "Arthur Alves (XXX)\t\tXXX.\n" +
-                    "Fabrício (XXX)\t\t\tXXX.\n" +
-                    "Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.\n" +
-                    "Leonardo Braga (XXX)\t\tXXX.\n" +
-                    "Luis Eduardo Rasch (Neji)\tConstrução do console e analise dos arquivos.\n" +
-                    "Renan Pinho (Naruto)\t\tUM POUCO DE TUDO? TRADUTOR OFICIAL? MEMORIA? nao sei mexi em td.\n" +
-                    "\t-----------------------------------------------------\n");
+                    System.out.println("""
+                            \t-----------------------Creditos-----------------------
+                            \tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv
+                            Arthur Alves (XXX)\t\tXXX.
+                            Fabrício (XXX)\t\t\tXXX.
+                            Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.
+                            Leonardo Braga (XXX)\t\tXXX.
+                            Luis Eduardo Rasch (Neji)\tConstrução do console e analise dos arquivos.
+                            Renan Pinho (Naruto)\t\tUM POUCO DE TUDO? TRADUTOR OFICIAL? MEMORIA? nao sei mexi em td.
+                            \t-----------------------------------------------------
+                            """);
                     break;
 
                 case "analisar_arq":
@@ -120,7 +162,7 @@ public class Simulador_SICXE {
 
                     int address = Integer.parseInt(args[1]);
                     if (address >= 0 && address < this.memory.getMemory().size()) {
-                        MemoryWord value = this.memory.getMemory().get(address);
+                        Word value = this.memory.getMemory().get(address);
                         System.out.println(value);
                     } else {
                         System.out.println("Endereço inválido ou fora do alcance");
@@ -217,7 +259,8 @@ public class Simulador_SICXE {
                     }
 
                     int addressChange = Integer.parseInt(args[1]);
-                    MemoryWord valueChange = new MemoryWord(args[2]);
+                    // Aqui, Word é utilizado para representar uma palavra na memória.
+                    Word valueChange = new Word(args[2]);
 
                     if (addressChange >= 0 && addressChange < this.memory.getMemory().size()) {
                         this.memory.setMemory(addressChange, valueChange);
@@ -265,6 +308,13 @@ public class Simulador_SICXE {
             }
         }
 
+        /**
+         * Verifica se um determinado valor está contido em um array de strings.
+         *
+         * @param array O array de strings.
+         * @param value O valor a ser verificado.
+         * @return true se o valor estiver presente; false caso contrário.
+         */
         private boolean contains(String[] array, String value) {
             for (String s : array) {
                 if (s.equals(value)) {
@@ -275,23 +325,55 @@ public class Simulador_SICXE {
         }
     }
 
-    // CLASSES PLACEHOLDER PRA TESTAR O CONSOLE
-
+    /**
+     * Classe placeholder do Interpretador.
+     * Responsável por processar e executar as instruções do arquivo de montagem.
+     */
     static class Interpreter {
+        /**
+         * Array de instruções a serem processadas.
+         */
         private String[] instructions;
+
+        /**
+         * Instância da memória utilizada pelo interpretador.
+         */
         private Memory memory;
+
+        /**
+         * Instância dos registradores utilizados pelo interpretador.
+         */
         private Register register;
 
+        /**
+         * Construtor do interpretador.
+         *
+         * @param instructions Array de instruções.
+         * @param memory Instância da memória.
+         * @param register Instância dos registradores.
+         */
         public Interpreter(String[] instructions, Memory memory, Register register) {
             this.instructions = instructions;
             this.memory = memory;
             this.register = register;
         }
 
+        /**
+         * Configura o endereço inicial para execução das instruções.
+         * (Implementação futura)
+         */
         public void setAddress() {
+            // TODO
         }
 
+        /**
+         * Executa a próxima instrução;
+         * (Implementação futura)
+         *
+         * @return Uma string que indica se a execução foi concluída ou null caso contrário.
+         */
         public String runNextInstruction() {
+            // TODO
             return null;
         }
     }

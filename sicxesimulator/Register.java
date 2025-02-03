@@ -35,7 +35,7 @@ public class Register {
 	/**
 	 * Retorna o valor armazenado no registrador especificado.
 	 *
-	 * @param register nome do registrador.
+	 * @param register Nome do registrador.
 	 * @return String com o valor do registrador.
 	 */
 	public String getRegister(String register) {
@@ -45,8 +45,8 @@ public class Register {
 	/**
 	 * Define o valor do registrador especificado.
 	 *
-	 * @param register nome do registrador.
-	 * @param value valor a ser armazenado.
+	 * @param register Nome do registrador.
+	 * @param value Valor a ser armazenado.
 	 */
     public void setRegister(String register, String value) {
 		this.registers.put(register, value);

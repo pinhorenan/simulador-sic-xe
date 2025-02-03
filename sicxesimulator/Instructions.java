@@ -4,23 +4,23 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.regex.Pattern;
 
 @SuppressWarnings("unused")
 
-public class Instruçoes {
+public class Instructions {
     private String label;
-    private String nome;
+    private String name;
     private String[] args;
-    private String endereço; // Serão determinados pelo interpretador 
-    private int numero_linha;
+    private String address; // Serão determinados pelo interpretador
+    private int lineNumber;
 
-    public Instruçoes(String label, String nome, String[] args, String endereço, int numero_linha) {
+
+    public Instructions(String label, String name, String[] args, String address, int lineNumber) {
         this.label = label;
-        this.nome = nome;
+        this.name = name;
         this.args = args;
-        this.endereço = endereço;
-        this.numero_linha = numero_linha;
+        this.address = address;
+        this.lineNumber = lineNumber;
     }
 
     public void setLabel(String label) {
@@ -28,21 +28,21 @@ public class Instruçoes {
     }
 
     public void setName(String nome) {
-        this.nome = nome;
+        this.name = nome;
     }
 
     public void setArgs(String[] args) {
         this.args = args;
     }
 
-    public static List<Instruçoes> ler_arquivo(String arquivo) {
-        List<Instruçoes> lista_instruçoes = new ArrayList<>();
-        int numero_linha = 0;
+    public static List<Instructions> readFile(String file) {
+        List<Instructions> instructionsList = new ArrayList<>();
+        int lineNumber = 0;
 
-        try (Scanner scanner = new Scanner(new File(arquivo))) {
+        try (Scanner scanner = new Scanner(new File(file))) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine().trim();
-                numero_linha++;
+                lineNumber++;
 
                 if (line.isEmpty() || line.startsWith(".")) {
                     continue;
@@ -69,21 +69,21 @@ public class Instruçoes {
                     }
                 }
 
-                Instruçoes instruction = new Instruçoes(
+                Instructions instruction = new Instructions(
                     inputList[0], // label
                     inputList[1], // nome
                     argsArray.toArray(new String[0]), // args
                     null, // endereço (determinado dps)
-                    numero_linha
+                    lineNumber
                 );
-                lista_instruçoes.add(instruction);
+                instructionsList.add(instruction);
             }
         } catch (FileNotFoundException e) {
-            System.out.println("File not found: " + arquivo);
+            System.out.println("File not found: " + file);
             return null;
         }
 
-        return lista_instruçoes;
+        return instructionsList;
     }
 } 
 

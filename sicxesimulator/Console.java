@@ -7,15 +7,10 @@ import java.util.List;
  * Responsável por tratar os comandos do usuário e interagir com os componentes do simulador.
  */
 public class Console {
-    private String[] instructions = null;
+    private List<Instruction> instructions = null;
     private Memory memory = null;
     private Register register = null;
     private Interpreter interpreter = null;
-
-    /**
-     * Tamanho em caracteres (bytes) para os registros.
-     */
-    private static final int BYTE_SIZE = 2; // Caracteres
 
     /**
      * Opções válidas para os registradores.
@@ -89,8 +84,8 @@ public class Console {
                     return;
                 }
 
-                List<Instructions> instructions = Instructions.readFile("sicxesimulator/executaveis/"+args[1]);
-                if (instructions == null) {
+                this.instructions = Instruction.readFile("sicxesimulator/executaveis/"+args[1]);
+                if (this.instructions == null) {
                     System.out.println("Falha na leitura do arquivo");
                     System.out.println("\n");
                     return;
@@ -102,6 +97,13 @@ public class Console {
                 this.memory = new Memory();
                 this.register = new Register();
                 System.out.println("\n");
+
+                // Inicializa os valores de NUM1 e NUM2 para teste !!!!!!!!!!!!!DEBUG
+                this.memory.setMemory(510, new Word(4));
+                this.memory.setMemory(513, new Word(4));
+
+                System.out.println("Memória inicializada para teste.");
+
                 break;
 
             case "visualizar_mem":
@@ -143,7 +145,7 @@ public class Console {
                 }
 
                 String regChoice = args[1];
-                if (contains(VALID_OPTIONS, regChoice)) {
+                if (contains(regChoice)) {
                     System.out.println(this.register.getRegister(regChoice));
                 }
                 System.out.println("\n");
@@ -157,12 +159,20 @@ public class Console {
                 break;
 
             case "prox":
+                if (this.interpreter == null) {
+                    this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
+                    this.interpreter.setAddress();
+                }
                 System.out.println("\n");
                 this.interpreter.runNextInstruction();
                 System.out.println("\n");
                 break;
 
             case "exec":
+                if (this.interpreter == null) {
+                    this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
+                    this.interpreter.setAddress();
+                }
                 cleanConsole();
                 while (true) {
                     String done = this.interpreter.runNextInstruction();
@@ -200,7 +210,7 @@ public class Console {
                     return;
                 }
 
-                if (contains(VALID_OPTIONS, regChoiceChange)) {
+                if (contains(regChoiceChange)) {
                     System.out.println("Ajustando registrador de " + regChoiceChange + " para " + value);
                 } else {
                     System.out.println("Defina um registrador válido");
@@ -269,12 +279,11 @@ public class Console {
     /**
      * Verifica se um determinado valor está contido em um array de strings.
      *
-     * @param array O array de strings.
      * @param value O valor a ser verificado.
      * @return true se o valor estiver presente; false caso contrário.
      */
-    private boolean contains(String[] array, String value) {
-        for (String s : array) {
+    private boolean contains(String value) {
+        for (String s : Console.VALID_OPTIONS) {
             if (s.equals(value)) {
                 return true;
             }

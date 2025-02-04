@@ -28,6 +28,9 @@ public class Memory {
 		for (int i = 0; i < SIZE; i++) {
 			memory.add(new Word());
 		}
+
+		// DEBUG
+		System.out.println("Memória inicializada com " + memory.size() + " posições.");
 	}
 
 	/**
@@ -91,5 +94,9 @@ public class Memory {
 		} else {
 			System.out.println("Erro: Endereço fora dos limites.");
 		}
+	}
+
+	public void setByte(int address, String byteValue) {
+		// TODO
 	}
 }

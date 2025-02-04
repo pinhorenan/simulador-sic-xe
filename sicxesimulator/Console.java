@@ -71,10 +71,10 @@ public class Console {
                             "\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv\n" +
                             "Arthur Alves (XXX)\t\tXXX.\n" +
                             "Fabrício (XXX)\t\t\tXXX.\n" +
-                            "Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.\n" +
+                            "Gabriel Moura (Shikamaru)\tConstrução, definição e ajustes dos registradores e memória.\n" +
                             "Leonardo Braga (XXX)\t\tXXX.\n" +
-                            "Luis Eduardo Rasch (Neji)\tConstrução do console e analise dos arquivos.\n" +
-                            "Renan Pinho (Naruto)\t\tUM POUCO DE TUDO? TRADUTOR OFICIAL? MEMORIA? nao sei mexi em td.\n" +
+                            "Luis Eduardo Rasch (Neji)\tConstrução e ajuste do console, leitura e analise dos arquivos, e testes.\n" +
+                            "Renan Pinho (Naruto)\t\tConstrução das instruções e simulador, ajustes em todo o código e transpiler.\n" +
                             "\t-----------------------------------------------------\n"
                             );
                 break;

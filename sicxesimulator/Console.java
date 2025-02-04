@@ -7,7 +7,7 @@ import java.util.List;
  * Responsável por tratar os comandos do usuário e interagir com os componentes do simulador.
  */
 public class Console {
-    private String[] instructions = null;
+    private List<Instruction> instructions = null;
     private Memory memory = null;
     private Register register = null;
     private Interpreter interpreter = null;
@@ -89,8 +89,8 @@ public class Console {
                     return;
                 }
 
-                List<Instructions> instructions = Instructions.readFile("sicxesimulator/executaveis/"+args[1]);
-                if (instructions == null) {
+                this.instructions = Instruction.readFile("sicxesimulator/executaveis/"+args[1]);
+                if (this.instructions == null) {
                     System.out.println("Falha na leitura do arquivo");
                     System.out.println("\n");
                     return;

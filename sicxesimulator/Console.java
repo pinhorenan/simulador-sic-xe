@@ -157,14 +157,14 @@ public class Console {
             case "iniciar":
                 cleanConsole();
                 this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
-                this.interpreter.setAddress();
+                this.interpreter.setAddress(0);
                 System.out.println("\n");
                 break;
 
             case "prox":
                 if (this.interpreter == null) {
                     this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
-                    this.interpreter.setAddress();
+                    this.interpreter.setAddress(0);
                 }
                 System.out.println("\n");
                 this.interpreter.runNextInstruction();
@@ -174,7 +174,7 @@ public class Console {
             case "exec":
                 if (this.interpreter == null) {
                     this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
-                    this.interpreter.setAddress();
+                    this.interpreter.setAddress(0);
                 }
                 cleanConsole();
                 while (true) {

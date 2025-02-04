@@ -102,6 +102,13 @@ public class Console {
                 this.memory = new Memory();
                 this.register = new Register();
                 System.out.println("\n");
+
+                // Inicializa os valores de NUM1 e NUM2 para teste !!!!!!!!!!!!!DEBUG
+                this.memory.setMemory(0x0510, new Word(4));
+                this.memory.setMemory(0x0513, new Word(4));
+
+                System.out.println("Memória inicializada para teste.");
+
                 break;
 
             case "visualizar_mem":
@@ -157,12 +164,20 @@ public class Console {
                 break;
 
             case "prox":
+                if (this.interpreter == null) {
+                    this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
+                    this.interpreter.setAddress();
+                }
                 System.out.println("\n");
                 this.interpreter.runNextInstruction();
                 System.out.println("\n");
                 break;
 
             case "exec":
+                if (this.interpreter == null) {
+                    this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
+                    this.interpreter.setAddress();
+                }
                 cleanConsole();
                 while (true) {
                     String done = this.interpreter.runNextInstruction();

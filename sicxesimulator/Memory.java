@@ -17,7 +17,7 @@ public class Memory {
 	 * O tamanho da memória.
 	 * Pode ser modificado, sendo especificado apenas um tamanho mínimo de 1KB.
 	 */
-	private final int SIZE = 1000; // Tamanho da memória, não tenho certeza se vai ser fixo, logo isso aqui é temp.
+	private final int SIZE = 10000; // Tamanho da memória, não tenho certeza se vai ser fixo, logo isso aqui é temp.
 
 	/**
 	 * Construtor padrão. Inicializa todas as posições da memória com Word's padrão.
@@ -28,6 +28,9 @@ public class Memory {
 		for (int i = 0; i < SIZE; i++) {
 			memory.add(new Word());
 		}
+
+		// DEBUG
+		System.out.println("Memória inicializada com " + memory.size() + " posições.");
 	}
 
 	/**

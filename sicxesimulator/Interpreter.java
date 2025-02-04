@@ -303,6 +303,10 @@ public class Interpreter {
         }
         int address = Integer.parseInt(args[0]);
         int value = memory.read(address);
+
+        // DEBUG!!!!!!
+        System.out.println("Lendo da memória: Mem[" + address + "] = " + String.format("%06X", value)); // Debug
+
         register.setRegister("A", String.format("%06X", value));
         System.out.println("LDA: A = " + String.format("%06X", value));
     }

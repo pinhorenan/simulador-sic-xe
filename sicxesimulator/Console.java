@@ -30,7 +30,8 @@ public class Console {
      *
      * @param command O comando a ser digitado.
      */
-    public void treatCommand(String command) {
+    
+     public void treatCommand(String command) {
         String[] args = command.split(" ");
 
         switch (args[0]) {
@@ -50,7 +51,7 @@ public class Console {
                             "Comandos de Memória:\n" +
                             "\tcarregar_arq\t\tCarrega um arquivo para a memória\n" +
                             "\tsalvar_arq\t\tSalva a memória atual em um arquivo\n" +
-                            "\tvisualizar_mem\t\tVisualiza a memória de um determinado endereço de memória\n" +
+                            "\tvisualizar_mem\t\tVisualiza a memória (em HEX) de um determinado endereço de memória\n" +
                             "\tvisualizar_reg\t\tVisualiza o valor de um determinado registrador\n" +
                             "\talterar_mem\t\tAltera uma seção da memória\n" +
                             "\talterar_reg\t\tAltera um determinado registrador\n" +
@@ -182,6 +183,13 @@ public class Console {
                         System.out.println("\n");
                         break;
                     }
+                
+                    /**
+                     * Verifica se uma string é numérica.
+                     *
+                     * @param str A string a ser verificada.
+                     * @return true se a string for numérica; false caso contrário.
+                     */
                 }
                 break;
 
@@ -190,8 +198,20 @@ public class Console {
                 if (this.memory == null) {
                     System.out.println("Use \"analisar_arq\" em um arquivo antes de exportar a memória");
                 } else {
-                    this.memory.printMemory();
+                    this.memory.saveMemoryToFile(args[1]);
                 }
+                System.out.println("\n");
+                break;
+
+            case "carregar_arq":
+                System.out.println("\n");
+                if (args.length != 2) {
+                    System.out.println("Uso correto do comando: carregar_arq [arquivo]");
+                    System.out.println("\n");
+                    return;
+                }
+
+                this.memory.loadMemoryFromFile(args[1]);
                 System.out.println("\n");
                 break;
 

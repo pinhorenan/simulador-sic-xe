@@ -17,8 +17,8 @@ public class Interpreter {
      * Construtor do interpretador.
      *
      * @param instructions Array de instruções.
-     * @param memory Instância da memória.
-     * @param register Instância dos registradores.
+     * @param memory       Instância da memória.
+     * @param register     Instância dos registradores.
      */
     public Interpreter(List<Instruction> instructions, Memory memory, Register register) {
         this.instructions = instructions;
@@ -30,14 +30,42 @@ public class Interpreter {
     /**
      * Configura o endereço inicial para execução das instruções.
      * O interpretador pode configurar o program counter no registrador correspondente.
+     * @param startAddress Endereço inicial do programa
      */
+
     public void setAddress() {
-        this.programCounter = 0; // Reinicia a execução do programa.
+        public void setAddress ( int startAddress){
+            this.programCounter = 0; //reinicia a execução do programa.
+            this.programCounter = startAddress;
+        }
+    }
+
+    /**
+     * Atualiza as flags de condição baseado no resultado de uma operação
+     *
+     * @param result Resultado da operação
+     */
+    private void updateFlags(int result) {
+        String flags = "00000000"; //valor padrão
+
+        //verifica se é negativo (bit mais significativo = 1)
+        if ((result & 0x800000) != 0) {
+            flags = "00001000"; //flag N
+        }
+        //verifica se é zero
+        else if (result == 0) {
+            flags = "00000001"; //flag Z
+        }
+        //se não é negativo nem zero, então é positivo
+        else {
+            flags = "00000100"; //flag P
+        }
+
+        register.setRegister("SW", flags);
     }
 
     /**
      * Executa a próxima instrução;
-     * (Implementação futura)
      *
      * @return Uma string que indica se a execução foi concluída ou null caso contrário.
      */
@@ -53,8 +81,6 @@ public class Interpreter {
             return null;
         }
     }
-
-
 
     /**
      * Decodifica e executa uma instrução específica.
@@ -224,9 +250,6 @@ public class Interpreter {
         }
     }
 
-
-    // TODO precisamos atualizar as flags com os resultados de cada uma das funções. A maioria das funções vai precisar de algumas pequenas alterações pra adicionar uma chamada para atualizar o registrador SW.
-
     /**
      * ADD: A ← (A) + (m..m+2)
      * Soma o conteúdo da memória (no endereço especificado em args[0]) com o conteúdo do registrador A.
@@ -241,7 +264,7 @@ public class Interpreter {
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = (regA + memValue) & 0xFFFFFF;
 
-        register.setConditionFlags(result);
+        updateFlags(result);
 
         register.setRegister("A", String.format("%06X", result));
         System.out.println("ADD: A = " + String.format("%06X", result));
@@ -261,6 +284,9 @@ public class Interpreter {
         int value1 = Integer.parseInt(register.getRegister(r1), 16);
         int value2 = Integer.parseInt(register.getRegister(r2), 16);
         int result = (value2 + value1) & 0xFFFFFF;
+
+        updateFlags(result);
+
         register.setRegister(r2, String.format("%06X", result));
         System.out.println("ADDR: " + r2 + " = " + String.format("%06X", result));
     }
@@ -278,6 +304,8 @@ public class Interpreter {
         int memValue = memory.read(address);
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = regA & memValue;
+
+        updateFlags(results);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("AND: A = " + String.format("%06X", result));
     }
@@ -345,6 +373,8 @@ public class Interpreter {
         int memValue = memory.read(address);
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = (regA - memValue) & 0xFFFFFF;
+
+        updateFlags(result);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("SUB: A = " + String.format("%06X", result));
     }
@@ -364,8 +394,6 @@ public class Interpreter {
         System.out.println("J: Jump para " + address);
     }
 
-
-    // TODO PUTA MERDA QUANTA COISA
     /**
      * LDX: X ← (m..m+2)
      * Carrega o registrador X com o valor da memória no endereço especificado.
@@ -380,6 +408,7 @@ public class Interpreter {
         register.setRegister("X", String.format("%06X", value));
         System.out.println("LDX: X = " + String.format("%06X", value));
     }
+
     /**
      * COMP: CC ← (A) - (m..m+2)
      * Compara o conteúdo do registrador A com o valor da memória no endereço especificado.
@@ -409,7 +438,6 @@ public class Interpreter {
             System.out.println("COMP: CC ajustado para maior (SW = 00000011).");
         }
     }
-
 
     /**
      * COMPR: CC ← (r1) - (r2)
@@ -460,6 +488,8 @@ public class Interpreter {
             return;
         }
         int result = regA / memValue;
+
+        updateFlags(result);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("DIV: A = " + String.format("%06X", result));
     }
@@ -482,6 +512,8 @@ public class Interpreter {
             return;
         }
         int result = value2 / value1;
+
+        updateFlags(result);
         register.setRegister(r2, String.format("%06X", result));
         System.out.println("DIVR: " + r2 + " = " + String.format("%06X", result));
     }
@@ -680,6 +712,8 @@ public class Interpreter {
         int memValue = memory.read(address);
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = (regA * memValue) & 0xFFFFFF;
+
+        updateFlags(results);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("MUL: A = " + String.format("%06X", result));
     }
@@ -698,6 +732,8 @@ public class Interpreter {
         int value1 = Integer.parseInt(register.getRegister(r1), 16);
         int value2 = Integer.parseInt(register.getRegister(r2), 16);
         int result = (value2 * value1) & 0xFFFFFF;
+
+        updateFlags(results);
         register.setRegister(r2, String.format("%06X", result));
         System.out.println("MULR: " + r2 + " = " + String.format("%06X", result));
     }
@@ -715,6 +751,8 @@ public class Interpreter {
         int memValue = memory.read(address);
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = regA | memValue;
+
+        updateFlags(results);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("OR: A = " + String.format("%06X", result));
     }
@@ -752,22 +790,22 @@ public class Interpreter {
      */
     public void shiftl(String[] args) {
         if (args.length < 2) {
-            System.out.println("Erro: SHIFTL requer dois argumentos: registrador e quantidade de bits.");
+            System.out.println("Erro: SHIFTL requer dois argumentos.");
             return;
         }
         String reg = args[0];
         int shiftCount = Integer.parseInt(args[1]);
 
-        // Verifica se o registrador é de 48 bits (ex.: F) ou 24 bits.
         if (reg.equals("F")) {
             long value = Long.parseLong(register.getRegister(reg), 16);
-            // Máscara para 48 bits: (1 << 48) - 1, mas cuidado com overflow em long (usar 0xFFFFFFFFFFFFL)
             long result = (value << shiftCount) & 0xFFFFFFFFFFFFL;
             register.setRegister(reg, String.format("%012X", result));
+            updateFlags((int) (result & 0xFFFFFF)); //atualiza flags usando os 24 bits menos significativos
             System.out.println("SHIFTL: " + reg + " = " + String.format("%012X", result));
         } else {
             int value = Integer.parseInt(register.getRegister(reg), 16);
             int result = (value << shiftCount) & 0xFFFFFF;
+            updateFlags(result);
             register.setRegister(reg, String.format("%06X", result));
             System.out.println("SHIFTL: " + reg + " = " + String.format("%06X", result));
         }
@@ -779,7 +817,7 @@ public class Interpreter {
      */
     public void shiftr(String[] args) {
         if (args.length < 2) {
-            System.out.println("Erro: SHIFTR requer dois argumentos: registrador e quantidade de bits.");
+            System.out.println("Erro: SHIFTR requer dois argumentos.");
             return;
         }
         String reg = args[0];
@@ -789,10 +827,12 @@ public class Interpreter {
             long value = Long.parseLong(register.getRegister(reg), 16);
             long result = (value >> shiftCount) & 0xFFFFFFFFFFFFL;
             register.setRegister(reg, String.format("%012X", result));
+            updateFlags((int) (result & 0xFFFFFF)); //atualiza flags usando os 24 bits menos significativos
             System.out.println("SHIFTR: " + reg + " = " + String.format("%012X", result));
         } else {
             int value = Integer.parseInt(register.getRegister(reg), 16);
             int result = (value >> shiftCount) & 0xFFFFFF;
+            updateFlags(result);
             register.setRegister(reg, String.format("%06X", result));
             System.out.println("SHIFTR: " + reg + " = " + String.format("%06X", result));
         }
@@ -907,6 +947,8 @@ public class Interpreter {
         int value1 = Integer.parseInt(register.getRegister(r1), 16);
         int value2 = Integer.parseInt(register.getRegister(r2), 16);
         int result = (value2 - value1) & 0xFFFFFF; // Mantém o valor dentro de 24 bits.
+
+        updateFlags(results);
         register.setRegister(r2, String.format("%06X", result));
         System.out.println("SUBR: " + r2 + " = " + String.format("%06X", result));
     }
@@ -916,22 +958,32 @@ public class Interpreter {
      * Se o valor de X não for zero, incrementa o registrador X e compara o resultado com o conteúdo da memória.
      */
     public void tix(String[] args) {
-        int regX = Integer.parseInt(register.getRegister("X"), 16);
-        regX = (regX + 1) & 0xFFFFFF; // Incrementa X, e mantém o valor dentro de 24 bits.
-
-        register.setRegister("X", String.format("%06X", regX));
-        System.out.println("TIX: X = " + String.format("%06X", regX));
-
-        // Se X não for zero, faz o salto condicional.
-        if (regX != 0) {
-            if (args.length < 1) {
-                System.out.println("Erro: TIX requer um argumento.");
-                return;
-            }
-            int address = Integer.parseInt(args[0]);
-            this.programCounter = address - 1; // Ajusta o PC para o salto
-            System.out.println("TIX: Jump para " + address);
+        if (args.length < 1) {
+            System.out.println("Erro: TIX requer um argumento.");
+            return;
         }
+
+        int address = Integer.parseInt(args[0]);
+        int memValue = memory.read(address);
+
+        //incrementa X
+        int regX = Integer.parseInt(register.getRegister("X"), 16);
+        regX = (regX + 1) & 0xFFFFFF;
+        register.setRegister("X", String.format("%06X", regX));
+
+        //compara com valor da memória
+        int result = regX - memValue;
+
+        //ajusta flags de condição
+        if (result == 0) {
+            register.setRegister("SW", "00000001");  // igual
+        } else if (result < 0) {
+            register.setRegister("SW", "00000010");  // menor
+        } else {
+            register.setRegister("SW", "00000011");  // maior
+        }
+
+        System.out.println("TIX: X = " + String.format("%06X", regX));
     }
 
     /**
@@ -944,25 +996,27 @@ public class Interpreter {
             return;
         }
 
-        String r1 = args[0];  // O registrador com o qual compararemos o registrador X.
+        String r1 = args[0];
+
+        //incrementa X
         int regX = Integer.parseInt(register.getRegister("X"), 16);
-        regX = (regX + 1) & 0xFFFFFF; // Incrementa X, mantendo o valor dentro de 24 bits.
-
+        regX = (regX + 1) & 0xFFFFFF;
         register.setRegister("X", String.format("%06X", regX));
-        System.out.println("TIXR: X = " + String.format("%06X", regX));
 
-        int regValue = Integer.parseInt(register.getRegister(r1), 16);
+        //compara com o registrador r1
+        int r1Value = Integer.parseInt(register.getRegister(r1), 16);
+        int result = regX - r1Value;
 
-        // Se X não for zero, e X for diferente de r1, faz o salto condicional.
-        if (regX != 0 && regX != regValue) {
-            if (args.length < 2) {
-                System.out.println("Erro: TIXR requer dois argumentos.");
-                return;
-            }
-            int address = Integer.parseInt(args[1]);
-            this.programCounter = address - 1; // Ajusta o PC para o salto
-            System.out.println("TIXR: Jump para " + address);
+        //ajusta flags de condição
+        if (result == 0) {
+            register.setRegister("SW", "00000001"); //igual
+        } else if (result < 0) {
+            register.setRegister("SW", "00000010"); //menor
+        } else {
+            register.setRegister("SW", "00000011"); //maior
         }
-    }
 
+        System.out.println("TIXR: X = " + String.format("%06X", regX));
+    }
+}
 }

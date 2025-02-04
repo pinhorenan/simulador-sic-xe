@@ -95,4 +95,8 @@ public class Memory {
 			System.out.println("Erro: Endereço fora dos limites.");
 		}
 	}
+
+	public void setByte(int address, String byteValue) {
+		// TODO
+	}
 }

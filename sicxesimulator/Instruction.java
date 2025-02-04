@@ -2,6 +2,7 @@ package sicxesimulator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -114,9 +115,7 @@ public class Instruction {
                 if (validMnemonics.contains(tokens[0].toUpperCase())) {
                     mnemonic = tokens[0];
                     // Os argumentos começam no token 1
-                    for (int i = 1; i < tokens.length; i++) {
-                        argsList.add(tokens[i]);
-                    }
+                    argsList.addAll(Arrays.asList(tokens).subList(1, tokens.length));
                 } else {
                     // Caso contrário, o primeiro token é o label e o segundo é o mnemônico
                     label = tokens[0];
@@ -125,9 +124,7 @@ public class Instruction {
                         continue;
                     }
                     mnemonic = tokens[1];
-                    for (int i = 2; i < tokens.length; i++) {
-                        argsList.add(tokens[i]);
-                    }
+                    argsList.addAll(Arrays.asList(tokens).subList(2, tokens.length));
                 }
 
                 // Aqui você pode incluir lógica adicional para tratar literais como X'... ' Ou C'... se necessário.

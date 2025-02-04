@@ -67,7 +67,7 @@ public class Memory {
 	 * Lê o valor armazenado no endereço de memória especificado.
 	 *
 	 * @param address O endereço de memória a ser lido.
-	 * @return o valor inteiro armazenado na palavra, ou -1 se o endereço especificado estiver fora dos limites.
+	 * @return o valor inteiro armazenado na palavra, ou −1 se o endereço especificado estiver fora dos limites.
 	 */
 	public int read(int address) {
 		if (address >= 0 && address < SIZE) {
@@ -79,8 +79,8 @@ public class Memory {
 	}
 
 	/**
-	 * Escreve o valor no endereço especificado a partir de um Integer de entrada.
-	 * O valor é armazenado na memória após a aplicação da máscara de 24bits.
+	 * Escreve o valor no endereço especificado a partir de um Inteiro de entrada.
+	 * O valor é armazenado na memória após a aplicação da máscara de 24 bits.
 	 *
 	 * @param address O endereço de memória onde o valor vai ser escrito.
 	 * @param value O valor inteiro a ser escrito.

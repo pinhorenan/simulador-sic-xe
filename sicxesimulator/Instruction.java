@@ -96,36 +96,36 @@ public class Instruction {
 
         try (Scanner scanner = new Scanner(new File(file))) {
             while (scanner.hasNextLine()) {
-                String line = scanner.nextLine().trim();
-                lineNumber++;
+            String line = scanner.nextLine().trim();
+            lineNumber++;
 
-                // Ignora linhas vazias ou que comecem com "."
-                if (line.isEmpty() || line.startsWith(".")) {
-                    continue;
+            // Ignora linhas vazias ou que comecem com "."
+            if (line.isEmpty() || line.startsWith(".")) {
+                continue;
+            }
+
+            // Divide a linha por espaços ou vírgulas (removendo tokens vazios)
+            String[] tokens = line.split("[\\s,]+");
+
+            String label = "";
+            String mnemonic;
+            List<String> argsList = new ArrayList<>();
+
+            // Se o primeiro token estiver em validMnemonics, significa que não há label.
+            if (validMnemonics.contains(tokens[0].toUpperCase())) {
+                mnemonic = tokens[0];
+                // Os argumentos começam no token 1
+                argsList.addAll(Arrays.asList(tokens).subList(1, tokens.length));
+            } else {
+                // Caso contrário, o primeiro token é o label e o segundo é o mnemônico
+                label = tokens[0];
+                if (tokens.length < 2) {
+                System.out.println("Erro de sintaxe na linha " + lineNumber);
+                continue;
                 }
-
-                // Divide a linha por espaços (removendo tokens vazios)
-                String[] tokens = line.split("\\s+");
-
-                String label = "";
-                String mnemonic;
-                List<String> argsList = new ArrayList<>();
-
-                // Se o primeiro token estiver em validMnemonics, significa que não há label.
-                if (validMnemonics.contains(tokens[0].toUpperCase())) {
-                    mnemonic = tokens[0];
-                    // Os argumentos começam no token 1
-                    argsList.addAll(Arrays.asList(tokens).subList(1, tokens.length));
-                } else {
-                    // Caso contrário, o primeiro token é o label e o segundo é o mnemônico
-                    label = tokens[0];
-                    if (tokens.length < 2) {
-                        System.out.println("Erro de sintaxe na linha " + lineNumber);
-                        continue;
-                    }
-                    mnemonic = tokens[1];
-                    argsList.addAll(Arrays.asList(tokens).subList(2, tokens.length));
-                }
+                mnemonic = tokens[1];
+                argsList.addAll(Arrays.asList(tokens).subList(2, tokens.length));
+            }
 
                 // Aqui você pode incluir lógica adicional para tratar literais como X'... ' Ou C'... se necessário.
 

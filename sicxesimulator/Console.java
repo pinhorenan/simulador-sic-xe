@@ -104,8 +104,8 @@ public class Console {
                 System.out.println("\n");
 
                 // Inicializa os valores de NUM1 e NUM2 para teste !!!!!!!!!!!!!DEBUG
-                this.memory.setMemory(0x0510, new Word(4));
-                this.memory.setMemory(0x0513, new Word(4));
+                this.memory.setMemory(510, new Word(4));
+                this.memory.setMemory(513, new Word(4));
 
                 System.out.println("Memória inicializada para teste.");
 

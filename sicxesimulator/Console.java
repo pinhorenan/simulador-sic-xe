@@ -70,9 +70,9 @@ public class Console {
                             "\t-----------------------Creditos-----------------------\n" +
                             "\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv\n" +
                             "Arthur Alves (XXX)\t\tXXX.\n" +
-                            "Fabrício (XXX)\t\t\tXXX.\n" +
+                            "Fabrício Bartz (XXX)\t\t\tXXX.\n" +
                             "Gabriel Moura (Shikamaru)\tConstrução, definição e ajustes dos registradores e memória.\n" +
-                            "Leonardo Braga (XXX)\t\tXXX.\n" +
+                            "Leonardo Braga (XXX)\t\tAjustes nas flags de operações.\n" +
                             "Luis Eduardo Rasch (Neji)\tConstrução e ajuste do console, leitura e analise dos arquivos, e testes.\n" +
                             "Renan Pinho (Naruto)\t\tConstrução das instruções e simulador, ajustes em todo o código e transpiler.\n" +
                             "\t-----------------------------------------------------\n"

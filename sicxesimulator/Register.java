@@ -25,11 +25,12 @@ public class Register {
 		this.registers.put("A", "000000");
 		this.registers.put("X", "000000");
 		this.registers.put("L", "000000");
-		this.registers.put("PC", "000000");
 		this.registers.put("B", "000000");
 		this.registers.put("S", "000000");
 		this.registers.put("T", "000000");
 		this.registers.put("F", "000000000000");
+		this.registers.put("PC", "000000");
+		this.registers.put("SW", "000000");
 	}
 
 	/**
@@ -60,5 +61,26 @@ public class Register {
 		for (String key : registers.keySet()) {
 			System.out.println(key + " = " + this.getRegister(key));
 		}
+	}
+
+	public void setConditionFlags(int result) {
+		int conditionFlags = 0;
+
+		// Verifica se o resultado é positivo
+		if (result > 0 ) {
+			conditionFlags |= 0b0010;  // P (Positive) - bit 1
+		}
+
+		// Verifica se o resultado é zero
+		if (result == 0) {
+			conditionFlags |= 0b0001; // Z (Zero) - bit 0
+		}
+
+		// Verifica se o resultado é negativo
+		if (result < 0) {
+			conditionFlags |= 0b1000; // N (Negative) - bit 3
+		}
+
+		this.setRegister("SW", String.format("%04X", conditionFlags));
 	}
 }

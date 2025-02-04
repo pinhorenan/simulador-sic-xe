@@ -30,50 +30,53 @@ public class Console {
      *
      * @param command O comando a ser digitado.
      */
-    public void treatCommand(String command) {
+    
+     public void treatCommand(String command) {
         String[] args = command.split(" ");
 
         switch (args[0]) {
             case "comandos":
                 cleanConsole();
-                System.out.println("""
-                            \t------------------------Comandos------------------------
-                            Inicie com:
-                            \tanalisar_arq\t\tInicia a análise e verificação de sintaxe
-                            Comandos do Interpretador:
-                            \texec\t\t\tExecuta todo o arquivo de montagem
-                            \tiniciar\t\t\tInicia o interpretador
-                            \tprox\t\t\tIncrementa o interpretador por uma instrução
-                            \tparar\t\t\tPara o interpretador
+                System.out.println(
+                            "\t------------------------Comandos------------------------\n" +
+                            "Inicie com:\n" +
+                            "\tanalisar_arq\t\tInicia a análise e verificação de sintaxe\n" +
+
+                            "Comandos do Interpretador:\n" +
+                            "\texec\t\t\tExecuta todo o arquivo de montagem\n" +
+                            "\tiniciar\t\t\tInicia o interpretador\n" +
+                            "\tprox\t\t\tIncrementa o interpretador por uma instrução\n" +
+                            "\tparar\t\t\tPara o interpretador\n" +
                             
-                            Comandos de Manipulação de Arquivos:
-                            \tvisualizar_mem\t\tVisualiza a memória de um determinado endereço de memória
-                            \tvisualizar_reg\t\tVisualiza o valor de um determinado registrador
-                            \talterar_mem\t\tAltera uma seção da memória
-                            \talterar_reg\t\tAltera um determinado registrador
-                            \texportar_mem\t\tExporta a memória atual para um arquivo txt
+                            "Comandos de Memória:\n" +
+                            "\tcarregar_arq\t\tCarrega um arquivo para a memória\n" +
+                            "\tsalvar_arq\t\tSalva a memória atual em um arquivo\n" +
+                            "\tvisualizar_mem\t\tVisualiza a memória (em HEX) de um determinado endereço de memória\n" +
+                            "\tvisualizar_reg\t\tVisualiza o valor de um determinado registrador\n" +
+                            "\talterar_mem\t\tAltera uma seção da memória\n" +
+                            "\talterar_reg\t\tAltera um determinado registrador\n" +
                             
-                            Outros Comandos:
-                            \tcomandos\t\tLista de comandos disponíveis
-                            \tcreditos\t\tCréditos da execução do trabalho
-                            \tsair\t\t\tSai do simulador
-                            \t-------------------------------------------------------
-                            """);
+                            "Outros Comandos:\n" +
+                            "\tcomandos\t\tLista de comandos disponíveis\n" +
+                            "\tcreditos\t\tCréditos da execução do trabalho\n" +
+                            "\tsair\t\t\tSai do simulador\n" +
+                            "\t-------------------------------------------------------\n"
+                            );
                 break;
 
             case "creditos":
                 cleanConsole();
-                System.out.println("""
-                            \t-----------------------Creditos-----------------------
-                            \tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv
-                            Arthur Alves (XXX)\t\tXXX.
-                            Fabrício (XXX)\t\t\tXXX.
-                            Gabriel Moura (Shikamaru)\tDefinição e controle dos registradores e memória.
-                            Leonardo Braga (XXX)\t\tXXX.
-                            Luis Eduardo Rasch (Neji)\tConstrução do console e analise dos arquivos.
-                            Renan Pinho (Naruto)\t\tUM POUCO DE TUDO? TRADUTOR OFICIAL? MEMORIA? nao sei mexi em td.
-                            \t-----------------------------------------------------
-                            """);
+                System.out.println(
+                            "\t-----------------------Creditos-----------------------\n" +
+                            "\tSimulador SIC/XE | Rock lee vs Gaara - Linkin park.amv\n" +
+                            "Arthur Alves (XXX)\t\tXXX.\n" +
+                            "Fabrício (XXX)\t\t\tXXX.\n" +
+                            "Gabriel Moura (Shikamaru)\tConstrução, definição e ajustes dos registradores e memória.\n" +
+                            "Leonardo Braga (XXX)\t\tXXX.\n" +
+                            "Luis Eduardo Rasch (Neji)\tConstrução e ajuste do console, leitura e analise dos arquivos, e testes.\n" +
+                            "Renan Pinho (Naruto)\t\tConstrução das instruções e simulador, ajustes em todo o código e transpiler.\n" +
+                            "\t-----------------------------------------------------\n"
+                            );
                 break;
 
             case "analisar_arq":
@@ -180,16 +183,35 @@ public class Console {
                         System.out.println("\n");
                         break;
                     }
+                
+                    /**
+                     * Verifica se uma string é numérica.
+                     *
+                     * @param str A string a ser verificada.
+                     * @return true se a string for numérica; false caso contrário.
+                     */
                 }
                 break;
 
-            case "exportar_mem":
+            case "salvar_arq":
                 System.out.println("\n");
                 if (this.memory == null) {
                     System.out.println("Use \"analisar_arq\" em um arquivo antes de exportar a memória");
                 } else {
-                    this.memory.printMemory();
+                    this.memory.saveMemoryToFile(args[1]);
                 }
+                System.out.println("\n");
+                break;
+
+            case "carregar_arq":
+                System.out.println("\n");
+                if (args.length != 2) {
+                    System.out.println("Uso correto do comando: carregar_arq [arquivo]");
+                    System.out.println("\n");
+                    return;
+                }
+
+                this.memory.loadMemoryFromFile(args[1]);
                 System.out.println("\n");
                 break;
 

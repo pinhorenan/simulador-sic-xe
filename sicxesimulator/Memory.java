@@ -1,5 +1,10 @@
 package sicxesimulator;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -51,7 +56,51 @@ public class Memory {
 	public ArrayList<Word> getMemory() {
 		return memory;
 	}
+	
+	/**
+	 * Salva o conteúdo da memória em um arquivo de texto.
+	 *
+	 * @param fileName O caminho do arquivo onde a memória será salva.
+	 */
+	public void saveMemoryToFile(String fileName) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("sicxesimulator/memoria/" + fileName))) {
+            for (int i = 0; i < memory.size(); i++) {
+				writer.write(i + ": " + Integer.toString(memory.get(i).getValue()) + "\t");
+                writer.newLine();
+            }
+            System.out.println("Memória salva em \"sicxesimulator/memoria/" + fileName + "\".\n");
+        } catch (IOException e) {
+            System.out.println("Erro ao salvar a memória: " + e.getMessage());
+        }
+    }
 
+    /**
+     * Carrega o conteúdo de um arquivo de texto para a memória.
+     *
+     * @param fileName O caminho do arquivo de onde a memória será carregada.
+     */
+    public void loadMemoryFromFile(String fileName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("sicxesimulator/memoria/" + fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(": ");
+                if (parts.length == 2) {
+                    int address = Integer.parseInt(parts[0].trim());
+                    int value = Integer.parseInt(parts[1].trim()); // Base 10
+                    if (address >= 0 && address < SIZE) {
+                        memory.get(address).setValue(value);
+                    } else {
+                        System.out.println("Erro: Endereço fora dos limites.");
+                    }
+                }
+            }
+            System.out.println("Memória carregada de \"sicxesimulator/memoria/" + fileName + "\".");
+        } catch (IOException e) {
+            System.out.println("Erro ao carregar a memória: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("Erro ao converter valor de memória: " + e.getMessage());
+        }
+    }
 	/**
 	 * Define o valor de uma posição de memória a partir de uma Word de entrada.
 	 *

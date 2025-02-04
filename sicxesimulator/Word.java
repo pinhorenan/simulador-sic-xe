@@ -1,7 +1,7 @@
 package sicxesimulator;
 
 /**
- * Representa uma palavra na memória. Cada palavra tem 24bits e a memória do simulador é um ArrayList desta classe.
+ * Representa uma palavra na memória. Cada palavra tem 24 bits e a memória do simulador é um ArrayList desta classe.
  */
 public class Word {
 
@@ -49,7 +49,7 @@ public class Word {
     /**
      * Retorna o valor atual da palavra.
      *
-     * @return O 24bits como um valor inteiro.
+     * @return O 24 bits como um valor inteiro.
      */
     public int getValue() {
         return value;

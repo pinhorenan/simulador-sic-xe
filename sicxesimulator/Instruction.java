@@ -92,8 +92,10 @@ public class Instruction {
         int lineNumber = 0;
 
         // Exemplo de mnemônicos válidos (pode ser expandido conforme a necessidade)
-        List<String> validMnemonics = Arrays.asList("START", "LDA", "LDX", "DIVR", "WORD", "END", "STA", "ADD", "SUB", "JUMP", "JEQ");
-
+        List<String> validMnemonics = Arrays.asList("ADD", "ADDR", "AND", "CLEAR", "LDX", "COMP",
+        "COMPR", "DIV", "DIVR", "J", "JEQ", "JGT", "JLT", "JSUB", "LDA", "LDB", "LDCH", "LDL",
+        "LDS", "LDT", "MUL", "MULR", "OR", "RMO", "RSUB", "SHIFTL", "SHIFTR", "STA", "STB", "STCH",
+        "STL", "STS", "STT", "STX", "SUB", "SUBR", "TIX", "TIXR");
         try (Scanner scanner = new Scanner(new File(file))) {
             while (scanner.hasNextLine()) {
             String line = scanner.nextLine().trim();

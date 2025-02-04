@@ -13,11 +13,6 @@ public class Console {
     private Interpreter interpreter = null;
 
     /**
-     * Tamanho em caracteres (bytes) para os registros.
-     */
-    private static final int BYTE_SIZE = 2; // Caracteres
-
-    /**
      * Opções válidas para os registradores.
      */
     private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F"};
@@ -150,7 +145,7 @@ public class Console {
                 }
 
                 String regChoice = args[1];
-                if (contains(VALID_OPTIONS, regChoice)) {
+                if (contains(regChoice)) {
                     System.out.println(this.register.getRegister(regChoice));
                 }
                 System.out.println("\n");
@@ -215,7 +210,7 @@ public class Console {
                     return;
                 }
 
-                if (contains(VALID_OPTIONS, regChoiceChange)) {
+                if (contains(regChoiceChange)) {
                     System.out.println("Ajustando registrador de " + regChoiceChange + " para " + value);
                 } else {
                     System.out.println("Defina um registrador válido");
@@ -284,12 +279,11 @@ public class Console {
     /**
      * Verifica se um determinado valor está contido em um array de strings.
      *
-     * @param array O array de strings.
      * @param value O valor a ser verificado.
      * @return true se o valor estiver presente; false caso contrário.
      */
-    private boolean contains(String[] array, String value) {
-        for (String s : array) {
+    private boolean contains(String value) {
+        for (String s : Console.VALID_OPTIONS) {
             if (s.equals(value)) {
                 return true;
             }

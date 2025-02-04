@@ -33,12 +33,11 @@ public class Interpreter {
      * @param startAddress Endereço inicial do programa
      */
 
-    public void setAddress() {
-        public void setAddress ( int startAddress){
-            this.programCounter = 0; //reinicia a execução do programa.
-            this.programCounter = startAddress;
-        }
+    public void setAddress ( int startAddress){
+        this.programCounter = 0; //reinicia a execução do programa.
+        this.programCounter = startAddress;
     }
+
 
     /**
      * Atualiza as flags de condição baseado no resultado de uma operação
@@ -305,7 +304,7 @@ public class Interpreter {
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = regA & memValue;
 
-        updateFlags(results);
+        updateFlags(result);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("AND: A = " + String.format("%06X", result));
     }
@@ -713,7 +712,7 @@ public class Interpreter {
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = (regA * memValue) & 0xFFFFFF;
 
-        updateFlags(results);
+        updateFlags(result);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("MUL: A = " + String.format("%06X", result));
     }
@@ -733,7 +732,7 @@ public class Interpreter {
         int value2 = Integer.parseInt(register.getRegister(r2), 16);
         int result = (value2 * value1) & 0xFFFFFF;
 
-        updateFlags(results);
+        updateFlags(result);
         register.setRegister(r2, String.format("%06X", result));
         System.out.println("MULR: " + r2 + " = " + String.format("%06X", result));
     }
@@ -752,7 +751,7 @@ public class Interpreter {
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = regA | memValue;
 
-        updateFlags(results);
+        updateFlags(result);
         register.setRegister("A", String.format("%06X", result));
         System.out.println("OR: A = " + String.format("%06X", result));
     }
@@ -948,7 +947,7 @@ public class Interpreter {
         int value2 = Integer.parseInt(register.getRegister(r2), 16);
         int result = (value2 - value1) & 0xFFFFFF; // Mantém o valor dentro de 24 bits.
 
-        updateFlags(results);
+        updateFlags(result);
         register.setRegister(r2, String.format("%06X", result));
         System.out.println("SUBR: " + r2 + " = " + String.format("%06X", result));
     }
@@ -1018,5 +1017,4 @@ public class Interpreter {
 
         System.out.println("TIXR: X = " + String.format("%06X", regX));
     }
-}
 }

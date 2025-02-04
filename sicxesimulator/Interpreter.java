@@ -163,7 +163,7 @@ public class Interpreter {
                 break;
 
             case "RSUB":
-                rsub(args);
+                rsub();
                 break;
 
             case "SHIFTL":
@@ -224,6 +224,9 @@ public class Interpreter {
         }
     }
 
+
+    // TODO precisamos atualizar as flags com os resultados de cada uma das funções. A maioria das funções vai precisar de algumas pequenas alterações pra adicionar uma chamada para atualizar o registrador SW.
+
     /**
      * ADD: A ← (A) + (m..m+2)
      * Soma o conteúdo da memória (no endereço especificado em args[0]) com o conteúdo do registrador A.
@@ -237,6 +240,9 @@ public class Interpreter {
         int memValue = memory.read(address);
         int regA = Integer.parseInt(register.getRegister("A"), 16);
         int result = (regA + memValue) & 0xFFFFFF;
+
+        register.setConditionFlags(result);
+
         register.setRegister("A", String.format("%06X", result));
         System.out.println("ADD: A = " + String.format("%06X", result));
     }
@@ -360,34 +366,603 @@ public class Interpreter {
 
 
     // TODO PUTA MERDA QUANTA COISA
-    public void ldx(String[] args) { System.out.println("LDX: Não implementado ainda."); }
-    public void comp(String[] args) { System.out.println("COMP: Não implementado ainda."); }
-    public void compr(String[] args) { System.out.println("COMPR: Não implementado ainda."); }
-    public void div(String[] args) { System.out.println("DIV: Não implementado ainda."); }
-    public void divr(String[] args) { System.out.println("DIVR: Não implementado ainda."); }
-    public void jeq(String[] args) { System.out.println("JEQ: Não implementado ainda."); }
-    public void jgt(String[] args) { System.out.println("JGT: Não implementado ainda."); }
-    public void jlt(String[] args) { System.out.println("JLT: Não implementado ainda."); }
-    public void jsub(String[] args) { System.out.println("JSUB: Não implementado ainda."); }
-    public void ldb(String[] args) { System.out.println("LDB: Não implementado ainda."); }
-    public void ldch(String[] args) { System.out.println("LDCH: Não implementado ainda."); }
-    public void ldl(String[] args) { System.out.println("LDL: Não implementado ainda."); }
-    public void lds(String[] args) { System.out.println("LDS: Não implementado ainda."); }
-    public void ldt(String[] args) { System.out.println("LDT: Não implementado ainda."); }
-    public void mul(String[] args) { System.out.println("MUL: Não implementado ainda."); }
-    public void mulr(String[] args) { System.out.println("MULR: Não implementado ainda."); }
-    public void or(String[] args) { System.out.println("OR: Não implementado ainda."); }
-    public void rmo(String[] args) { System.out.println("RMO: Não implementado ainda."); }
-    public void rsub(String[] args) { System.out.println("RSUB: Não implementado ainda."); }
-    public void shiftl(String[] args) { System.out.println("SHIFTL: Não implementado ainda."); }
-    public void shiftr(String[] args) { System.out.println("SHIFTR: Não implementado ainda."); }
-    public void stb(String[] args) { System.out.println("STB: Não implementado ainda."); }
-    public void stch(String[] args) { System.out.println("STCH: Não implementado ainda."); }
-    public void stl(String[] args) { System.out.println("STL: Não implementado ainda."); }
-    public void sts(String[] args) { System.out.println("STS: Não implementado ainda."); }
-    public void stt(String[] args) { System.out.println("STT: Não implementado ainda."); }
-    public void stx(String[] args) { System.out.println("STX: Não implementado ainda."); }
-    public void subr(String[] args) { System.out.println("SUBR: Não implementado ainda."); }
-    public void tix(String[] args) { System.out.println("TIX: Não implementado ainda."); }
-    public void tixr(String[] args) { System.out.println("TIXR: Não implementado ainda."); }
+    /**
+     * LDX: X ← (m..m+2)
+     * Carrega o registrador X com o valor da memória no endereço especificado.
+     */
+    public void ldx(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: LDX requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int value = memory.read(address);
+        register.setRegister("X", String.format("%06X", value));
+        System.out.println("LDX: X = " + String.format("%06X", value));
+    }
+    /**
+     * COMP: CC ← (A) - (m..m+2)
+     * Compara o conteúdo do registrador A com o valor da memória no endereço especificado.
+     */
+    public void comp(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: COMP requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int memValue = memory.read(address);
+        int regA = Integer.parseInt(register.getRegister("A"), 16);
+        int result = regA - memValue;
+
+        // Ajuste dos bits de condição (CC) conforme o resultado
+        if (result == 0) {
+            // CC = 0 (igual)
+            register.setRegister("SW", "00000001");  // Representando CC = 0 (igual)
+            System.out.println("COMP: CC ajustado para igual (SW = 00000001).");
+        } else if (result < 0) {
+            // CC = 1 (menor)
+            register.setRegister("SW", "00000010");  // Representando CC = 1 (menor)
+            System.out.println("COMP: CC ajustado para menor (SW = 00000010).");
+        } else {
+            // CC = 2 (maior)
+            register.setRegister("SW", "00000011");  // Representando CC = 2 (maior)
+            System.out.println("COMP: CC ajustado para maior (SW = 00000011).");
+        }
+    }
+
+
+    /**
+     * COMPR: CC ← (r1) - (r2)
+     * Compara o conteúdo de dois registradores e ajusta os bits de condição.
+     */
+    public void compr(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: COMPR requer dois argumentos.");
+            return;
+        }
+        String r1 = args[0];
+        String r2 = args[1];
+        int value1 = Integer.parseInt(register.getRegister(r1), 16);
+        int value2 = Integer.parseInt(register.getRegister(r2), 16);
+        int result = value1 - value2;
+
+        // Ajuste dos bits de condição (CC) conforme o resultado
+        if (result == 0) {
+            // CC = 0 (igual)
+            register.setRegister("SW", "00000001");  // Representando CC = 0 (igual)
+            System.out.println("COMPR: CC ajustado para igual (SW = 00000001).");
+        } else if (result < 0) {
+            // CC = 1 (menor)
+            register.setRegister("SW", "00000010");  // Representando CC = 1 (menor)
+            System.out.println("COMPR: CC ajustado para menor (SW = 00000010).");
+        } else {
+            // CC = 2 (maior)
+            register.setRegister("SW", "00000011");  // Representando CC = 2 (maior)
+            System.out.println("COMPR: CC ajustado para maior (SW = 00000011).");
+        }
+    }
+
+
+    /**
+     * DIV: A ← (A) / (m..m+2)
+     * Divide o conteúdo do registrador A pelo valor da memória no endereço especificado.
+     */
+    public void div(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: DIV requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int memValue = memory.read(address);
+        int regA = Integer.parseInt(register.getRegister("A"), 16);
+        if (memValue == 0) {
+            System.out.println("Erro: Divisão por zero.");
+            return;
+        }
+        int result = regA / memValue;
+        register.setRegister("A", String.format("%06X", result));
+        System.out.println("DIV: A = " + String.format("%06X", result));
+    }
+
+    /**
+     * DIVR: r2 ← (r2) / (r1)
+     * Divide o conteúdo de dois registradores e armazena o resultado no segundo registrador.
+     */
+    public void divr(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: DIVR requer dois argumentos.");
+            return;
+        }
+        String r1 = args[0];
+        String r2 = args[1];
+        int value1 = Integer.parseInt(register.getRegister(r1), 16);
+        int value2 = Integer.parseInt(register.getRegister(r2), 16);
+        if (value1 == 0) {
+            System.out.println("Erro: Divisão por zero.");
+            return;
+        }
+        int result = value2 / value1;
+        register.setRegister(r2, String.format("%06X", result));
+        System.out.println("DIVR: " + r2 + " = " + String.format("%06X", result));
+    }
+
+    /**
+     * JEQ: Se A == 0, PC ← m
+     * Realiza um salto condicional para o endereço especificado se o conteúdo do registrador A for zero.
+     */
+    public void jeq(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: JEQ requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+
+        // Verifica a flag Z (Zero) no SW
+        int swValue = Integer.parseInt(register.getRegister("SW"), 16);
+        boolean zeroFlag = (swValue & 0b0001) != 0;  // Flag Z (Zero) é o bit 0
+
+        if (zeroFlag) {
+            this.programCounter = address - 1;  // Salta para o endereço especificado
+            System.out.println("JEQ: Salto para " + address);
+        } else {
+            System.out.println("JEQ: Não ocorreu salto, SW = " + Integer.toBinaryString(swValue));
+        }
+    }
+
+
+    /**
+     * JGT: Se o resultado da comparação for 'maior' (CC == 2), PC ← m
+     * Realiza um salto condicional para o endereço especificado se o resultado da última comparação indicar que o valor comparado é maior.
+     */
+    public void jgt(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: JGT requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+
+        // Obtém o valor do registrador SW (Condition Code)
+        int swValue = Integer.parseInt(register.getRegister("SW"), 16);
+
+        // Verifica se a condição de maior foi atendida
+        // CC = 2 é quando a flag P está setada e N e Z estão zerados
+        boolean greaterThan = ((swValue & 0b0100) != 0) &&  // Flag P (positivo) deve estar 1
+                ((swValue & 0b1000) == 0) &&  // Flag N (negativo) deve estar 0
+                ((swValue & 0b0001) == 0);    // Flag Z (zero) deve estar 0
+
+        if (greaterThan) {
+            this.programCounter = address - 1;  // Ajusta o program counter para o endereço de salto
+            System.out.println("JGT: Condição satisfeita (maior). Salto para " + address);
+        } else {
+            System.out.println("JGT: Condição não satisfeita. Sem salto.");
+        }
+    }
+
+
+    /**
+     * JLT: Se o resultado da comparação for 'menor' (CC == 1), PC ← m
+     * Realiza um salto condicional para o endereço especificado se o resultado da última comparação indicar que o valor comparado é menor.
+     */
+    public void jlt(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: JLT requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+
+        // Obtém o valor do registrador SW (Condition Code)
+        int swValue = Integer.parseInt(register.getRegister("SW"), 16);
+
+        // Verifica se a condição de menor foi atendida
+        // CC = 1 é quando a flag N está setada e P e Z estão zerados
+        boolean lessThan = ((swValue & 0b1000) != 0) &&  // Flag N (negativo) deve estar 1
+                ((swValue & 0b0100) == 0) &&  // Flag P (positivo) deve estar 0
+                ((swValue & 0b0001) == 0);    // Flag Z (zero) deve estar 0
+
+        if (lessThan) {
+            this.programCounter = address - 1;  // Ajusta o program counter para o endereço de salto
+            System.out.println("JLT: Condição satisfeita (menor). Salto para " + address);
+        } else {
+            System.out.println("JLT: Condição não satisfeita. Sem salto.");
+        }
+    }
+
+
+    /**
+     * JSUB: L ← PC+1; PC ← m
+     * Salta para o endereço especificado, salvando o endereço de retorno (a instrução seguinte) no registrador L.
+     */
+    public void jsub(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: JSUB requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        // Armazena o endereço de retorno no registrador L
+        register.setRegister("L", String.format("%06X", this.programCounter + 1));
+        this.programCounter = address - 1;  // Salta para o endereço especificado
+        System.out.println("JSUB: Salto para " + address + " com retorno armazenado em L = " + register.getRegister("L"));
+    }
+
+
+    /**
+     * LDB: B ← (m..m+2)
+     * Carrega o registrador B com o valor da memória no endereço especificado.
+     */
+    public void ldb(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: LDB requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int value = memory.read(address);
+        register.setRegister("B", String.format("%06X", value));
+        System.out.println("LDB: B = " + String.format("%06X", value));
+    }
+
+
+    /**
+     * LDCH: Carrega um byte de memória no registrador A.
+     * O byte lido substitui os 8 bits menos significativos de A, preservando os 16 bits mais significativos.
+     */
+    public void ldch(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: LDCH requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int memValue = memory.read(address);  // Lê um valor de 24 bits da memória
+        int memByte = memValue & 0xFF;         // Extrai os 8 bits menos significativos (1 byte)
+        int regA = Integer.parseInt(register.getRegister("A"), 16);
+        int newValue = (regA & 0xFFFF00) | memByte;  // Preserva os 16 bits mais significativos
+        register.setRegister("A", String.format("%06X", newValue));
+        System.out.println("LDCH: A = " + String.format("%06X", newValue));
+    }
+
+
+    /**
+     * LDL: L ← (m..m+2)
+     * Carrega o registrador L com o valor da memória no endereço especificado.
+     */
+    public void ldl(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: LDL requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int value = memory.read(address);
+        register.setRegister("L", String.format("%06X", value));
+        System.out.println("LDL: L = " + String.format("%06X", value));
+    }
+
+
+    /**
+     * LDS: S ← (m..m+2)
+     * Carrega o registrador S com o valor da memória no endereço especificado.
+     */
+    public void lds(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: LDS requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int value = memory.read(address);
+        register.setRegister("S", String.format("%06X", value));
+        System.out.println("LDS: S = " + String.format("%06X", value));
+    }
+
+
+    /**
+     * LDT: T ← (m..m+2)
+     * Carrega o registrador T com o valor da memória no endereço especificado.
+     */
+    public void ldt(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: LDT requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int value = memory.read(address);
+        register.setRegister("T", String.format("%06X", value));
+        System.out.println("LDT: T = " + String.format("%06X", value));
+    }
+
+    /**
+     * MUL: A ← (A) * (m..m+2)
+     * Multiplica o conteúdo do registrador A pelo valor da memória no endereço especificado.
+     */
+    public void mul(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: MUL requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int memValue = memory.read(address);
+        int regA = Integer.parseInt(register.getRegister("A"), 16);
+        int result = (regA * memValue) & 0xFFFFFF;
+        register.setRegister("A", String.format("%06X", result));
+        System.out.println("MUL: A = " + String.format("%06X", result));
+    }
+
+    /**
+     * MULR: r2 ← (r2) * (r1)
+     * Multiplica o conteúdo de dois registradores e armazena o resultado no segundo registrador.
+     */
+    public void mulr(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: MULR requer dois argumentos.");
+            return;
+        }
+        String r1 = args[0];
+        String r2 = args[1];
+        int value1 = Integer.parseInt(register.getRegister(r1), 16);
+        int value2 = Integer.parseInt(register.getRegister(r2), 16);
+        int result = (value2 * value1) & 0xFFFFFF;
+        register.setRegister(r2, String.format("%06X", result));
+        System.out.println("MULR: " + r2 + " = " + String.format("%06X", result));
+    }
+
+    /**
+     * OR: A ← (A) | (m..m+2)
+     * Realiza a operação OR bit a bit entre o conteúdo do registrador A e o valor da memória.
+     */
+    public void or(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: OR requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        int memValue = memory.read(address);
+        int regA = Integer.parseInt(register.getRegister("A"), 16);
+        int result = regA | memValue;
+        register.setRegister("A", String.format("%06X", result));
+        System.out.println("OR: A = " + String.format("%06X", result));
+    }
+
+    /**
+     * RMO: r2 ← (r1)
+     * Move (cópia) o conteúdo do registrador r1 para o registrador r2.
+     */
+    public void rmo(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: RMO requer dois argumentos.");
+            return;
+        }
+        String source = args[0];
+        String dest = args[1];
+        String value = register.getRegister(source);
+        register.setRegister(dest, value);
+        System.out.println("RMO: " + dest + " = " + value + " (copiado de " + source + ")");
+    }
+
+    /**
+     * RSUB: PC ← L
+     * Retorna da sub-rotina, ajustando o contador de programa para o endereço armazenado em L.
+     */
+    public void rsub() {
+        String lValue = register.getRegister("L");
+        int returnAddress = Integer.parseInt(lValue, 16);
+        this.programCounter = returnAddress - 1; // Ajusta para que, após o incremento, PC seja o endereço de retorno
+        System.out.println("RSUB: Retorno para " + returnAddress);
+    }
+
+    /**
+     * SHIFTL: r ← (r) << n
+     * Realiza um deslocamento lógico à esquerda no registrador especificado por n bits.
+     */
+    public void shiftl(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: SHIFTL requer dois argumentos: registrador e quantidade de bits.");
+            return;
+        }
+        String reg = args[0];
+        int shiftCount = Integer.parseInt(args[1]);
+
+        // Verifica se o registrador é de 48 bits (ex.: F) ou 24 bits.
+        if (reg.equals("F")) {
+            long value = Long.parseLong(register.getRegister(reg), 16);
+            // Máscara para 48 bits: (1 << 48) - 1, mas cuidado com overflow em long (usar 0xFFFFFFFFFFFFL)
+            long result = (value << shiftCount) & 0xFFFFFFFFFFFFL;
+            register.setRegister(reg, String.format("%012X", result));
+            System.out.println("SHIFTL: " + reg + " = " + String.format("%012X", result));
+        } else {
+            int value = Integer.parseInt(register.getRegister(reg), 16);
+            int result = (value << shiftCount) & 0xFFFFFF;
+            register.setRegister(reg, String.format("%06X", result));
+            System.out.println("SHIFTL: " + reg + " = " + String.format("%06X", result));
+        }
+    }
+
+    /**
+     * SHIFTR: r ← (r) >> n
+     * Realiza um deslocamento lógico à direita no registrador especificado por n bits.
+     */
+    public void shiftr(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: SHIFTR requer dois argumentos: registrador e quantidade de bits.");
+            return;
+        }
+        String reg = args[0];
+        int shiftCount = Integer.parseInt(args[1]);
+
+        if (reg.equals("F")) {
+            long value = Long.parseLong(register.getRegister(reg), 16);
+            long result = (value >> shiftCount) & 0xFFFFFFFFFFFFL;
+            register.setRegister(reg, String.format("%012X", result));
+            System.out.println("SHIFTR: " + reg + " = " + String.format("%012X", result));
+        } else {
+            int value = Integer.parseInt(register.getRegister(reg), 16);
+            int result = (value >> shiftCount) & 0xFFFFFF;
+            register.setRegister(reg, String.format("%06X", result));
+            System.out.println("SHIFTR: " + reg + " = " + String.format("%06X", result));
+        }
+    }
+
+    /**
+     * STB: m..m+2 ← (B)
+     * Armazena o conteúdo do registrador B na memória no endereço especificado.
+     */
+    public void stb(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: STB requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        String value = register.getRegister("B");
+        memory.setMemory(address, new Word(value));
+        System.out.println("STB: Mem[" + address + "] = " + value);
+    }
+
+    /**
+     * STCH: m ← (byte menos significativo de A)
+     * Armazena o byte (8 bits) menos significativo do registrador A na memória no endereço especificado.
+     */
+    public void stch(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: STCH requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        String regA = register.getRegister("A");
+        // Extrai os 2 últimos dígitos hexadecimais (1 byte)
+        String byteValue = regA.substring(regA.length() - 2);
+
+        // TODO adicionar método setByte em memory
+        memory.setByte(address, byteValue);
+
+        System.out.println("STCH: Mem[" + address + "] = " + byteValue);
+    }
+
+    /**
+     * STL: m..m+2 ← (L)
+     * Armazena o conteúdo do registrador L na memória no endereço especificado.
+     */
+    public void stl(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: STL requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        String value = register.getRegister("L");
+        memory.setMemory(address, new Word(value));
+        System.out.println("STL: Mem[" + address + "] = " + value);
+    }
+
+    /**
+     * STS: m..m+2 ← (S)
+     * Armazena o conteúdo do registrador S na memória no endereço especificado.
+     */
+    public void sts(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: STS requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        String value = register.getRegister("S");
+        memory.setMemory(address, new Word(value));
+        System.out.println("STS: Mem[" + address + "] = " + value);
+    }
+
+    /**
+     * STT: m..m+2 ← (T)
+     * Armazena o conteúdo do registrador T na memória no endereço especificado.
+     */
+    public void stt(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: STT requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        String value = register.getRegister("T");
+        memory.setMemory(address, new Word(value));
+        System.out.println("STT: Mem[" + address + "] = " + value);
+    }
+
+    /**
+     * STX: m..m+2 ← (X)
+     * Armazena o conteúdo do registrador X na memória no endereço especificado.
+     */
+    public void stx(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: STX requer um argumento.");
+            return;
+        }
+        int address = Integer.parseInt(args[0]);
+        String value = register.getRegister("X");
+        memory.setMemory(address, new Word(value));
+        System.out.println("STX: Mem[" + address + "] = " + value);
+    }
+
+    /**
+     * SUBR: r2 ← (r2) - (r1)
+     * Subtrai o conteúdo de um registrador (r1) do conteúdo de outro registrador (r2).
+     */
+    public void subr(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Erro: SUBR requer dois argumentos.");
+            return;
+        }
+        String r1 = args[0];
+        String r2 = args[1];
+        int value1 = Integer.parseInt(register.getRegister(r1), 16);
+        int value2 = Integer.parseInt(register.getRegister(r2), 16);
+        int result = (value2 - value1) & 0xFFFFFF; // Mantém o valor dentro de 24 bits.
+        register.setRegister(r2, String.format("%06X", result));
+        System.out.println("SUBR: " + r2 + " = " + String.format("%06X", result));
+    }
+
+    /**
+     * TIX: X ← (X) + 1
+     * Se o valor de X não for zero, incrementa o registrador X e compara o resultado com o conteúdo da memória.
+     */
+    public void tix(String[] args) {
+        int regX = Integer.parseInt(register.getRegister("X"), 16);
+        regX = (regX + 1) & 0xFFFFFF; // Incrementa X, e mantém o valor dentro de 24 bits.
+
+        register.setRegister("X", String.format("%06X", regX));
+        System.out.println("TIX: X = " + String.format("%06X", regX));
+
+        // Se X não for zero, faz o salto condicional.
+        if (regX != 0) {
+            if (args.length < 1) {
+                System.out.println("Erro: TIX requer um argumento.");
+                return;
+            }
+            int address = Integer.parseInt(args[0]);
+            this.programCounter = address - 1; // Ajusta o PC para o salto
+            System.out.println("TIX: Jump para " + address);
+        }
+    }
+
+    /**
+     * TIXR: X ← (X) + 1
+     * Se X não for zero, faz o salto condicional, comparando X com outro registrador (r1).
+     */
+    public void tixr(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Erro: TIXR requer um argumento.");
+            return;
+        }
+
+        String r1 = args[0];  // O registrador com o qual compararemos o registrador X.
+        int regX = Integer.parseInt(register.getRegister("X"), 16);
+        regX = (regX + 1) & 0xFFFFFF; // Incrementa X, mantendo o valor dentro de 24 bits.
+
+        register.setRegister("X", String.format("%06X", regX));
+        System.out.println("TIXR: X = " + String.format("%06X", regX));
+
+        int regValue = Integer.parseInt(register.getRegister(r1), 16);
+
+        // Se X não for zero, e X for diferente de r1, faz o salto condicional.
+        if (regX != 0 && regX != regValue) {
+            if (args.length < 2) {
+                System.out.println("Erro: TIXR requer dois argumentos.");
+                return;
+            }
+            int address = Integer.parseInt(args[1]);
+            this.programCounter = address - 1; // Ajusta o PC para o salto
+            System.out.println("TIXR: Jump para " + address);
+        }
+    }
+
 }

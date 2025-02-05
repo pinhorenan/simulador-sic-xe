@@ -47,40 +47,18 @@ public class Register {
 	 * Define o valor do registrador especificado.
 	 *
 	 * @param register Nome do registrador.
-	 * @param value Valor a ser armazenado.
+	 * @param value    Valor a ser armazenado.
 	 */
-    public void setRegister(String register, String value) {
+	public void setRegister(String register, String value) {
 		this.registers.put(register, value);
 	}
 
 	/**
-	 * Imprime o valor de todos os registradores.
-	 * Para cada registrador, imprime o nome e o valor armazenado.
+	 * WIP
 	 */
-    public void viewRegisters() {
+	public void viewRegisters() {
 		for (String key : registers.keySet()) {
 			System.out.println(key + " = " + this.getRegister(key));
 		}
-	}
-
-	public void setConditionFlags(int result) {
-		int conditionFlags = 0;
-
-		// Verifica se o resultado é positivo
-		if (result > 0 ) {
-			conditionFlags |= 0b0010;  // P (Positive) - bit 1
-		}
-
-		// Verifica se o resultado é zero
-		if (result == 0) {
-			conditionFlags |= 0b0001; // Z (Zero) - bit 0
-		}
-
-		// Verifica se o resultado é negativo
-		if (result < 0) {
-			conditionFlags |= 0b1000; // N (Negative) - bit 3
-		}
-
-		this.setRegister("SW", String.format("%04X", conditionFlags));
 	}
 }

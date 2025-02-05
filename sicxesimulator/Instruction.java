@@ -141,7 +141,7 @@ public class Instruction {
                 instructionsList.add(instruction);
             }
         } catch (FileNotFoundException e) {
-            System.out.println("File not found: " + file);
+            System.out.println("Arquivo não encontrado: " + file);
             return null;
         }
 

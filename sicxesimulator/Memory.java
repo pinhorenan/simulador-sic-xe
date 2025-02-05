@@ -145,6 +145,12 @@ public class Memory {
 		}
 	}
 
+	/**
+	 * Esse método ainda não foi implementado.
+	 *
+	 * @param address O endereço onde está o dado.
+	 * @param byteValue O endereço
+	 */
 	public void setByte(int address, String byteValue) {
 		// TODO
 	}

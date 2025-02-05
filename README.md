@@ -20,7 +20,7 @@ Você também pode digitar 'help' para ver a lista de comandos.
 
 ## Créditos
 Arthur Alves - XXX.  
-Fabrício Bartz - XXX.  
+Fabricio Bartz - Organização, discussão, ajustes.  
 Gabriel Moura - Construção, definição e ajustes dos registradores e memória.  
 Leonardo Braga - Ajustes nas flags de operações.  
 Luis Eduardo Rasch - Construção e ajuste do console, leitura e analise dos arquivos, e testes.  

@@ -11,8 +11,8 @@ public class FileHandler {
 
     /**
      * Lê um arquivo de código de montagem e retorna uma lista de instruções.
-     * @Param filePath - Caminho do arquivo a ser lido.
-     * \@return Lista de instruções, ou null se ocorrer algum erro.
+     * @param filePath - Caminho do arquivo a ser lido.
+     * @return Lista de instruções, ou null se ocorrer algum erro.
      */
     public List<Instruction> loadInstructionsFromFile(String filePath) {
         List<Instruction> instructions = new ArrayList<>();
@@ -87,7 +87,7 @@ public class FileHandler {
 
     public void loadMemoryFromFile(Memory memory, String filePath) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;;
+            String line;
             int address = 0;
             while ((line = reader.readLine()) != null) {
                 memory.write(address++, String.valueOf(Integer.parseInt(line, 16)));

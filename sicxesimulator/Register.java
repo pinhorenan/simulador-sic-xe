@@ -1,64 +1,53 @@
 package sicxesimulator;
 
-import java.util.HashMap;
-
-/**
- * Representa o conjunto de registradores do simulador SIC/XE.
- * Cada registrador é armazenado como uma entrada em um HashMap, a chave é o nome do registrador
- * e o valor é o seu conteúdo em hexadecimal.
- */
 public class Register {
 
-	/**
-	 * HashMap que armazena os registradores.
-	 * A chave representa o nome do registrador e o valor, o seu conteúdo em hexadecimal.
-	 */
-	private HashMap<String, String> registers = new HashMap<>();
+	private final String name;
+	private String value;
+	private final int size;
 
-	/**
-	 * Construtor padrão.
-	 * Inicializa os registradores com valores padrão:
-	 * A, X, L, PC, B, S e T são inicializados com seus 24 bits,
-	 * enquanto F, que lida com ponto flutuante, possui 48 bits.
-	 */
-	public Register() {
-		this.registers.put("A", "000000");
-		this.registers.put("X", "000000");
-		this.registers.put("L", "000000");
-		this.registers.put("B", "000000");
-		this.registers.put("S", "000000");
-		this.registers.put("T", "000000");
-		this.registers.put("F", "000000000000");
-		this.registers.put("PC", "000000");
-		this.registers.put("SW", "000000");
-	}
 
-	/**
-	 * Retorna o valor armazenado no registrador especificado.
-	 *
-	 * @param register Nome do registrador.
-	 * @return String com o valor do registrador.
-	 */
-	public String getRegister(String register) {
-		return this.registers.get(register);
-	}
-
-	/**
-	 * Define o valor do registrador especificado.
-	 *
-	 * @param register Nome do registrador.
-	 * @param value    Valor a ser armazenado.
-	 */
-	public void setRegister(String register, String value) {
-		this.registers.put(register, value);
-	}
-
-	/**
-	 * WIP
-	 */
-	public void viewRegisters() {
-		for (String key : registers.keySet()) {
-			System.out.println(key + " = " + this.getRegister(key));
+	public Register(String name) {
+		this.name = name;
+		if (name.equals("F")) {
+			this.size = 48; // Tamanho em bits. Para o registrador dos floats.
+			this.value = "000000000000000000000000000000000000000000000000"; // TODO isso deve ser temporário.
+		} else {
+			this.size = 24;
+			this.value = "000000000000000000000000";
 		}
+		// TODO
+		// Condicional para garantir que o valor de entrada seja válido.
+	}
+
+	// Getters
+
+	public String getName() {
+		return name;
+	}
+
+	public String getValue() {
+		return value;
+	}
+
+	public int getSize() {
+		return size;
+	}
+
+	/// Setters
+
+	// Setter que recebe uma String
+	public void setValue(String value) {
+		this.value = value;
+	}
+
+	// Setter que recebe um inteiro
+	public void setValue(int value) {
+		this.value = String.valueOf(value);
+	}
+
+	// Setters que recebe uma Word
+	public void setValue(Word value) {
+		this.value = value.toString();
 	}
 }

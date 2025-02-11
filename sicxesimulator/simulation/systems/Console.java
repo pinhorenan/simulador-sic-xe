@@ -1,4 +1,7 @@
-package sicxesimulator;
+package sicxesimulator.simulation.systems;
+
+import sicxesimulator.simulation.virtualMachine.operations.Instruction;
+import sicxesimulator.simulation.virtualMachine.*;
 
 import java.util.List;
 
@@ -7,15 +10,23 @@ import java.util.List;
  * Responsável por tratar os comandos do usuário e interagir com os componentes do simulador.
  */
 public class Console {
-    private List<Instruction> instructions = null;
-    private Memory memory = null;
-    private Register register = null;
-    private Interpreter interpreter = null;
+    private final Machine virtualMachine;
+    private final FileHandler fileHandler;
+    private final Interpreter interpreter;
+    private final Assembler assembler;
 
     /**
      * Opções válidas para os registradores.
      */
     private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F"};
+
+
+    public Console(Machine virtualMachine, FileHandler fileHandler, Interpreter interpreter, Assembler assembler) {
+        this.virtualMachine = virtualMachine;
+        this.fileHandler = fileHandler;
+        this.interpreter = interpreter;
+        this.assembler = assembler;
+    }
 
     /**
      * Limpa o console imprimindo várias linhas em branco.
@@ -33,8 +44,10 @@ public class Console {
     
      public void treatCommand(String command) {
         String[] args = command.split(" ");
+        Memory memory = virtualMachine.getMemory();
 
         switch (args[0]) {
+                // Aqui imprime os comandos.
             case "comandos":
                 cleanConsole();
                 System.out.println(
@@ -64,6 +77,7 @@ public class Console {
                             );
                 break;
 
+                // Aqui imprime os créditos.
             case "creditos":
                 cleanConsole();
                 System.out.println(
@@ -79,36 +93,30 @@ public class Console {
                             );
                 break;
 
-            case "analisar_arq":
+               // Aqui utilizamos fileHandler.loadInstructionsFromFile().
+            case "carregar_instrucoes":
                 System.out.println("\n");
                 if (args.length != 2) {
-                    System.out.println("Uso correto do comando: analisar_arq [arquivo]");
+                    System.out.println("Uso correto do comando: carregar_instrucoes [arquivo]");
                     System.out.println("\n");
                     return;
                 }
 
-                this.instructions = Instruction.readFile("sicxesimulator/executaveis/"+args[1]);
-                if (this.instructions == null) {
+                List<Instruction> instructionList = fileHandler.loadInstructionsFromFile(args[1]);
+
+                if (instructionList == null) {
                     System.out.println("Falha na leitura do arquivo");
                     System.out.println("\n");
                     return;
                 }
                 else {
-                    System.out.println("Arquivo lido com sucesso");
+                    Interpreter.setInstructions(instructionList);
+                    System.out.println("Instruções carregadas com sucesso.");
                 }
-
-                this.memory = new Memory();
-                this.register = new Register();
-                System.out.println("\n");
-
-                // Inicializa os valores de NUM1 e NUM2 para teste !!!!!!!!!!!!!DEBUG
-                this.memory.setMemory(10, new Word(6));
-                this.memory.setMemory(13, new Word(2));
-
-                System.out.println("Memória inicializada para teste.");
 
                 break;
 
+                // Aqui utilizamos a memory.read().
             case "visualizar_mem":
                 System.out.println("\n");
                 if (args.length != 2) {
@@ -117,22 +125,22 @@ public class Console {
                     return;
                 }
 
-                if (this.memory == null) {
+                if (memory == null) {
                     System.out.println("Use \"analisar_arq\" em um arquivo antes de visualizar a memória");
                     System.out.println("\n");
                     return;
                 }
 
                 int address = Integer.parseInt(args[1]);
-                if (address >= 0 && address < this.memory.getMemory().size()) {
-                    Word value = this.memory.getMemory().get(address);
-                    System.out.println(value);
+                if (address >= 0 && address < memory.getSize()) {
+                    System.out.println(memory.read(address));
                 } else {
                     System.out.println("Endereço inválido ou fora do alcance");
                 }
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos register.read(). TODO
             case "visualizar_reg":
                 System.out.println("\n");
                 if (args.length != 2) {
@@ -154,27 +162,30 @@ public class Console {
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos Interpreter.run(). TODO
             case "iniciar":
                 cleanConsole();
                 this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
-                this.interpreter.setAddress(0);
+                this.interpreter.setStartAddress(0);
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos Interpreter.runNextInstruction(). TODO
             case "prox":
                 if (this.interpreter == null) {
                     this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
-                    this.interpreter.setAddress(0);
+                    this.interpreter.setStartAddress(0);
                 }
                 System.out.println("\n");
                 this.interpreter.runNextInstruction();
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos um loop para rodar todas instruções do início ao fim. TODO
             case "exec":
                 if (this.interpreter == null) {
                     this.interpreter = new Interpreter(this.instructions, this.memory, this.register);
-                    this.interpreter.setAddress(0);
+                    this.interpreter.setStartAddress(0);
                 }
                 cleanConsole();
                 while (true) {
@@ -193,16 +204,18 @@ public class Console {
                 }
                 break;
 
+                // Aqui utilizamos FileHandler.saveMemoryToFile().
             case "salvar_arq":
                 System.out.println("\n");
-                if (this.memory == null) {
+                if (memory == null) {
                     System.out.println("Use \"analisar_arq\" em um arquivo antes de exportar a memória");
                 } else {
-                    this.memory.saveMemoryToFile(args[1]);
+                    fileHandler.saveMemoryToFile(memory, args[1]);
                 }
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos FileHandler.loadMemoryFromFile().
             case "carregar_arq":
                 System.out.println("\n");
                 if (args.length != 2) {
@@ -211,10 +224,11 @@ public class Console {
                     return;
                 }
 
-                this.memory.loadMemoryFromFile(args[1]);
+                fileHandler.loadMemoryFromFile(memory, args[1]);
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos Register.setValue(). TODO
             case "alterar_reg":
                 System.out.println("\n");
                 if (args.length != 3) {
@@ -240,6 +254,7 @@ public class Console {
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos Memory.write().
             case "alterar_mem":
                 System.out.println("\n");
                 if (args.length != 3) {
@@ -248,12 +263,11 @@ public class Console {
                     return;
                 }
 
-                int addressChange = Integer.parseInt(args[1]);
-                // Aqui, Word é utilizado para representar uma palavra na memória.
-                Word valueChange = new Word(args[2]);
+                int addressToChange = Integer.parseInt(args[1]);
+                String newValue = args[2];
 
-                if (addressChange >= 0 && addressChange < this.memory.getMemory().size()) {
-                    this.memory.setMemory(addressChange, valueChange);
+                if (addressToChange >= 0 && addressToChange < memory.getSize()) {
+                    memory.write(addressToChange, newValue);
                     System.out.println("Memória alterada com sucesso");
                 } else {
                     System.out.println("Endereço inválido ou fora do alcance");
@@ -261,12 +275,14 @@ public class Console {
                 System.out.println("\n");
                 break;
 
+                // Aqui utilizamos Interpreter.stop(). TODO
             case "parar":
                 cleanConsole();
                 System.out.println("Parando Interpretador");
                 System.out.println("\n");
                 break;
 
+                // Aqui chamamos System.exit().
             case "sair":
                 cleanConsole();
 

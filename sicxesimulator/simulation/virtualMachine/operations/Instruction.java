@@ -1,4 +1,5 @@
-package sicxesimulator;
+package sicxesimulator.simulation.virtualMachine.operations;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -20,15 +21,7 @@ public class Instruction {
     private String address;
     private int lineNumber;
 
-    /**
-     * Construtor.
-     *
-     * @param label O rótulo da instrução.
-     * @param name O nome ou mnemônico da instrução.
-     * @param args Os argumentos da instrução.
-     * @param address O endereço da instrução.
-     * @param lineNumber O número da linha em que a instrução aparece no arquivo.
-     */
+
     public Instruction(String label, String name, String[] args, String address, int lineNumber) {
         this.label = label;
         this.name = name;
@@ -37,7 +30,8 @@ public class Instruction {
         this.lineNumber = lineNumber;
     }
 
-    // Getters
+    /// Getters
+
     public String getLabel() {
         return label;
     }
@@ -58,10 +52,7 @@ public class Instruction {
         return lineNumber;
     }
 
-    // Setters
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    /// Setters
 
     public void setLabel(String label) {
         this.label = label;
@@ -71,22 +62,24 @@ public class Instruction {
         this.name = name;
     }
 
-    public void setLineNumber(int lineNumber) {
-        this.lineNumber = lineNumber;
-    }
-
     public void setArgs(String[] args) {
         this.args = args;
     }
 
-    /**
-     * Lê um arquivo de montagem e retorna uma lista de instruções.
-     * O arquivo deve conter as instruções de montagem e o método processa cada linha,
-     * ignorando linhas vazias ou que iniciam com ponto.
-     *
-     * @param file O caminho do arquivo a ser lido.
-     * @return Uma lista de objetos Instructions, ou null se o arquivo não for encontrado.
-     */
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public void setLineNumber(int lineNumber) {
+        this.lineNumber = lineNumber;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(%d) %s %s %s", lineNumber, name, address, String.join(", ", args));
+    }
+
+
     public static List<Instruction> readFile(String file) {
         List<Instruction> instructionsList = new ArrayList<>();
         int lineNumber = 0;

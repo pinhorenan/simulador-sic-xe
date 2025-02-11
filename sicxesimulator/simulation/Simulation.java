@@ -7,13 +7,12 @@ import java.util.Scanner;
 
 import static sicxesimulator.simulation.systems.Console.cleanConsole;
 
+public abstract class Simulation {
 
-public class Simulation {
-
-    public Simulation() {
+    public static void run(){
         Machine virtualMachine = new Machine();
         FileHandler fileHandler = new FileHandler();
-        Interpreter interpreter = new Interpreter();
+        Interpreter interpreter = new Interpreter(virtualMachine);
         Assembler assembler = new Assembler();
         Console console = new Console(virtualMachine, fileHandler, interpreter, assembler);
 

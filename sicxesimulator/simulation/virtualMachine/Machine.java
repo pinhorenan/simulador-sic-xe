@@ -5,33 +5,51 @@ package sicxesimulator.simulation.virtualMachine;
  */
 public class Machine {
     private Memory memory;
-    private Register[] registerSet; // TODO usar uma estrutura que faça algum sentido.
+    private final Register A;
+    private final Register X;
+    private final Register L;
+    private final Register PC;
+    private final Register B;
+    private final Register S;
+    private final Register T;
+    private final Register F;
+    private final Register SW;
 
     public Machine() {
-        memory = new Memory();
-        registerSet = new Register[16]; // TODO Temporário
-
-        // TODO Instanciar todos os registradores com valor zerado e adicionar ao registerSet
+        this.memory = new Memory();
+        this.A = new Register("A");
+        this.X = new Register("X");
+        this.L = new Register("L");
+        this.PC = new Register("PC");
+        this.B = new Register("B");
+        this.S = new Register("S");
+        this.T = new Register("T");
+        this.F = new Register("F");
+        this.SW = new Register("SW");
     }
 
-    ///  Getters
+    // Métodos de acesso aos componentes da máquina.
 
     public Memory getMemory() {
         return memory;
     }
 
-    public Register[] getRegisterSet() {
-        return registerSet;
-    }
-
-    /// Setters
-
     public void setMemory(Memory memory) {
         this.memory = memory;
     }
 
-    public void setRegisterSet(Register[] register) {
-        this.registerSet = register;
-        // TODO ainda devemos estruturar o conjunto de registradores de forma adequada.
+    public Register getRegister(String name) {
+        return switch (name) {
+            case "A" -> A;
+            case "X" -> X;
+            case "L" -> L;
+            case "PC" -> PC;
+            case "B" -> B;
+            case "S" -> S;
+            case "T" -> T;
+            case "F" -> F;
+            case "SW" -> SW;
+            default -> null;
+        };
     }
 }

@@ -1,4 +1,4 @@
-package sicxesimulator;
+package sicxesimulator.simulation.systems;
 
 import java.io.*;
 import java.util.*;

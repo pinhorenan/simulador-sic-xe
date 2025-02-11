@@ -1,10 +1,15 @@
-package sicxesimulator;
+package sicxesimulator.simulation.virtualMachine;
 
 public class Register {
 
 	private final String name;
 	private String value;
 	private final int size;
+
+	/**
+	 * Opções válidas para os registradores.
+	 */
+	private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F", "PC", "SW"};
 
 
 	public Register(String name) {

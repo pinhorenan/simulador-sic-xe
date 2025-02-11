@@ -1,40 +1,27 @@
-package sicxesimulator;
+package sicxesimulator.simulation.systems;
+
+import sicxesimulator.simulation.virtualMachine.operations.Instruction;
+import sicxesimulator.simulation.virtualMachine.Word;
 
 import java.util.List;
 
-/**
- * Classe placeholder do Interpretador.
- * Responsável por processar e executar as instruções do arquivo de montagem.
- */
 public class Interpreter {
 
-    private List<Instruction> instructions;
-    private Memory memory;
-    private Register register;
-    private int programCounter;
+    private static List<Instruction> instructions;
 
-    /**
-     * Construtor do interpretador.
-     *
-     * @param instructions Array de instruções.
-     * @param memory       Instância da memória.
-     * @param register     Instância dos registradores.
-     */
-    public Interpreter(List<Instruction> instructions, Memory memory, Register register) {
-        this.instructions = instructions;
-        this.memory = memory;
-        this.register = register;
-        this.programCounter = 0;
+    public Interpreter() {
+        instructions = null;
     }
 
-    /**
-     * Configura o endereço inicial para execução das instruções.
-     * O interpretador pode configurar o program counter no registrador correspondente.
-     * @param startAddress Endereço inicial do programa
-     */
+    public static void setInstructions(List<Instruction> instructionList) {
+        instructions = instructionList;
+    }
 
-    public void setAddress ( int startAddress){
-        this.programCounter = 0; //reinicia a execução do programa.
+    public List<Instruction> getInstructions() {
+        return instructions;
+    }
+
+    public void setStartAddress(int startAddress){
         this.programCounter = startAddress;
     }
 

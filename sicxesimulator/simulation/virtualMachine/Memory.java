@@ -3,16 +3,11 @@ package sicxesimulator.simulation.virtualMachine;
 import java.util.ArrayList;
 
 public class Memory {
-
 	protected final ArrayList<Word> words;
-	protected final int SIZE = 1000; // Tamanho da memória, não tenho certeza se vai ser fixo, logo isso aqui é temp.
+	protected final int SIZE = 1000; // Tamanho arbitrário.
 
-	/**
-	 * Construtor padrão. Inicializa todas as posições da memória com Word's padrão.
-	 */
 	public Memory() {
 		words = new ArrayList<>(SIZE);
-
 		for (int i = 0; i < SIZE; i++) {
 			words.add(new Word());
 		}
@@ -30,6 +25,15 @@ public class Memory {
 		words.get(address).setValue(value);
 	}
 
-	// TODO; Implementar operações byte à byte.
-
+	// Função para alterar um byte (usado na instrução STCH)
+	public void setByte(int address, String byteValue) {
+		Word word = words.get(address);
+		String currentValue = word.getValue();
+		if (currentValue.length() < 2) {
+			System.out.println("Erro: Word inválido para setByte");
+			return;
+		}
+		String newValue = currentValue.substring(0, currentValue.length() - 2) + byteValue;
+		word.setValue(newValue);
+	}
 }

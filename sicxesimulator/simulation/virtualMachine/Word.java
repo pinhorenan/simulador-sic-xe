@@ -1,17 +1,10 @@
 package sicxesimulator.simulation.virtualMachine;
 
 public class Word {
-
     private String value;
-    // TODO
-    // Deixar de trabalhar com inteiros e achar uma representação melhor para os bits na palavra.
 
     public Word() {
-        this.value = "";
-    }
-
-    public Word(String value) {
-        this.value = value;
+        this.value = "000000"; // Valor padrão para 24 bits.
     }
 
     public String getValue() {
@@ -20,5 +13,10 @@ public class Word {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return value;
     }
 }

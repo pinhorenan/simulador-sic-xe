@@ -5,6 +5,11 @@ import sicxesimulator.simulation.systems.FileHandler;
 import sicxesimulator.simulation.systems.Interpreter;
 import sicxesimulator.simulation.systems.Assembler;
 import sicxesimulator.simulation.systems.Console;
+
+import javafx.geometry.Pos;
+import javafx.geometry.Insets;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -31,10 +36,13 @@ public class MainApp extends Application {
         Assembler assembler = new Assembler();
 
         // Agora passamos os argumentos corretamente para Console
-        Console console = new Console(machine, fileHandler, interpreter, assembler);
-
+        console = new Console(machine, fileHandler, interpreter, assembler);
 
         primaryStage.setTitle("Simulador SIC/XE");
+
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        double screenWidth = screenBounds.getWidth();
+        double screenHeight = screenBounds.getHeight();
 
         outputArea = new TextArea();
         outputArea.setEditable(false);
@@ -43,17 +51,26 @@ public class MainApp extends Application {
         inputField.setPromptText("Digite um comando...");
         inputField.setOnAction(this::handleInputAction);
 
+        inputField.setPrefWidth(screenWidth*0.2); // Define a largura do campo de entrada
+
         Button executeButton = new Button("Executar");
         executeButton.setOnAction(this::handleInputAction);
 
+        executeButton.setPrefWidth(screenWidth*0.05); // Define a largura do botão
+
         HBox inputBox = new HBox(10, inputField, executeButton);
+        inputBox.setPadding(new Insets(10)); // Adiciona um espaçamento interno
+        inputBox.setAlignment(Pos.CENTER_LEFT); // Alinha os elementos à esquerda
 
         BorderPane root = new BorderPane();
         root.setCenter(outputArea);
         root.setBottom(inputBox);
+        
+        Scene scene = new Scene(root, screenWidth * 0.6, screenHeight * 0.6);
 
-        Scene scene = new Scene(root, 800, 600);
+        // Cria a janela propriamente dita
         primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
         primaryStage.show();
 
         // Redireciona a saída do console para a área de texto

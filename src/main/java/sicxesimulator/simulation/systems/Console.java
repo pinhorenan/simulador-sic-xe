@@ -14,7 +14,7 @@ public class Console {
     private List<Instruction> instructions;
     private final Assembler assembler;
 
-    // Registradores válidos para visualização/alteração
+    // Registradores validos para visualizacao/alteracao
     private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F", "SW"};
 
     public Console(Machine virtualMachine, FileHandler fileHandler, Interpreter interpreter, Assembler assembler) {
@@ -25,7 +25,6 @@ public class Console {
     }
 
     public static void cleanConsole() {
-        System.out.print("\033[H\033[2J");
         System.out.flush();
     }
 
@@ -35,27 +34,32 @@ public class Console {
             case "comandos":
                 cleanConsole();
                 System.out.println(
-                        "\t------------------------Comandos------------------------\n" +
-                                "analisar_arq [arquivo]         - Análise e verificação de sintaxe\n" +
-                                "carregar_instrucoes [arquivo]  - Carrega instruções assembly\n" +
-                                "exec                           - Executa todas as instruções\n" +
-                                "prox                           - Executa a próxima instrução\n" +
-                                "visualizar_mem [endereço]      - Visualiza memória a partir do endereço\n" +
-                                "visualizar_reg [registrador]   - Visualiza o valor de um registrador\n" +
-                                "alterar_mem [endereço] [valor] - Altera o conteúdo da memória\n" +
-                                "alterar_reg [registrador] [valor] - Altera o valor de um registrador\n" +
-                                "salvar_arq [arquivo]           - Salva a memória em um arquivo\n" +
-                                "carregar_arq [arquivo]         - Carrega a memória de um arquivo\n" +
-                                "creditos                       - Exibe os créditos\n" +
-                                "sair                           - Encerra o simulador\n" +
-                                "\t-------------------------------------------------------\n"
+                        "------------------------Comandos------------------------\n" +
+                        "analisar_arq [arquivo]             - Analise e verificacao de sintaxe\n" +
+                        "carregar_instrucoes [arquivo]      - Carrega instrucoes assembly\n" +
+                        "exec                               - Executa todas as instrucoes\n" +
+                        "prox                               - Executa a proxima instrucao\n" +                            "visualizar_mem [endereco]      - Visualiza memoria a partir do endereco\n" +
+                        "visualizar_reg [registrador]       - Visualiza o valor de um registrador\n" +
+                        "alterar_mem [endereco] [valor]     - Altera o conteúdo da memoria\n" +
+                        "alterar_reg [registrador] [valor]  - Altera o valor de um registrador\n" +
+                        "salvar_arq [arquivo]               - Salva a memoria em um arquivo\n" +
+                        "carregar_arq [arquivo]             - Carrega a memoria de um arquivo\n" +
+                        "creditos                           - Exibe os creditos\n" +
+                        "sair                               - Encerra o simulador\n" +
+                        "-----------------------------------------------------------\n"
                 );
                 break;
             case "creditos":
                 cleanConsole();
                 System.out.println(
-                        "\t-----------------------Créditos-----------------------\n" +
-                                "\t-----------------------------------------------------\n"
+                        "-----------------------Creditos-----------------------\n" +
+                        "Arthur Alves - Organizacao, discussao, ajustes.\n" +
+                        "Fabricio Bartz - Organizacao, discussao, ajustes.\n" +
+                        "Gabriel Moura (Shikamaru) - Construcao, definicao e ajustes dos registradores e memoria.\n" +
+                        "Leonardo Braga - Ajustes nas flags de operacoes.\n" +
+                        "Luis Eduardo Rasch (Neji) - Construcao e ajuste do console, leitura e analise dos arquivos, e testes.\n" +  
+                        "Renan Pinho (Naruto) - Construcao das instrucoes e simulador, ajustes em todo o codigo e transpiler.\n" +
+                        "---------------------------------------------------------\n"
                 );
                 break;
             case "montar":
@@ -77,12 +81,12 @@ public class Console {
                 break;
             case "visualizar_mem":
                 if (args.length != 2) {
-                    System.out.println("Uso: visualizar_mem [endereço]");
+                    System.out.println("Uso: visualizar_mem [endereco]");
                     return;
                 }
                 int address = Integer.parseInt(args[1], 16);
                 if (address < 0 || address >= virtualMachine.getMemory().getSize()) {
-                    System.out.println("Endereço inválido.");
+                    System.out.println("Endereco invalido.");
                     return;
                 }
                 System.out.println("Mem[" + String.format("%04X", address) + "]: " + virtualMachine.getMemory().read(address));
@@ -94,20 +98,20 @@ public class Console {
                 }
                 String regName = args[1].toUpperCase();
                 if (!contains(regName)) {
-                    System.out.println("Registrador inválido.");
+                    System.out.println("Registrador invalido.");
                     return;
                 }
                 System.out.println(regName + " = " + virtualMachine.getRegister(regName).getValue());
                 break;
             case "alterar_mem":
                 if (args.length != 3) {
-                    System.out.println("Uso: alterar_mem [endereço] [valor]");
+                    System.out.println("Uso: alterar_mem [endereco] [valor]");
                     return;
                 }
                 int addr = Integer.parseInt(args[1], 16);
                 String newValue = args[2];
                 virtualMachine.getMemory().write(addr, newValue);
-                System.out.println("Memória alterada com sucesso.");
+                System.out.println("Memoria alterada com sucesso.");
                 break;
             case "alterar_reg":
                 if (args.length != 3) {
@@ -117,7 +121,7 @@ public class Console {
                 String regToChange = args[1].toUpperCase();
                 String regVal = args[2];
                 if (!contains(regToChange)) {
-                    System.out.println("Registrador inválido.");
+                    System.out.println("Registrador invalido.");
                     return;
                 }
                 virtualMachine.getRegister(regToChange).setValue(regVal);
@@ -139,7 +143,7 @@ public class Console {
                 break;
             case "iniciar":
                 if (instructions == null) {
-                    System.out.println("Nenhuma instrução carregada. Use 'montar'.");
+                    System.out.println("Nenhuma instrucao carregada. Use 'montar'.");
                     return;
                 }
                 interpreter.setStartAddress(0);
@@ -152,15 +156,26 @@ public class Console {
                 while (!interpreter.isFinished()) {
                     interpreter.runNextInstruction();
                 }
-                System.out.println("Execução concluída.");
+                System.out.println("Execucao concluída.");
                 break;
             case "sair":
                 cleanConsole();
                 System.out.println("Encerrando simulador...");
+                int count = 3;
+                while (count != 0) {
+                    System.out.println("Encerrando em " + count + "...\n");
+                    count--;
+                    try {
+                        Thread.sleep(1500);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
                 System.exit(0);
                 break;
             default:
-                System.out.println("Comando inválido.");
+                System.out.println("Comando invalido.");
                 break;
         }
     }

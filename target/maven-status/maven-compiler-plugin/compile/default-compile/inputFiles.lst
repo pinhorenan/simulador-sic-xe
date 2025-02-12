@@ -1,0 +1,14 @@
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\Main.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\MainApp.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\Simulation.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\systems\Assembler.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\systems\Console.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\systems\FileHandler.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\systems\Interpreter.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\virtualMachine\Machine.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\virtualMachine\Memory.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\virtualMachine\operations\Instruction.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\virtualMachine\operations\Operation.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\virtualMachine\Register.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\simulation\virtualMachine\Word.java
+C:\codes\SIC-XE-Simulator\src\main\java\sicxesimulator\TextAreaOutputStream.java

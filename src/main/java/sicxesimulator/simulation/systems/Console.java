@@ -3,6 +3,7 @@ package sicxesimulator.simulation.systems;
 import sicxesimulator.simulation.virtualMachine.Machine;
 import sicxesimulator.simulation.virtualMachine.operations.Instruction;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -171,5 +172,9 @@ public class Console {
             }
         }
         return false;
+    }
+
+    public void setOutput(PrintStream output) {
+        System.setOut(output);
     }
 }

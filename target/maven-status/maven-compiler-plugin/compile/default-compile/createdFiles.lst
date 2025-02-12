@@ -1,0 +1,14 @@
+sicxesimulator\simulation\virtualMachine\operations\Instruction.class
+sicxesimulator\simulation\virtualMachine\Word.class
+sicxesimulator\simulation\systems\Interpreter.class
+sicxesimulator\simulation\virtualMachine\operations\Operation.class
+sicxesimulator\TextAreaOutputStream.class
+sicxesimulator\Main.class
+sicxesimulator\simulation\systems\Console.class
+sicxesimulator\simulation\systems\Assembler.class
+sicxesimulator\MainApp.class
+sicxesimulator\simulation\Simulation.class
+sicxesimulator\simulation\systems\FileHandler.class
+sicxesimulator\simulation\virtualMachine\Register.class
+sicxesimulator\simulation\virtualMachine\Memory.class
+sicxesimulator\simulation\virtualMachine\Machine.class

@@ -38,17 +38,27 @@ public class Machine {
     }
 
     public Register getRegister(String name) {
-        return switch (name.toUpperCase()) {
-            case "A" -> A;
-            case "X" -> X;
-            case "L" -> L;
-            case "PC" -> PC;
-            case "B" -> B;
-            case "S" -> S;
-            case "T" -> T;
-            case "F" -> F;
-            case "SW" -> SW;
-            default -> null;
-        };
+        switch (name.toUpperCase()) {
+            case "A":
+                return A;
+            case "X":
+                return X;
+            case "L":
+                return L;
+            case "PC":
+                return PC;
+            case "B":
+                return B;
+            case "S":
+                return S;
+            case "T":
+                return T;
+            case "F":
+                return F;
+            case "SW":
+                return SW;
+            default:
+                return null;
+        }
     }
 }

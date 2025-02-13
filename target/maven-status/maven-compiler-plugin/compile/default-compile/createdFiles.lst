@@ -4,6 +4,7 @@ sicxesimulator\simulation\systems\Interpreter.class
 sicxesimulator\simulation\virtualMachine\operations\Operation.class
 sicxesimulator\TextAreaOutputStream.class
 sicxesimulator\Main.class
+sicxesimulator\RegisterEntry.class
 sicxesimulator\simulation\systems\Console.class
 sicxesimulator\simulation\systems\Assembler.class
 sicxesimulator\MainApp.class

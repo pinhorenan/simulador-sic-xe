@@ -3,6 +3,8 @@ package sicxesimulator.simulation.systems;
 import sicxesimulator.simulation.virtualMachine.Machine;
 import sicxesimulator.simulation.virtualMachine.operations.Instruction;
 
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,7 @@ public class Console {
     private final Interpreter interpreter;
     private List<Instruction> instructions;
     private final Assembler assembler;
+    private PrintStream outputStream;
 
     // Registradores validos para visualizacao/alteracao
     private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F", "SW"};
@@ -34,32 +37,33 @@ public class Console {
             case "comandos":
                 cleanConsole();
                 System.out.println(
-                        "------------------------Comandos------------------------\n" +
-                        "analisar_arq [arquivo]             - Analise e verificacao de sintaxe\n" +
-                        "carregar_instrucoes [arquivo]      - Carrega instrucoes assembly\n" +
-                        "exec                               - Executa todas as instrucoes\n" +
-                        "prox                               - Executa a proxima instrucao\n" +                            "visualizar_mem [endereco]      - Visualiza memoria a partir do endereco\n" +
-                        "visualizar_reg [registrador]       - Visualiza o valor de um registrador\n" +
-                        "alterar_mem [endereco] [valor]     - Altera o conteúdo da memoria\n" +
-                        "alterar_reg [registrador] [valor]  - Altera o valor de um registrador\n" +
-                        "salvar_arq [arquivo]               - Salva a memoria em um arquivo\n" +
-                        "carregar_arq [arquivo]             - Carrega a memoria de um arquivo\n" +
-                        "creditos                           - Exibe os creditos\n" +
-                        "sair                               - Encerra o simulador\n" +
-                        "-----------------------------------------------------------\n"
+                        "-----------------------------------------------  Comandos  -----------------------------------------------\n" +
+                        "analisar_arq [arquivo]\t\t\t\t- Analise e verificacao de sintaxe\n" +
+                        "carregar_instrucoes [arquivo]\t\t\t- Carrega instrucoes assembly\n" +
+                        "exec\t\t\t\t\t\t\t\t- Executa todas as instrucoes\n" +
+                        "prox\t\t\t\t\t\t\t\t- Executa a proxima instrucao\n" +
+                        "visualizar_mem [endereco]\t\t\t- Visualiza memoria a partir do endereco\n" +
+                        "visualizar_reg [registrador]\t\t\t- Visualiza o valor de um registrador\n" +
+                        "alterar_mem [endereco] [valor]\t\t- Altera o conteúdo da memoria\n" +
+                        "alterar_reg [registrador] [valor]\t\t- Altera o valor de um registrador\n" +
+                        "salvar_arq [arquivo]\t\t\t\t\t- Salva a memoria em um arquivo\n" +
+                        "carregar_arq [arquivo]\t\t\t\t- Carrega a memoria de um arquivo\n" +
+                        "creditos\t\t\t\t\t\t\t- Exibe os creditos\n" +
+                        "sair\t\t\t\t\t\t\t\t- Encerra o simulador\n" +
+                        "-----------------------------------------------------------------------------------------------------------\n"
                 );
                 break;
             case "creditos":
                 cleanConsole();
                 System.out.println(
-                        "-----------------------Creditos-----------------------\n" +
+                        "------------------------------------------------  Creditos  ------------------------------------------------\n" +
                         "Arthur Alves - Organizacao, discussao, ajustes.\n" +
                         "Fabricio Bartz - Organizacao, discussao, ajustes.\n" +
                         "Gabriel Moura (Shikamaru) - Construcao, definicao e ajustes dos registradores e memoria.\n" +
                         "Leonardo Braga - Ajustes nas flags de operacoes.\n" +
                         "Luis Eduardo Rasch (Neji) - Construcao e ajuste do console, leitura e analise dos arquivos, e testes.\n" +  
                         "Renan Pinho (Naruto) - Construcao das instrucoes e simulador, ajustes em todo o codigo e transpiler.\n" +
-                        "---------------------------------------------------------\n"
+                        "-------------------------------------------------------------------------------------------------------------\n"
                 );
                 break;
             case "montar":
@@ -160,20 +164,39 @@ public class Console {
                 break;
             case "sair":
                 cleanConsole();
-                System.out.println("Encerrando simulador...");
-                int count = 3;
-                while (count != 0) {
-                    System.out.println("Encerrando em " + count + "...\n");
-                    count--;
-                    try {
-                        Thread.sleep(1500);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-
-                System.exit(0);
-                break;
+                outputStream.print("Encerrando simulador"); // Sem quebra de linha
+                outputStream.flush();
+            
+                // Criar uma transição de pausa para os pontos
+                PauseTransition pause1 = new PauseTransition(Duration.seconds(1));
+                pause1.setOnFinished(event -> {
+                    outputStream.print(".");
+                    outputStream.flush();
+                });
+            
+                PauseTransition pause2 = new PauseTransition(Duration.seconds(2));
+                pause2.setOnFinished(event -> {
+                    outputStream.print(".");
+                    outputStream.flush();
+                });
+            
+                PauseTransition pause3 = new PauseTransition(Duration.seconds(3));
+                pause3.setOnFinished(event -> {
+                    outputStream.print(".");
+                    outputStream.flush();
+                });
+            
+                // Criar a transição final para sair do sistema
+                PauseTransition exitPause = new PauseTransition(Duration.seconds(4));
+                exitPause.setOnFinished(event -> System.exit(0));
+            
+                // Executar as pausas em sequência
+                pause1.play();
+                pause2.play();
+                pause3.play();
+                exitPause.play();
+            
+                break;            
             default:
                 System.out.println("Comando invalido.");
                 break;
@@ -190,6 +213,15 @@ public class Console {
     }
 
     public void setOutput(PrintStream output) {
+        this.outputStream = output;
         System.setOut(output);
+    }
+
+    public Machine getMachine() {
+        return virtualMachine;
+    }
+
+    public void setOutputStream(PrintStream outputStream) {
+        this.outputStream = outputStream;
     }
 }

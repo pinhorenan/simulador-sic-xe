@@ -35,19 +35,19 @@ public class Console {
                 cleanConsole();
                 System.out.println(
                         "\t------------------------Comandos------------------------\n" +
-                                "montar [arquivo]               - Análise e verificação de sintaxe\n" +
-                                "carregar_instrucoes [arquivo]  - Carrega instruções assembly\n" +
-                                "exec                           - Executa todas as instruções\n" +
-                                "prox                           - Executa a próxima instrução\n" +
-                                "visualizar_mem [endereço]      - Visualiza memória a partir do endereço\n" +
-                                "visualizar_reg [registrador]   - Visualiza o valor de um registrador\n" +
-                                "alterar_mem [endereço] [valor] - Altera o conteúdo da memória\n" +
-                                "alterar_reg [registrador] [valor] - Altera o valor de um registrador\n" +
-                                "salvar_arq [arquivo]           - Salva a memória em um arquivo\n" +
-                                "carregar_arq [arquivo]         - Carrega a memória de um arquivo\n" +
-                                "creditos                       - Exibe os créditos\n" +
-                                "sair                           - Encerra o simulador\n" +
-                                "\t-------------------------------------------------------\n"
+                            "montar [arquivo]               - Análise e verificação de sintaxe\n" +
+                            "carregar_instrucoes [arquivo]  - Carrega instruções assembly\n" +
+                            "exec                           - Executa todas as instruções\n" +
+                            "prox                           - Executa a próxima instrução\n" +
+                            "visualizar_mem [endereço]      - Visualiza memória a partir do endereço\n" +
+                            "visualizar_reg [registrador]   - Visualiza o valor de um registrador\n" +
+                            "alterar_mem [endereço] [valor] - Altera o conteúdo da memória\n" +
+                            "alterar_reg [registrador] [valor]  - Altera o valor de um registrador\n" +
+                            "salvar_arq [arquivo]           - Salva a memória em um arquivo\n" +
+                            "carregar_arq [arquivo]         - Carrega a memória de um arquivo\n" +
+                            "creditos                       - Exibe os créditos\n" +
+                            "sair                           - Encerra o simulador\n" +
+                        "\t-------------------------------------------------------\n"
                 );
                 break;
             case "creditos":

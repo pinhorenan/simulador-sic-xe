@@ -35,7 +35,7 @@ public class Console {
                 cleanConsole();
                 System.out.println(
                         "\t------------------------Comandos------------------------\n" +
-                                "analisar_arq [arquivo]         - Análise e verificação de sintaxe\n" +
+                                "montar [arquivo]               - Análise e verificação de sintaxe\n" +
                                 "carregar_instrucoes [arquivo]  - Carrega instruções assembly\n" +
                                 "exec                           - Executa todas as instruções\n" +
                                 "prox                           - Executa a próxima instrução\n" +

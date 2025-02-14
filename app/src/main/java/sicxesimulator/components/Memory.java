@@ -1,4 +1,4 @@
-package app.src.main.java.sicxesimulator.simulation.virtualMachine;
+package sicxesimulator.components;
 
 import java.util.ArrayList;
 

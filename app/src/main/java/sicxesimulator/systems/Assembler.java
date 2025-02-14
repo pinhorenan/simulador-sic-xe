@@ -1,7 +1,7 @@
-package app.src.main.java.sicxesimulator.simulation.systems;
+package sicxesimulator.systems;
 
 import java.util.*;
-import app.src.main.java.sicxesimulator.simulation.virtualMachine.operations.Instruction;
+import sicxesimulator.components.operations.Instruction;
 
 /**
  * Montador para a arquitetura SIC/XE.
@@ -70,7 +70,7 @@ public class Assembler {
             }
 
             // Se a primeira palavra não é um mnemônico, assume-se label
-            if (!OPCODE_TABLE.containsKey(parts[0])) {
+            if (!OPCODE_TABLE.containsKey(parts[0].toUpperCase())) {
                 symbolTable.put(parts[0], locationCounter);
             }
             locationCounter += 3; // Supõe-se instruções de tamanho fixo (3 bytes); TODO, Revisar.
@@ -103,7 +103,7 @@ public class Assembler {
                     operand = parts[1];
                 }
             }
-            Instruction instruction = new Instruction("", mnemonic, new String[]{operand}, null, lineNumber);
+            Instruction instruction = new Instruction("", mnemonic, new String[]{operand}, lineNumber);
             instructions.add(instruction);
         }
     }

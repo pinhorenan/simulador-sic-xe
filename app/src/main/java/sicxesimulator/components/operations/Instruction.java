@@ -1,4 +1,4 @@
-package app.src.main.java.sicxesimulator.simulation.virtualMachine.operations;
+package sicxesimulator.components.operations;
 
 /**
  * Representa uma instrução do arquivo de montagem.
@@ -11,15 +11,13 @@ public class Instruction {
     private String label;
     private String name;
     private String[] args;
-    private String address;
     private int lineNumber;
 
 
-    public Instruction(String label, String name, String[] args, String address, int lineNumber) {
+    public Instruction(String label, String name, String[] args, int lineNumber) {
         this.label = label;
         this.name = name;
         this.args = args;
-        this.address = address;
         this.lineNumber = lineNumber;
     }
 
@@ -35,10 +33,6 @@ public class Instruction {
 
     public String[] getArgs() {
         return args;
-    }
-
-    public String getAddress() {
-        return address;
     }
 
     public int getLineNumber() {
@@ -59,17 +53,13 @@ public class Instruction {
         this.args = args;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
     public void setLineNumber(int lineNumber) {
         this.lineNumber = lineNumber;
     }
 
     @Override
     public String toString() {
-        return String.format("(%d) %s %s %s", lineNumber, name, address, String.join(", ", args));
+        return String.format("(%d) %s %s", lineNumber, name, String.join(", ", args));
     }
 } 
 

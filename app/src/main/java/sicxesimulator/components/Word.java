@@ -1,4 +1,4 @@
-package app.src.main.java.sicxesimulator.simulation.virtualMachine;
+package sicxesimulator.components;
 
 public class Word {
     private String value;

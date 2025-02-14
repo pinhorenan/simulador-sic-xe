@@ -1,12 +1,48 @@
-package app.src.main.java.sicxesimulator.simulation.systems;
+package sicxesimulator.utils;
 
-import app.src.main.java.sicxesimulator.simulation.virtualMachine.Memory;
+import sicxesimulator.components.Memory;
+import sicxesimulator.components.operations.Instruction;
 import java.io.*;
 import java.util.*;
 
 public class FileHandler {
 
-    // Lê um arquivo assembly e retorna uma lista de instruções
+    ///  WIP
+    @SuppressWarnings("unused")
+    public List<Instruction> loadInstructionsFromFile(String filePath) {
+        // TODO
+        // Se desejar usar o Assembler para montar, use o método readFileLines e passe para o Assembler.
+        // Mas se você quiser ler diretamente instruções simples, pode continuar assim:
+        List<Instruction> instructions = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int lineNumber = 0;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                String[] tokens = line.split("\\s+");
+                if (tokens.length == 0 || tokens[0].startsWith(".")) continue;
+                String label = "";
+                String mnemonic;
+                String operand = "";
+                if (tokens.length == 1) {
+                    mnemonic = tokens[0];
+                } else if (tokens.length == 2) {
+                    mnemonic = tokens[0];
+                    operand = tokens[1];
+                } else {
+                    label = tokens[0];
+                    mnemonic = tokens[1];
+                    operand = tokens[2];
+                }
+                instructions.add(new Instruction(label, mnemonic, new String[]{operand}, lineNumber));
+            }
+        } catch (IOException e) {
+            System.out.println("Erro ao ler o arquivo de instruções: " + e.getMessage());
+            return null;
+        }
+        return instructions;
+    }
+
     public List<String> readFileLines(String filePath) {
         List<String> lines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -21,8 +57,6 @@ public class FileHandler {
         return lines;
     }
 
-
-    // Salva o conteúdo da memória em um arquivo
     public void saveMemoryToFile(Memory memory, String filePath) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             int size = memory.getSize();
@@ -36,12 +70,10 @@ public class FileHandler {
         }
     }
 
-    // Carrega o conteúdo da memória a partir de um arquivo
     public void loadMemoryFromFile(Memory memory, String filePath) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                // Espera o formato "endereço: valor"
                 String[] parts = line.split(":");
                 if (parts.length < 2) continue;
                 int address = Integer.parseInt(parts[0].trim(), 16);

@@ -1,8 +1,8 @@
-package app.src.main.java.sicxesimulator.simulation.virtualMachine.operations;
+package sicxesimulator.components.operations;
 
-import app.src.main.java.sicxesimulator.simulation.virtualMachine.Machine;
-import app.src.main.java.sicxesimulator.simulation.virtualMachine.Register;
-import app.src.main.java.sicxesimulator.simulation.virtualMachine.Memory;
+import sicxesimulator.components.Machine;
+import sicxesimulator.components.Register;
+import sicxesimulator.components.Memory;
 
 public class Operation {
     protected Machine machine;

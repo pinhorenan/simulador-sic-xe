@@ -1,9 +1,10 @@
-package app.src.main.java.sicxesimulator;
+package sicxesimulator;
 
-import app.src.main.java.sicxesimulator.simulation.Simulation;
+import javafx.application.Application;
+import sicxesimulator.ui.SimulationApp;
 
 public class Main {
     public static void main(String[] args) {
-        Simulation.run();
+        Application.launch(SimulationApp.class, args);
     }
 }

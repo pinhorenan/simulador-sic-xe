@@ -1,3 +1,4 @@
+sicxesimulator\MemoryEntry.class
 sicxesimulator\simulation\virtualMachine\operations\Instruction.class
 sicxesimulator\simulation\virtualMachine\Word.class
 sicxesimulator\simulation\systems\Interpreter.class

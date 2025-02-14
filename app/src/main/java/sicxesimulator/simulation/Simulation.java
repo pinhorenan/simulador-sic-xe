@@ -1,12 +1,12 @@
-package sicxesimulator.simulation;
+package app.src.main.java.sicxesimulator.simulation;
 
-import sicxesimulator.simulation.virtualMachine.Machine;
-import sicxesimulator.simulation.systems.Console;
-import sicxesimulator.simulation.systems.FileHandler;
-import sicxesimulator.simulation.systems.Interpreter;
-import sicxesimulator.simulation.systems.Assembler;
+import app.src.main.java.sicxesimulator.simulation.virtualMachine.Machine;
+import app.src.main.java.sicxesimulator.simulation.systems.Console;
+import app.src.main.java.sicxesimulator.simulation.systems.FileHandler;
+import app.src.main.java.sicxesimulator.simulation.systems.Interpreter;
+import app.src.main.java.sicxesimulator.simulation.systems.Assembler;
 import java.util.Scanner;
-import static sicxesimulator.simulation.systems.Console.cleanConsole;
+import static app.src.main.java.sicxesimulator.simulation.systems.Console.cleanConsole;
 
 public abstract class Simulation {
     public static void run(){

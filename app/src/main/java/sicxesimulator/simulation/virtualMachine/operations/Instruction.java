@@ -1,4 +1,4 @@
-package sicxesimulator.simulation.virtualMachine.operations;
+package app.src.main.java.sicxesimulator.simulation.virtualMachine.operations;
 
 /**
  * Representa uma instrução do arquivo de montagem.

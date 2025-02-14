@@ -1,7 +1,7 @@
-package sicxesimulator.simulation.systems;
+package app.src.main.java.sicxesimulator.simulation.systems;
 
 import java.util.*;
-import sicxesimulator.simulation.virtualMachine.operations.Instruction;
+import app.src.main.java.sicxesimulator.simulation.virtualMachine.operations.Instruction;
 
 /**
  * Montador para a arquitetura SIC/XE.

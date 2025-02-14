@@ -1,8 +1,8 @@
-package sicxesimulator.simulation.systems;
+package app.src.main.java.sicxesimulator.simulation.systems;
 
-import sicxesimulator.simulation.virtualMachine.Machine;
-import sicxesimulator.simulation.virtualMachine.operations.Operation;
-import sicxesimulator.simulation.virtualMachine.operations.Instruction;
+import app.src.main.java.sicxesimulator.simulation.virtualMachine.Machine;
+import app.src.main.java.sicxesimulator.simulation.virtualMachine.operations.Operation;
+import app.src.main.java.sicxesimulator.simulation.virtualMachine.operations.Instruction;
 
 import java.util.List;
 

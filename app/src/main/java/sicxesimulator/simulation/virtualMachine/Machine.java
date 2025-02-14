@@ -1,4 +1,4 @@
-package sicxesimulator.simulation.virtualMachine;
+package app.src.main.java.sicxesimulator.simulation.virtualMachine;
 
 public class Machine {
     private final Memory memory;

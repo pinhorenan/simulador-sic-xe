@@ -1,6 +1,6 @@
-package sicxesimulator.simulation.systems;
+package app.src.main.java.sicxesimulator.simulation.systems;
 
-import sicxesimulator.simulation.virtualMachine.Memory;
+import app.src.main.java.sicxesimulator.simulation.virtualMachine.Memory;
 import java.io.*;
 import java.util.*;
 

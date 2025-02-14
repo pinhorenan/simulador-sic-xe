@@ -61,4 +61,19 @@ public class Machine {
                 return null;
         }
     }
+
+    public void reset() {
+        // Zere os valores dos registradores
+        this.A.setValue(0);
+        this.X.setValue(0);
+        this.L.setValue(0);
+        this.PC.setValue(0);
+        this.B.setValue(0);
+        this.S.setValue(0);
+        this.T.setValue(0);
+        this.F.setValue(0);
+        this.SW.setValue(0);
+        // Zere a memória
+        this.memory.clear();  // Supondo que você tenha um método clear() na classe Memory
+    }
 }

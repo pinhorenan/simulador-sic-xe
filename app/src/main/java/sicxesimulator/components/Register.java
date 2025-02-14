@@ -34,6 +34,10 @@ public class Register {
 		}
 	}
 
+	public void setValue(int value) {
+		this.value = Integer.toString(value);
+	}
+
 	/// Métodos auxiliares
 	private boolean isValidHex(String hex) {
 		return hex.matches("[0-9A-Fa-f]+");

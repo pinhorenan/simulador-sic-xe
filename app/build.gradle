@@ -25,11 +25,12 @@ dependencies {
 
     implementation 'org.openjfx:javafx-controls:17.0.2'
     implementation 'org.openjfx:javafx-fxml:17.0.2'
+    implementation 'org.openjfx:javafx-media:17.0.2'
 }
 
 javafx {
     version = "17.0.2"
-    modules = ['javafx.controls', 'javafx.fxml']
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.media']
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

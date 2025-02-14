@@ -1,9 +1,13 @@
 package sicxesimulator.systems;
 
-import sicxesimulator.utils.FileHandler;
 import sicxesimulator.components.Machine;
 import sicxesimulator.components.operations.Instruction;
+import sicxesimulator.utils.FileHandler;
 
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Console {
@@ -12,8 +16,9 @@ public class Console {
     private final Interpreter interpreter;
     private List<Instruction> instructions;
     private final Assembler assembler;
+    private PrintStream outputStream;
 
-    // Registradores válidos para visualização/alteração
+    // Registradores validos para visualizacao/alteracao
     private static final String[] VALID_OPTIONS = {"A", "X", "L", "PC", "B", "S", "T", "F", "SW"};
 
     public Console(Machine virtualMachine, FileHandler fileHandler, Interpreter interpreter, Assembler assembler) {
@@ -24,39 +29,12 @@ public class Console {
     }
 
     public static void cleanConsole() {
-        System.out.print("\033[H\033[2J");
         System.out.flush();
     }
 
     public void treatCommand(String command) {
         String[] args = command.split(" ");
         switch (args[0]) {
-            case "comandos":
-                cleanConsole();
-                System.out.println(
-                        "\t------------------------Comandos------------------------\n" +
-                            "montar [arquivo]               - Análise e verificação de sintaxe\n" +
-                            "carregar_instrucoes [arquivo]  - Carrega instruções assembly\n" +
-                            "exec                           - Executa todas as instruções\n" +
-                            "prox                           - Executa a próxima instrução\n" +
-                            "visualizar_mem [endereço]      - Visualiza memória a partir do endereço\n" +
-                            "visualizar_reg [registrador]   - Visualiza o valor de um registrador\n" +
-                            "alterar_mem [endereço] [valor] - Altera o conteúdo da memória\n" +
-                            "alterar_reg [registrador] [valor]  - Altera o valor de um registrador\n" +
-                            "salvar_arq [arquivo]           - Salva a memória em um arquivo\n" +
-                            "carregar_arq [arquivo]         - Carrega a memória de um arquivo\n" +
-                            "creditos                       - Exibe os créditos\n" +
-                            "sair                           - Encerra o simulador\n" +
-                        "\t-------------------------------------------------------\n"
-                );
-                break;
-            case "creditos":
-                cleanConsole();
-                System.out.println(
-                        "\t-----------------------Créditos-----------------------\n" +
-                                "\t-----------------------------------------------------\n"
-                );
-                break;
             case "montar":
                 if (args.length != 2) {
                     System.out.println("Uso: montar [arquivo.asm]");
@@ -72,94 +50,58 @@ public class Console {
                     System.out.println("Falha ao montar o programa.");
                 }
                 instructions = assembledInstructions;
-                System.out.println("Montagem concluída com sucesso.");
-                break;
-            case "visualizar_mem":
-                if (args.length != 2) {
-                    System.out.println("Uso: visualizar_mem [endereço]");
-                    return;
-                }
-                int address = Integer.parseInt(args[1], 16);
-                if (address < 0 || address >= virtualMachine.getMemory().getSize()) {
-                    System.out.println("Endereço inválido.");
-                    return;
-                }
-                System.out.println("Mem[" + String.format("%04X", address) + "]: " + virtualMachine.getMemory().read(address));
-                break;
-            case "visualizar_reg":
-                if (args.length != 2) {
-                    System.out.println("Uso: visualizar_reg [registrador]");
-                    return;
-                }
-                String regName = args[1].toUpperCase();
-                if (!contains(regName)) {
-                    System.out.println("Registrador inválido.");
-                    return;
-                }
-                System.out.println(regName + " = " + virtualMachine.getRegister(regName).getValue());
-                break;
-            case "alterar_mem":
-                if (args.length != 3) {
-                    System.out.println("Uso: alterar_mem [endereço] [valor]");
-                    return;
-                }
-                int addr = Integer.parseInt(args[1], 16);
-                String newValue = args[2];
-                virtualMachine.getMemory().write(addr, newValue);
-                System.out.println("Memória alterada com sucesso.");
-                break;
-            case "alterar_reg":
-                if (args.length != 3) {
-                    System.out.println("Uso: alterar_reg [registrador] [valor]");
-                    return;
-                }
-                String regToChange = args[1].toUpperCase();
-                String regVal = args[2];
-                if (!contains(regToChange)) {
-                    System.out.println("Registrador inválido.");
-                    return;
-                }
-                virtualMachine.getRegister(regToChange).setValue(regVal);
-                System.out.println("Registrador " + regToChange + " alterado para " + regVal);
-                break;
-            case "salvar_arq":
-                if (args.length != 2) {
-                    System.out.println("Uso: salvar_arq [arquivo]");
-                    return;
-                }
-                fileHandler.saveMemoryToFile(virtualMachine.getMemory(), args[1]);
-                break;
-            case "carregar_arq":
-                if (args.length != 2) {
-                    System.out.println("Uso: carregar_arq [arquivo]");
-                    return;
-                }
-                fileHandler.loadMemoryFromFile(virtualMachine.getMemory(), args[1]);
-                break;
-            case "iniciar":
-                if (instructions == null) {
-                    System.out.println("Nenhuma instrução carregada. Use 'montar'.");
-                    return;
-                }
-                interpreter.setStartAddress(0);
-                System.out.println("Interpretador iniciado.");
+                System.out.println("Montagem concluida com sucesso.");
                 break;
             case "prox":
                 interpreter.runNextInstruction();
                 break;
             case "exec":
+                if (instructions == null) {
+                    System.out.println("Nenhuma instrucao carregada. Use 'montar'.");
+                    return;
+                }
                 while (!interpreter.isFinished()) {
                     interpreter.runNextInstruction();
                 }
-                System.out.println("Execução concluída.");
+                System.out.println("Execucao concluida.");
                 break;
-            case "sair":
+            case "limpar":
                 cleanConsole();
-                System.out.println("Encerrando simulador...");
-                System.exit(0);
+                outputStream.print("Encerrando simulador"); // Sem quebra de linha
+                outputStream.flush();
+
+                // Criar uma transicao de pausa para os pontos
+                PauseTransition pause1 = new PauseTransition(Duration.seconds(1));
+                pause1.setOnFinished(event -> {
+                    outputStream.print(".");
+                    outputStream.flush();
+                });
+
+                PauseTransition pause2 = new PauseTransition(Duration.seconds(2));
+                pause2.setOnFinished(event -> {
+                    outputStream.print(".");
+                    outputStream.flush();
+                });
+
+                PauseTransition pause3 = new PauseTransition(Duration.seconds(3));
+                pause3.setOnFinished(event -> {
+                    outputStream.print(".");
+                    outputStream.flush();
+                });
+
+                // Criar a transicao final para sair do sistema
+                PauseTransition exitPause = new PauseTransition(Duration.seconds(4));
+                exitPause.setOnFinished(event -> System.exit(0));
+
+                // Executar as pausas em sequência
+                pause1.play();
+                pause2.play();
+                pause3.play();
+                exitPause.play();
+
                 break;
             default:
-                System.out.println("Comando inválido.");
+                System.out.println("Comando invalido.");
                 break;
         }
     }
@@ -171,5 +113,36 @@ public class Console {
             }
         }
         return false;
+    }
+
+    public void setOutput(PrintStream output) {
+        this.outputStream = output;
+        System.setOut(output);
+    }
+
+    public Machine getMachine() {
+        return virtualMachine;
+    }
+
+    public void setOutputStream(PrintStream outputStream) {
+        this.outputStream = outputStream;
+    }
+
+    public void reset() {
+        // Limpar registradores
+        for (String register : VALID_OPTIONS) {
+            virtualMachine.getRegister(register).setValue("0");  // Limpa os registradores
+        }
+
+        // Limpar memória
+        virtualMachine.getMemory().clear();  // Supondo que a memória tenha um método clear() que limpa todos os valores
+
+        // Limpar instruções montadas
+        instructions = new ArrayList<>();  // Limpa a lista de instruções montadas
+
+        // Reinicializar o arquivo lido
+        fileHandler.clear();  // Supondo que o FileHandler tenha um método clear() para limpar o conteúdo lido
+
+        System.out.println("Sistema resetado.");
     }
 }

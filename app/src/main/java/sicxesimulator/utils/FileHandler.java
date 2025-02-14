@@ -7,6 +7,11 @@ import java.util.*;
 
 public class FileHandler {
 
+    private List<String> fileContent;
+
+    public FileHandler() {
+        this.fileContent = new ArrayList<>();
+    }
     ///  WIP
     @SuppressWarnings("unused")
     public List<Instruction> loadInstructionsFromFile(String filePath) {
@@ -84,5 +89,9 @@ public class FileHandler {
         } catch (IOException e) {
             System.out.println("Erro ao carregar a memória: " + e.getMessage());
         }
+    }
+
+    public void clear() {
+        fileContent.clear();  // Limpa o conteúdo armazenado
     }
 }

@@ -6,6 +6,8 @@ import sicxesimulator.components.operations.Instruction;
 /**
  * Montador para a arquitetura SIC/XE.
  */
+
+// TODO Tradução das variáveis para os seus valores
 public class Assembler {
     private Map<String, Integer> symbolTable = new HashMap<>();
     private List<Instruction> instructions = new ArrayList<>();

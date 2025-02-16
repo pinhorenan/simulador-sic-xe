@@ -1,7 +1,7 @@
-LOOP   LDA ALPHA
-       ADD ONE
-       STA ALPHA
-       COMP MAX
+LOOP   LDA 000005
+       ADD 000001
+       STA 000005
+       COMP 00000A
        JLT LOOP
        RSUB
 ALPHA  WORD 000005

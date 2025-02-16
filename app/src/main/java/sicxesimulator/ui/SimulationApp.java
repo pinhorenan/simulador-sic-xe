@@ -189,7 +189,7 @@ public class SimulationApp extends Application {
         try {
             playRandomMusic(musicFiles, random);
         } catch (Exception e) {
-            System.out.printf("Não foi possível tocar nenhuma música");
+            System.out.println("Não foi possível tocar nenhuma música");
         }
 
         // Redireciona a saída do console para a area de texto
@@ -218,7 +218,7 @@ public class SimulationApp extends Application {
 
     private void handleAssembleAction() {
         outputArea.clear();
-        outputArea.appendText("> montar[arquivo.asm]\n");
+        outputArea.appendText("> montar[teste.asm]\n");
         // TODO
         // Por enquanto, vamos assumir um teste em resources.
         List<String> sourceLines = fileHandler.readFileLines("teste.asm");

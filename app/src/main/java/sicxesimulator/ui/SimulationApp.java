@@ -186,7 +186,11 @@ public class SimulationApp extends Application {
         );
 
         Random random = new Random();
-        playRandomMusic(musicFiles, random);
+        try {
+            playRandomMusic(musicFiles, random);
+        } catch (Exception e) {
+            System.out.printf("Não foi possível tocar nenhuma música");
+        }
 
         // Redireciona a saída do console para a area de texto
         PrintStream printStream = new PrintStream(new TextAreaOutputStream(outputArea));

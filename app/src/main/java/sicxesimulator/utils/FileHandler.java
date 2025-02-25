@@ -1,7 +1,6 @@
 package sicxesimulator.utils;
 
-import sicxesimulator.components.Memory;
-import sicxesimulator.components.operations.Instruction;
+import sicxesimulator.model.components.Memory;
 import java.io.*;
 import java.util.*;
 
@@ -11,41 +10,6 @@ public class FileHandler {
 
     public FileHandler() {
         this.fileContent = new ArrayList<>();
-    }
-    ///  WIP
-    @SuppressWarnings("unused")
-    public List<Instruction> loadInstructionsFromFile(String filePath) {
-        // TODO
-        // Se desejar usar o Assembler para montar, use o método readFileLines e passe para o Assembler.
-        // Mas se você quiser ler diretamente instruções simples, pode continuar assim:
-        List<Instruction> instructions = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            int lineNumber = 0;
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-                String[] tokens = line.split("\\s+");
-                if (tokens.length == 0 || tokens[0].startsWith(".")) continue;
-                String label = "";
-                String mnemonic;
-                String operand = "";
-                if (tokens.length == 1) {
-                    mnemonic = tokens[0];
-                } else if (tokens.length == 2) {
-                    mnemonic = tokens[0];
-                    operand = tokens[1];
-                } else {
-                    label = tokens[0];
-                    mnemonic = tokens[1];
-                    operand = tokens[2];
-                }
-                instructions.add(new Instruction(label, mnemonic, new String[]{operand}, lineNumber));
-            }
-        } catch (IOException e) {
-            System.out.println("Erro ao ler o arquivo de instruções: " + e.getMessage());
-            return null;
-        }
-        return instructions;
     }
 
     public List<String> readFileLines(String filePath) {
@@ -93,5 +57,29 @@ public class FileHandler {
 
     public void clear() {
         fileContent.clear();  // Limpa o conteúdo armazenado
+    }
+
+    public void saveObjectFile(List<String> objectRecords, String filePath) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            for (String record : objectRecords) {
+                writer.write(record);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao salvar arquivo objeto: " + e.getMessage());
+        }
+    }
+
+    public List<String> readObjectFile(String filePath) {
+        List<String> records = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                records.add(line);
+            }
+            return records;
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao ler arquivo objeto: " + e.getMessage());
+        }
     }
 }

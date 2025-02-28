@@ -14,6 +14,26 @@ public class Memory {
 		clear();
 	}
 
+	// ================ ESCRITA DE BYTES (PARA CARREGAR PROGRAMAS) ================
+	public void writeBytes(int startAddress, byte[] data) {
+		validateAddress(startAddress);
+		validateAddress(startAddress + data.length - 1); // Verifica se o último byte cabe na memória
+
+		for (int i = 0; i < data.length; i++) {
+			memory[startAddress + i] = data[i];
+		}
+	}
+
+	public byte[] readBytes(int startAddress, int numBytes) {
+		validateAddress(startAddress);
+		validateAddress(startAddress + numBytes - 1);
+		byte[] result = new byte[numBytes];
+		for (int i = 0; i < numBytes; i++) {
+			result[i] = memory[startAddress + i];
+		}
+		return result;
+	}
+
 	// ================ MÉTODOS BÁSICOS (BYTE) ================
 	public int readByte(int address) {
 		validateAddress(address);
@@ -86,18 +106,7 @@ public class Memory {
 
 	private void validateAddress(int address) {
 		if (address < 0 || address >= memory.length) {
-			throw new IllegalArgumentException("Endereço inválido: " + address);
+			throw new IllegalArgumentException("Endereço inválido: " + address + ". Tamanho da memória: " + memory.length);
 		}
-	}
-
-	// ================ MÉTODOS LEGACY (DEPRECIADOS) ================
-	@Deprecated
-	public String read(int address) {
-		return String.format("%02X", readByte(address));
-	}
-
-	@Deprecated
-	public void write(int address, String value) {
-		writeByte(address, Integer.parseInt(value, 16));
 	}
 }

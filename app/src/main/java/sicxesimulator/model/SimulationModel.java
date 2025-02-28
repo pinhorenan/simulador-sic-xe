@@ -1,57 +1,70 @@
 package sicxesimulator.model;
 
-import sicxesimulator.model.components.Machine;
-import sicxesimulator.model.systems.Assembler;
-import sicxesimulator.model.systems.Loader;
-import sicxesimulator.model.systems.Runner;
+import sicxesimulator.model.machine.Machine;
+import sicxesimulator.model.assembler.Assembler;
+import sicxesimulator.model.loader.Loader;
 
 import java.io.IOException;
 import java.util.List;
 
 public class SimulationModel {
-    private final Machine virtualMachine;
+    private final Machine machine;
     private final Assembler assembler;
-    private final Runner runner;
     private final Loader loader;
 
-    public SimulationModel(Machine virtualMachine, Assembler assembler, Runner runner, Loader loader) {
-        this.virtualMachine = virtualMachine;
+    public SimulationModel(Machine machine, Assembler assembler, Loader loader) {
+        this.machine = machine;
         this.assembler = assembler;
-        this.runner = runner;
         this.loader = loader;
     }
 
+    /**
+     * Carrega um arquivo objeto na memória usando o Loader.
+     * O Loader ajusta a memória e a ControlUnit (PC) da máquina.
+     *
+     * @param objectFilePath Caminho para o arquivo objeto.
+     * @throws IOException Se ocorrer erro de I/O.
+     */
     public void loadProgramFromObjectFile(String objectFilePath) throws IOException {
-        loader.loadProgram(objectFilePath, virtualMachine);
-        runner.setStartAddress(virtualMachine.getPC().getIntValue());
+        // O Loader recebe a memória e a ControlUnit (obtidos via getters da Machine)
+        loader.load(objectFilePath, machine.getMemoryState(), machine.getControlUnit());
     }
 
+    /**
+     * Monta e carrega um programa na máquina.
+     * Gera um arquivo objeto temporário a partir do código fonte.
+     *
+     * @param sourceLines Lista contendo o código assembly fonte.
+     * @throws IOException Se ocorrer erro durante a montagem ou carregamento.
+     */
     public void assembleAndLoadProgram(List<String> sourceLines) throws IOException {
-        // Monta e gera arquivo objeto temporário
+        // Gera um arquivo objeto temporário, por exemplo "temp.obj"
         String tempObjectFile = "temp.obj";
         assembler.assembleToFile(sourceLines, tempObjectFile);
-
-        // Carrega o programa montado
         loadProgramFromObjectFile(tempObjectFile);
     }
 
+    /**
+     * Executa um ciclo de instrução (fetch-decode-execute).
+     */
     public void runNextInstruction() {
-        if (!runner.isFinished()) {
-            runner.runNextInstruction();
-        }
+        machine.runCycle();
     }
 
+    /**
+     * Indica se a execução foi concluída.
+     * Como não há um mecanismo de término automático, retorna sempre false.
+     */
     public boolean isFinished() {
-        return runner.isFinished();
+        return false; // Stub – ajuste conforme sua lógica de término
     }
 
     public void reset() {
-        virtualMachine.reset();
-        runner.setStartAddress(0);
+        machine.reset();
     }
 
-    public Machine getVirtualMachine() {
-        return virtualMachine;
+    public Machine getMachine() {
+        return machine;
     }
 
     public Assembler getAssembler() {

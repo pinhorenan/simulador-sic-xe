@@ -1,6 +1,6 @@
-package sicxesimulator.model.components.cpu;
+package sicxesimulator.model.machine.cpu;
 
-import sicxesimulator.model.components.Memory;
+import sicxesimulator.model.machine.Memory;
 
 public class InstructionSet {
     private final Memory memory;

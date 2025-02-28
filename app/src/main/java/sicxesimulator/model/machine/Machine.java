@@ -1,7 +1,9 @@
-package sicxesimulator.model.components;
+package sicxesimulator.model.machine;
 
-import sicxesimulator.model.components.cpu.ControlUnit;
-import sicxesimulator.model.components.cpu.Register;
+import sicxesimulator.model.machine.cpu.ControlUnit;
+import sicxesimulator.model.machine.cpu.Register;
+
+import java.util.ResourceBundle;
 
 public class Machine {
     private final Memory memory;
@@ -54,5 +56,14 @@ public class Machine {
     public Memory getMemoryState() { return memory; }
 
     public Register[] getRegisterState() { return controlUnit.getCurrentRegisters(); }
+
+    public ControlUnit getControlUnit() {
+        return controlUnit;
+    }
+
+    public void reset() {
+        isRunning = false;
+        // TODO: Implementar;
+    }
 
 }

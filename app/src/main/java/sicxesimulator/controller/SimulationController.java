@@ -27,8 +27,10 @@ public class SimulationController {
 
     public void handleRunAction() {
         try {
+            // Executa um ciclo de instrução repetidamente (aqui, de forma simplificada)
             while (!model.isFinished()) {
                 model.runNextInstruction();
+                // Você pode inserir um delay ou lógica para parar após um número de ciclos
             }
             view.updateRegisterTable();
             view.updateMemoryTable();
@@ -48,6 +50,7 @@ public class SimulationController {
         model.reset();
         view.updateRegisterTable();
         view.updateMemoryTable();
+        // Caso seja necessário, descarregar o arquivo objeto carregado.
     }
 
     public SimulationModel getSimulationModel() {

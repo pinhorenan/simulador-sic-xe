@@ -1,4 +1,4 @@
-package sicxesimulator.model.components.cpu;
+package sicxesimulator.model.machine.cpu;
 
 public class Register {
 	private final String name;

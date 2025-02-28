@@ -1,4 +1,4 @@
-package sicxesimulator.model.components;
+package sicxesimulator.model.machine;
 
 import java.util.Arrays;
 

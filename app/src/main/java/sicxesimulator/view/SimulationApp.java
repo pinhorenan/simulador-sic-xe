@@ -12,10 +12,10 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import sicxesimulator.controller.SimulationController;
 import sicxesimulator.model.SimulationModel;
-import sicxesimulator.model.components.Machine;
-import sicxesimulator.model.systems.Assembler;
-import sicxesimulator.model.systems.Loader;
-import sicxesimulator.model.systems.Runner;
+import sicxesimulator.model.machine.Machine;
+import sicxesimulator.model.assembler.Assembler;
+import sicxesimulator.model.loader.Loader;
+import sicxesimulator.model.machine.cpu.Register;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,12 +24,9 @@ import java.util.Map;
 public class SimulationApp extends Application {
 
     // Records auxiliares para as tabelas
-    public record RegisterEntry(String name, String value) {
-    }
-    public record MemoryEntry(String address, String value) {
-    }
-    public record SymbolEntry(String symbol, String address) {
-    }
+    public record RegisterEntry(String name, String value) { }
+    public record MemoryEntry(String address, String value) { }
+    public record SymbolEntry(String symbol, String address) { }
 
     private SimulationController controller;
     private TextArea outputArea;
@@ -45,7 +42,6 @@ public class SimulationApp extends Application {
         SimulationModel model = new SimulationModel(
                 virtualMachine,
                 new Assembler(),
-                new Runner(virtualMachine),
                 new Loader()
         );
         controller = new SimulationController(model, this);
@@ -55,17 +51,15 @@ public class SimulationApp extends Application {
         primaryStage.setHeight(600);
 
         BorderPane root = new BorderPane();
-        // Configura a barra de menus no topo
         root.setTop(createMenuBar());
 
-        // Coluna Esquerda: Entrada, botões de ação e Saída empilhados verticalmente
+        // Coluna Esquerda: entrada, botões de ação e saída
         VBox leftColumn = new VBox(10);
         leftColumn.setPadding(new Insets(10));
 
         TitledPane inputPane = new TitledPane("Código Assembly", createInputArea());
         inputPane.setCollapsible(false);
 
-        // Criação dos botões de ação
         HBox actionButtons = new HBox(10);
         actionButtons.setPadding(new Insets(5));
 
@@ -96,7 +90,7 @@ public class SimulationApp extends Application {
         VBox.setVgrow(inputPane, Priority.ALWAYS);
         VBox.setVgrow(outputPane, Priority.ALWAYS);
 
-        // Coluna Direita: Tabelas empilhadas verticalmente: Memória, Registradores e Símbolos
+        // Coluna Direita: tabelas de memória, registradores e símbolos
         VBox rightColumn = new VBox(10);
         rightColumn.setPadding(new Insets(10));
         TitledPane memoryPane = new TitledPane("Memória", createMemoryTablePane());
@@ -110,7 +104,6 @@ public class SimulationApp extends Application {
         VBox.setVgrow(registersPane, Priority.ALWAYS);
         VBox.setVgrow(symbolsPane, Priority.ALWAYS);
 
-        // Combina as duas colunas em um HBox
         HBox mainContent = new HBox(10, leftColumn, rightColumn);
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
         HBox.setHgrow(rightColumn, Priority.ALWAYS);
@@ -124,109 +117,91 @@ public class SimulationApp extends Application {
         showWelcomeMessage();
     }
 
-    // Cria a barra de menus com os itens: Arquivo, Configurações, Ajuda, Sobre e Sair
     private MenuBar createMenuBar() {
         MenuBar menuBar = new MenuBar();
 
-        // Menu "Arquivo" com opções de importação/exportação
+        // Menu "Arquivo"
         Menu fileMenu = new Menu("Arquivo");
         MenuItem importAssemblyFile = new MenuItem("Importar .asm");
         importAssemblyFile.setOnAction(e -> {
-            // TODO: implementar a lógica de importação de arquivo .asm
             System.out.println("Importar .asm acionado");
         });
         MenuItem importObjFile = new MenuItem("Importar .obj");
         importObjFile.setOnAction(e -> {
-            // TODO: implementar a lógica de importação de arquivo .obj
             System.out.println("Importar .obj acionado");
         });
-        MenuItem exportObjFile = new MenuItem("Exportar");
-        exportObjFile.setOnAction(e -> {
-            // TODO: implementar a lógica de exportação
-            System.out.println("Exportar acionado");
-        });
-        fileMenu.getItems().addAll(importAssemblyFile, importObjFile, exportObjFile);
+        fileMenu.getItems().addAll(importAssemblyFile, importObjFile);
 
         // Menu "Configurações"
         Menu settingsMenu = new Menu("Configurações");
         MenuItem optionsItem = new MenuItem("Opções...");
         optionsItem.setOnAction(e -> {
-            // TODO: implementar a lógica de configurações
-            System.out.println("Opções acionadas");
+            // TODO: implementar configurações
         });
         settingsMenu.getItems().add(optionsItem);
 
-        // Menu "Ajuda" com link para o repositório
+        // Menu "Exibição"
+        Menu viewMenu = new Menu("Exibição");
+        MenuItem hexadecimalView = new MenuItem("Hexadecimal");
+        hexadecimalView.setOnAction(e -> {
+            // TODO: implementação da exibição hexadecimal
+        });
+        viewMenu.getItems().add(hexadecimalView);
+        MenuItem octalView = new MenuItem("Octal");
+        octalView.setOnAction(e -> {
+            // TODO: implementação da exibição octal
+        });
+        viewMenu.getItems().add(octalView);
+        MenuItem decimalView = new MenuItem("Decimal");
+        decimalView.setOnAction(e -> {
+            // TODO: implementação da exibição decimal
+        });
+        viewMenu.getItems().add(decimalView);
+
+        // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
         MenuItem repository = new MenuItem("Repositório");
-        repository.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/seu-repositorio");
-        });
+        repository.setOnAction(e -> getHostServices().showDocument("https://github.com/seu-repositorio"));
         helpMenu.getItems().add(repository);
 
-        // Menu "Sobre" que exibe informações da aplicação
+        // Menu "Sobre"
         Menu aboutMenu = new Menu("Sobre");
         MenuItem info = new MenuItem("Informações");
         info.setOnAction(e -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Sobre");
             alert.setHeaderText("SIC/XE Simulator v2.1");
-            alert.setContentText("© 2024 SIC/XE Team");
+            alert.setContentText("© 2025 SIC/XE Team");
             alert.showAndWait();
         });
         aboutMenu.getItems().add(info);
 
-        // Menu "Créditos" que exibe os perfis do Github de cada um dos desenvolvedores.
+        // Menu "Créditos"
         Menu creditsMenu = new Menu("Créditos");
-
-        // Perfil Renan
         MenuItem renanPinho = new MenuItem("Renan Pinho");
-        renanPinho.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/pinhorenan");
-        });
-
-        // Perfil Luis
+        renanPinho.setOnAction(e -> getHostServices().showDocument("https://github.com/pinhorenan"));
         MenuItem luisRasch = new MenuItem("Luis Rasch");
-        luisRasch.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/LuisEduardoRasch");
-        });
-
-        // Perfil Gabriel
+        luisRasch.setOnAction(e -> getHostServices().showDocument("https://github.com/LuisEduardoRasch"));
         MenuItem gabrielMoura = new MenuItem("Gabriel Moura");
-        gabrielMoura.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/gbrimoura");
-        });
-
-        // Perfil Fabricio
+        gabrielMoura.setOnAction(e -> getHostServices().showDocument("https://github.com/gbrimoura"));
         MenuItem fabricioBartz = new MenuItem("Fabricio Bartz");
-        fabricioBartz.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/FabricioBartz");
-        });
-
-        // Perfil Arthur
+        fabricioBartz.setOnAction(e -> getHostServices().showDocument("https://github.com/FabricioBartz"));
         MenuItem arthurAlves = new MenuItem("Arthur Alves");
-        arthurAlves.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/arthursa21");
-        });
-
-        // Perfil Leonardo
+        arthurAlves.setOnAction(e -> getHostServices().showDocument("https://github.com/arthursa21"));
         MenuItem leonardoBraga = new MenuItem("Leonardo Braga");
-        leonardoBraga.setOnAction(e -> {
-            getHostServices().showDocument("https://github.com/braga0425");
-        });
+        leonardoBraga.setOnAction(e -> getHostServices().showDocument("https://github.com/braga0425"));
         creditsMenu.getItems().addAll(renanPinho, luisRasch, gabrielMoura, arthurAlves, fabricioBartz, leonardoBraga);
 
-        // Menu "Sair" com item que encerra a aplicação
+        // Menu "Sair"
         Menu exitMenu = new Menu("Sair");
         MenuItem exitItem = new MenuItem("Sair");
         exitItem.setOnAction(e -> Platform.exit());
         exitMenu.getItems().add(exitItem);
 
-        menuBar.getMenus().addAll(fileMenu, settingsMenu, helpMenu, aboutMenu, creditsMenu, exitMenu);
+        menuBar.getMenus().addAll(fileMenu, settingsMenu, viewMenu, helpMenu, aboutMenu, creditsMenu, exitMenu);
         return menuBar;
     }
 
-    // Cria a área de entrada (editor de código)
     private ScrollPane createInputArea() {
         inputField = new TextArea();
         inputField.setPromptText("Insira seu código assembly aqui...");
@@ -238,7 +213,6 @@ public class SimulationApp extends Application {
         return inputScroll;
     }
 
-    // Cria a área de saída
     private ScrollPane createOutputAreaPane() {
         outputArea = new TextArea();
         outputArea.setEditable(false);
@@ -250,7 +224,6 @@ public class SimulationApp extends Application {
         return outputScroll;
     }
 
-    // Cria o painel para a tabela de registradores
     private ScrollPane createRegisterTablePane() {
         setupRegisterTable();
         ScrollPane registerScroll = new ScrollPane(registerTable);
@@ -258,7 +231,6 @@ public class SimulationApp extends Application {
         return registerScroll;
     }
 
-    // Cria o painel para a tabela de memória
     private ScrollPane createMemoryTablePane() {
         setupMemoryTable();
         ScrollPane memoryScroll = new ScrollPane(memoryTable);
@@ -266,7 +238,6 @@ public class SimulationApp extends Application {
         return memoryScroll;
     }
 
-    // Cria o painel para a tabela de símbolos
     private ScrollPane createSymbolTablePane() {
         setupSymbolTable();
         ScrollPane symbolScroll = new ScrollPane(symbolTable);
@@ -274,7 +245,6 @@ public class SimulationApp extends Application {
         return symbolScroll;
     }
 
-    // Configuração da tabela de registradores utilizando lambdas
     private void setupRegisterTable() {
         registerTable = new TableView<>();
         TableColumn<RegisterEntry, String> nameCol = new TableColumn<>("Registrador");
@@ -285,7 +255,6 @@ public class SimulationApp extends Application {
         registerTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
-    // Configuração da tabela de memória utilizando lambdas
     private void setupMemoryTable() {
         memoryTable = new TableView<>();
         TableColumn<MemoryEntry, String> addressCol = new TableColumn<>("Endereço");
@@ -296,7 +265,6 @@ public class SimulationApp extends Application {
         memoryTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
-    // Configuração da tabela de símbolos utilizando lambdas
     private void setupSymbolTable() {
         symbolTable = new TableView<>();
         TableColumn<SymbolEntry, String> symbolCol = new TableColumn<>("Símbolo");
@@ -323,34 +291,33 @@ public class SimulationApp extends Application {
         pause.play();
     }
 
-    // Atualiza os dados dos registradores
+    // Atualiza os dados dos registradores (obtidos da ControlUnit)
     public void updateRegisterTable() {
-        List<String> registerNames = Arrays.asList("A", "X", "L", "PC", "B", "S", "T", "F", "SW");
         registerTable.getItems().clear();
-        for (String name : registerNames) {
-            String value = controller.getSimulationModel().getVirtualMachine().getRegister(name).getValue();
-            registerTable.getItems().add(new RegisterEntry(name, value));
+        for (Register reg : controller.getSimulationModel().getMachine().getControlUnit().getCurrentRegisters()) {
+            registerTable.getItems().add(new RegisterEntry(reg.getName(), reg.getHexValue()));
         }
     }
 
     // Atualiza os dados da memória
     public void updateMemoryTable() {
         memoryTable.getItems().clear();
-        for (int address = 0; address < controller.getSimulationModel().getVirtualMachine().getMemory().getSize(); address++) {
-            String value = controller.getSimulationModel().getVirtualMachine().getMemory().read(address);
+        for (int address = 0; address < controller.getSimulationModel().getMachine().getMemoryState().getSize(); address++) {
+            int byteValue = controller.getSimulationModel().getMachine().getMemoryState().readByte(address);
+            String value = String.format("%02X", byteValue);
             memoryTable.getItems().add(new MemoryEntry(String.format("%04X", address), value));
         }
     }
 
-    // Atualiza os dados dos símbolos
+    // Atualiza os dados dos símbolos (obtidos do Assembler)
     public void updateSymbolTable() {
         symbolTable.getItems().clear();
         Map<String, Integer> symbols = controller.getSimulationModel().getAssembler().getSymbolTable();
         symbols.forEach((name, address) ->
-                symbolTable.getItems().add(new SymbolEntry(name, String.format("%04X", address))));
+                symbolTable.getItems().add(new SymbolEntry(name, String.format("%04X", address)))
+        );
     }
 
-    // Atualiza todas as tabelas
     public void updateAllTables() {
         updateRegisterTable();
         updateMemoryTable();

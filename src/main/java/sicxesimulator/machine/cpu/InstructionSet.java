@@ -42,10 +42,6 @@ public class InstructionSet {
         return memory.readWord(address);
     }
 
-    public void writeMemoryWord(int address, int value) {
-        memory.writeWord(address, value);
-    }
-
     /// CÁLCULO DO ENDEREÇO EFETIVO
 
     public int calculateEffectiveAddress(int base, int index, boolean indexed) {
@@ -85,6 +81,11 @@ public class InstructionSet {
         return currentA - memValue;
     }
 
+    // COMPR (Format 2)
+    public int executeCOMPR(int reg1Value, int reg2Value) {
+        return reg1Value - reg2Value; // Retorna a diferença para atualizar o Condition Code
+    }
+
     // DIV (Formato 3)
     public int executeDIV(int currentA, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
@@ -93,12 +94,18 @@ public class InstructionSet {
         return divide(currentA, divisor);
     }
 
+    // DIVR (Format 2)
+    public int executeDIVR(int reg1Value, int reg2Value) {
+        if (reg2Value == 0) throw new ArithmeticException("Divisão por zero.");
+        return divide(reg1Value, reg2Value);
+    }
+
     // J (Formato 3/4) - Retorna novo valor para PC
     public int executeJ(int address, boolean indexed, int indexRegValue) {
         return calculateEffectiveAddress(address, indexRegValue, indexed);
     }
 
-    // JEQ/JLT/JGT (Formato 3/4) - Retorna novo PC ou -1 (sem branch)
+    // JEQ/JGT/JLT/ (Formato 3/4) - Retorna novo PC ou -1 (sem branch)
     public int executeCONDITIONAL_JUMP(int conditionCode, int targetAddress, int currentCC) {
         if (currentCC == conditionCode) {
             return targetAddress;
@@ -106,8 +113,19 @@ public class InstructionSet {
         return -1; // Indica que o salto não foi tomado
     }
 
+    // JSUB (Formato 3)
+    public int executeJSUB (int address, boolean indexed, int indexRegValue) {
+        return calculateEffectiveAddress(address, indexRegValue, indexed);
+    }
+
     // LDA (Formato 3)
     public int executeLDA(int address, boolean indexed, int indexRegValue) {
+        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
+        return readMemoryWord(effectiveAddress);
+    }
+
+    // LDB (Format 3/4)
+    public int executeLDB(int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         return readMemoryWord(effectiveAddress);
     }
@@ -125,15 +143,59 @@ public class InstructionSet {
         return readMemoryWord(effectiveAddress);
     }
 
+    // LDS (Format 3/4)
+    public int executeLDS(int address, boolean indexed, int indexRegValue) {
+        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
+        return readMemoryWord(effectiveAddress);
+    }
+
+    // LDT (Format 3/4)
+    public int executeLDT(int address, boolean indexed, int indexRegValue) {
+        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
+        return readMemoryWord(effectiveAddress);
+    }
+
     // LDX (Formato 3)
     public int executeLDX(int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         return readMemoryWord(effectiveAddress);
     }
 
+    // MUL (Formato 3)
+    public int executeMUL(int currentA, int address, boolean indexed, int indexRegValue) {
+        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
+        int memValue = readMemoryWord(effectiveAddress);
+        return multiply(currentA, memValue);
+    }
+
+    // MULR (Format 2)
+    public int executeMULR(int reg1Value, int reg2Value) {
+        return multiply(reg1Value, reg2Value);
+    }
+
+    // OR (Format 3/4)
+    public int executeOR(int currentA, int address, boolean indexed, int indexRegValue) {
+        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
+        int memValue = readMemoryWord(effectiveAddress);
+        return or(currentA, memValue);
+    }
+
+    // RMO (Format 2)
+    // Não necessita de implementação aqui devido à sua simplicidade, talvez eu mude de ideia depois.
+
     // RSUB (Formato 3) - Retorna valor de L
     public int executeRSUB(int currentL) {
         return currentL;
+    }
+
+    // SHIFTL (Format 2)
+    public int executeSHIFTL(int regValue, int count) {
+        return (regValue << count) & 0xFFFFFF; // Deslocamento à esquerda
+    }
+
+    // SHIFTR (Format 2)
+    public int executeSHIFTR(int regValue, int count) {
+        return (regValue >>> count) & 0xFFFFFF; // Deslocamento à direita (com preenchimento de zeros)
     }
 
     // STA (Formato 3) - Retorna valor para escrever na memória
@@ -141,9 +203,29 @@ public class InstructionSet {
         return currentA;
     }
 
+    // STB (Format 3/4)
+    public int executeSTB(int currentB) {
+        return currentB; // Retorna o valor do registrador B para escrever na memória
+    }
+
     // STCH (Formato 3) - Retorna byte para escrever na memória
     public int executeSTCH(int currentA) {
         return currentA & 0xFF;
+    }
+
+    // STL (Format 3/4)
+    public int executeSTL(int currentL) {
+        return currentL; // Retorna o valor do registrador L para escrever na memória
+    }
+
+    // STS (Format 3/4)
+    public int executeSTS(int currentS) {
+        return currentS; // Retorna o valor do registrador S para escrever na memória
+    }
+
+    // STT (Format 3/4)
+    public int executeSTT(int currentT) {
+        return currentT; // Retorna o valor do registrador T para escrever na memória
     }
 
     // STX (Formato 3)
@@ -158,6 +240,11 @@ public class InstructionSet {
         return subtract(currentA, memValue);
     }
 
+    // SUBR (Format 2)
+    public int executeSUBR(int reg1Value, int reg2Value) {
+        return subtract(reg1Value, reg2Value);
+    }
+
     // TIX (Formato 3)
     public int executeTIX(int currentX, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
@@ -165,29 +252,8 @@ public class InstructionSet {
         return (currentX + 1) - memValue; // Retorna comparação para atualizar SW
     }
 
-    // MUL (Formato 3)
-    public int executeMUL(int currentA, int address, boolean indexed, int indexRegValue) {
-        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
-        int memValue = readMemoryWord(effectiveAddress);
-        return multiply(currentA, memValue);
-    }
-
-    // JSUB (Formato 3)
-    public int executeJSUB(int currentPC, int address, boolean indexed, int indexRegValue) {
-        return calculateEffectiveAddress(address, indexRegValue, indexed);
-    }
-
-    // ADDF (Formato 3)
-    public long executeADDF(long currentF, int address, boolean indexed, int indexRegValue) {
-        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
-        long value2 = ((long) readMemoryWord(effectiveAddress) << 24) | readMemoryWord(effectiveAddress + 3);
-        return currentF + value2;
-    }
-
-    // SUBF (Formato 3)
-    public long executeSUBF(long currentF, int address, boolean indexed, int indexRegValue) {
-        int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
-        long value2 = ((long) readMemoryWord(effectiveAddress) << 24) | readMemoryWord(effectiveAddress + 3);
-        return currentF - value2;
+    // TIXR (Format 2)
+    public int executeTIXR(int currentX, int regValue) {
+        return (currentX + 1) - regValue; // Retorna a comparação para atualizar o Condition Code
     }
 }

@@ -4,9 +4,11 @@ import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.css.Size;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -21,24 +23,28 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("unchecked")
 public class SimulationApp extends Application {
-
-    // Records auxiliares para as tabelas
-    public record RegisterEntry(String name, String value) { }
-    public record MemoryEntry(String address, String value) { }
-    public record SymbolEntry(String symbol, String address) { }
-
     private SimulationController controller;
+
+    private Stage primaryStage;
     private TextArea outputArea;
     private TextArea inputField;
     private TableView<RegisterEntry> registerTable;
     private TableView<MemoryEntry> memoryTable;
     private TableView<SymbolEntry> symbolTable;
 
+    // Records auxiliares para as tabelas
+    public record RegisterEntry(String name, String value) { }
+    public record MemoryEntry(String address, String value) { }
+    public record SymbolEntry(String symbol, String address) { }
+
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+
         // Inicialização do modelo e controlador
-        Machine virtualMachine = new Machine(40000);
+        Machine virtualMachine = new Machine();
         SimulationModel model = new SimulationModel(
                 virtualMachine,
                 new Assembler(),
@@ -49,6 +55,7 @@ public class SimulationApp extends Application {
         primaryStage.setTitle("SIC/XE Simulator v2.1");
         primaryStage.setWidth(900);
         primaryStage.setHeight(600);
+        primaryStage.getIcons().add(new Image("https://img.icons8.com/?size=100&id=rd2k11wyt7We&format=png&color=000000"));
 
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
@@ -72,6 +79,9 @@ public class SimulationApp extends Application {
             }
         });
 
+        Button showObjectCodeButton = new Button("Mostrar Código Objeto");
+        showObjectCodeButton.setOnAction(e -> controller.handleShowObjectCodeAction());
+
         Button runButton = new Button("Executar");
         runButton.setOnAction(e -> controller.handleRunAction());
 
@@ -81,7 +91,7 @@ public class SimulationApp extends Application {
         Button resetButton = new Button("Resetar");
         resetButton.setOnAction(e -> controller.handleResetAction());
 
-        actionButtons.getChildren().addAll(assembleButton, runButton, nextButton, resetButton);
+        actionButtons.getChildren().addAll(assembleButton, runButton, showObjectCodeButton, nextButton, resetButton);
 
         TitledPane outputPane = new TitledPane("Saída", createOutputAreaPane());
         outputPane.setCollapsible(false);
@@ -122,59 +132,63 @@ public class SimulationApp extends Application {
 
         // Menu "Arquivo"
         Menu fileMenu = new Menu("Arquivo");
+
         MenuItem importAssemblyFile = new MenuItem("Importar .asm");
-        importAssemblyFile.setOnAction(e -> {
-            System.out.println("Importar .asm acionado");
-        });
-        MenuItem importObjFile = new MenuItem("Importar .obj");
-        importObjFile.setOnAction(e -> {
-            System.out.println("Importar .obj acionado");
-        });
-        fileMenu.getItems().addAll(importAssemblyFile, importObjFile);
+        importAssemblyFile.setOnAction(e -> System.out.println("Importar .asm acionado"));
+
+        MenuItem loadExampleASM = new MenuItem("Carregar código exemplo");
+        loadExampleASM.setOnAction(e -> loadExampleCode());
+
+        fileMenu.getItems().addAll(importAssemblyFile, loadExampleASM);
 
         // Menu "Configurações"
-        Menu settingsMenu = new Menu("Configurações");
-        MenuItem optionsItem = new MenuItem("Opções...");
-        optionsItem.setOnAction(e -> {
-            // TODO: implementar configurações
-        });
-        settingsMenu.getItems().add(optionsItem);
+        Menu optionsMenu = new Menu("Opções");
+
+        MenuItem memorySizeItem = new MenuItem("Tamanho da memória");
+        memorySizeItem.setOnAction(e -> {}); // TODO: implementar configurações
+
+        MenuItem executionSpeedItem = new MenuItem("Velocidade de execução");
+        executionSpeedItem.setOnAction(e -> {}); // TODO: implementar configurações
+
+        optionsMenu.getItems().addAll(memorySizeItem, executionSpeedItem);
 
         // Menu "Exibição"
         Menu viewMenu = new Menu("Exibição");
+
         MenuItem hexadecimalView = new MenuItem("Hexadecimal");
-        hexadecimalView.setOnAction(e -> {
-            // TODO: implementação da exibição hexadecimal
-        });
-        viewMenu.getItems().add(hexadecimalView);
+        hexadecimalView.setOnAction(e -> {}); // TODO: implementação da exibição hexadecimal
+
         MenuItem octalView = new MenuItem("Octal");
-        octalView.setOnAction(e -> {
-            // TODO: implementação da exibição octal
-        });
-        viewMenu.getItems().add(octalView);
+        octalView.setOnAction(e -> {}); // TODO: implementação da exibição octal
+
         MenuItem decimalView = new MenuItem("Decimal");
-        decimalView.setOnAction(e -> {
-            // TODO: implementação da exibição decimal
-        });
-        viewMenu.getItems().add(decimalView);
+        decimalView.setOnAction(e -> {}); // TODO: implementação da exibição decimal
+
+        viewMenu.getItems().addAll(hexadecimalView, octalView, decimalView);
 
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
-        MenuItem repository = new MenuItem("Repositório");
-        repository.setOnAction(e -> getHostServices().showDocument("https://github.com/seu-repositorio"));
-        helpMenu.getItems().add(repository);
+        helpMenu.setOnAction(e -> {}); // TODO: Abrir janela mostrando funcionalidades suportadas, comandos e tutorial.
 
         // Menu "Sobre"
         Menu aboutMenu = new Menu("Sobre");
+
+        MenuItem repository = new MenuItem("Repositório");
+        repository.setOnAction(e -> getHostServices().showDocument("https://github.com/pinhorenan/SIC-XE-Simulator"));
+
         MenuItem info = new MenuItem("Informações");
         info.setOnAction(e -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Sobre");
             alert.setHeaderText("SIC/XE Simulator v2.1");
-            alert.setContentText("© 2025 SIC/XE Team");
+            alert.setContentText("""
+                    © 2025 SIC/XEd
+                    Time ROCK LEE VS GAARA
+                    Ícone: https://icons8.com/icon/NAL2lztANaO6/rust""");
             alert.showAndWait();
         });
-        aboutMenu.getItems().add(info);
+
+        aboutMenu.getItems().addAll(info, repository);
 
         // Menu "Créditos"
         Menu creditsMenu = new Menu("Créditos");
@@ -192,13 +206,7 @@ public class SimulationApp extends Application {
         leonardoBraga.setOnAction(e -> getHostServices().showDocument("https://github.com/braga0425"));
         creditsMenu.getItems().addAll(renanPinho, luisRasch, gabrielMoura, arthurAlves, fabricioBartz, leonardoBraga);
 
-        // Menu "Sair"
-        Menu exitMenu = new Menu("Sair");
-        MenuItem exitItem = new MenuItem("Sair");
-        exitItem.setOnAction(e -> Platform.exit());
-        exitMenu.getItems().add(exitItem);
-
-        menuBar.getMenus().addAll(fileMenu, settingsMenu, viewMenu, helpMenu, aboutMenu, creditsMenu, exitMenu);
+        menuBar.getMenus().addAll(fileMenu, optionsMenu, viewMenu, helpMenu, aboutMenu, creditsMenu);
         return menuBar;
     }
 
@@ -275,6 +283,66 @@ public class SimulationApp extends Application {
         symbolTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
+    public void updateRegisterTable() {
+        registerTable.getItems().clear();
+        for (Register reg : controller.getSimulationModel().getMachine().getControlUnit().getCurrentRegisters()) {
+            registerTable.getItems().add(new RegisterEntry(reg.getName(), reg.getHexValue()));
+        }
+    }
+
+    public void updateMemoryTable() {
+        memoryTable.getItems().clear();
+        for (int address = 0; address < controller.getSimulationModel().getMachine().getMemoryState().getSize(); address++) {
+            int byteValue = controller.getSimulationModel().getMachine().getMemoryState().readByte(address);
+            String value = String.format("%02X", byteValue);
+            memoryTable.getItems().add(new MemoryEntry(String.format("%04X", address), value));
+        }
+    }
+
+    public void updateSymbolTable() {
+        symbolTable.getItems().clear();
+        Map<String, Integer> symbols = controller.getSimulationModel().getAssembler().getSymbolTable();
+        symbols.forEach((name, address) ->
+                symbolTable.getItems().add(new SymbolEntry(name, String.format("%04X", address)))
+        );
+    }
+
+    public void updateAllTables() {
+        updateRegisterTable();
+        updateMemoryTable();
+        updateSymbolTable();
+    }
+
+    private void loadExampleCode() {
+        // Código de exemplo
+        String exampleCode =
+                "COPY START 1000\n" +
+                        "FIRST  LDA   FIVE\n" +
+                        "       ADD   FOUR\n" +
+                        "       STA   RESULT\n" +
+                        "       RSUB\n" +
+                        "FIVE   WORD  5\n" +
+                        "FOUR   WORD  4\n" +
+                        "RESULT RESW  1";
+
+        // Coloca o código exemplo no campo de entrada
+        inputField.setText(exampleCode);
+
+        // Atualiza o título da janela (opcional)
+        primaryStage.setTitle("Simulador SIC/XE - Exemplo Carregado");
+
+        // Exibe uma mensagem (opcional)
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Código de Exemplo");
+        alert.setHeaderText("Código Assembly de Exemplo Carregado");
+        alert.setContentText("O código de exemplo foi carregado no campo de entrada.");
+        alert.showAndWait();
+    }
+
+    public void appendOutput(String message) {
+        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
+    }
+
     private void showWelcomeMessage() {
         PauseTransition pause = new PauseTransition(Duration.seconds(0.5));
         pause.setOnFinished(e -> {
@@ -291,42 +359,6 @@ public class SimulationApp extends Application {
         pause.play();
     }
 
-    // Atualiza os dados dos registradores (obtidos da ControlUnit)
-    public void updateRegisterTable() {
-        registerTable.getItems().clear();
-        for (Register reg : controller.getSimulationModel().getMachine().getControlUnit().getCurrentRegisters()) {
-            registerTable.getItems().add(new RegisterEntry(reg.getName(), reg.getHexValue()));
-        }
-    }
-
-    // Atualiza os dados da memória
-    public void updateMemoryTable() {
-        memoryTable.getItems().clear();
-        for (int address = 0; address < controller.getSimulationModel().getMachine().getMemoryState().getSize(); address++) {
-            int byteValue = controller.getSimulationModel().getMachine().getMemoryState().readByte(address);
-            String value = String.format("%02X", byteValue);
-            memoryTable.getItems().add(new MemoryEntry(String.format("%04X", address), value));
-        }
-    }
-
-    // Atualiza os dados dos símbolos (obtidos do Assembler)
-    public void updateSymbolTable() {
-        symbolTable.getItems().clear();
-        Map<String, Integer> symbols = controller.getSimulationModel().getAssembler().getSymbolTable();
-        symbols.forEach((name, address) ->
-                symbolTable.getItems().add(new SymbolEntry(name, String.format("%04X", address)))
-        );
-    }
-
-    public void updateAllTables() {
-        updateRegisterTable();
-        updateMemoryTable();
-        updateSymbolTable();
-    }
-
-    public void appendOutput(String message) {
-        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
-    }
 
     public void showError(String errorMessage) {
         Platform.runLater(() -> {
@@ -336,6 +368,32 @@ public class SimulationApp extends Application {
             alert.setContentText(errorMessage);
             alert.showAndWait();
         });
+    }
+
+    ///  GETTERS
+
+    public Stage getStage() {
+        return primaryStage;
+    }
+
+    public TextArea getOutputArea() {
+        return outputArea;
+    }
+
+    public TextArea getInputField() {
+        return inputField;
+    }
+
+    public TableView<RegisterEntry> getRegisterTable() {
+        return registerTable;
+    }
+
+    public TableView<MemoryEntry> getMemoryTable() {
+        return memoryTable;
+    }
+
+    public TableView<SymbolEntry> getSymbolTable() {
+        return symbolTable;
     }
 
     public static void main(String[] args) {

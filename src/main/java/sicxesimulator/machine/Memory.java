@@ -2,6 +2,7 @@ package sicxesimulator.machine;
 
 import java.util.Arrays;
 
+@SuppressWarnings("ManualArrayCopy")
 public class Memory {
 	private final byte[] memory;
 	private static final int MIN_SIZE = 1024; // 1 KB (tamanho mínimo exigido)
@@ -12,6 +13,11 @@ public class Memory {
 		}
 		this.memory = new byte[size];
 		clearMemory();
+	}
+
+	///  Getter
+	public int getSize() {
+		return memory.length;
 	}
 
 	// ================ ESCRITA DE BYTES (PARA CARREGAR PROGRAMAS) ================
@@ -98,10 +104,6 @@ public class Memory {
 	// ================ MÉTODOS AUXILIARES ================
 	public void clearMemory() {
 		Arrays.fill(memory, (byte) 0);
-	}
-
-	public int getSize() {
-		return memory.length;
 	}
 
 	private void validateAddress(int address) {

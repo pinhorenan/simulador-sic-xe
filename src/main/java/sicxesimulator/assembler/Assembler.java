@@ -20,7 +20,7 @@ public class Assembler {
     }
 
     /**
-     * Método principal que recebe o código assembly (como lista de linhas e retorna o código objeto (array de bytes).
+     * Recebe o código assembly (como lista de linhas e retorna o código objeto (array de bytes).
      */
     public byte[] assemble(List<String> sourceLines) {
         passOne(sourceLines);       // Primeira passagem: montar a tabela de símbolos e definir endereços.
@@ -280,7 +280,27 @@ public class Assembler {
         return data;
     }
 
-    ///  CLASSES INTERNAS AUXILIARES
+    /**
+     * Formata o código objeto em uma string legível
+      */
+    public String formatObjectCode(byte[] objectCode) {
+        StringBuilder formattedCode = new StringBuilder();
+        for (int i = 0; i < objectCode.length; i++) {
+            // Adiciona cada byte em hexadecimal, com espaço entre eles.
+            formattedCode.append(String.format("%02X ", objectCode[i] & 0xFF));
+        }
+        return formattedCode.toString().trim();
+    }
+
+    ///  GETTERS
+
+    public int getStartAddress() {
+        return startAddress;
+    }
+
+    public Map<String, Integer> getSymbolTable() {
+        return symbolTable;
+    }
 
     /**
      * Classe interna para representar uma linha de instrução ou diretiva no código assembly.
@@ -301,13 +321,8 @@ public class Assembler {
         }
     }
 
-    ///  GETTERS
-
-    public int getStartAddress() {
-        return startAddress;
+    public void reset() {
+        symbolTable.clear();
     }
 
-    public Map<String, Integer> getSymbolTable() {
-        return symbolTable;
-    }
 }

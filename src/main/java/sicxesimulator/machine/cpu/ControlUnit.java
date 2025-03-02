@@ -7,18 +7,22 @@ import java.util.Arrays;
 public class ControlUnit {
     private final Memory memory;
     private final InstructionSet instructionSet;
+
+    // Registradores do SIC/XE
     private final Register A, X, L, B, S, T, F;
     private final Register PC;
     private final Register SW;
     private final Register[] registers;
+
+    // Variáveis para o ciclo de instrução
     private int currentOpcode;
+    private int instructionFormat; // 1, 2, 3 ou 4
+    private int[] operands;        // Operandos decodificados
+    private boolean indexed;       // Modo indexado
+    private boolean extended;      // Flag "e" (formato 4)
 
-    // Variáveis temporárias para armazenar dados decodificados
-    private int instructionFormat; //1, 2, 3, ou 4
-    private int[] operands;         // Operandos decodificados
-    private boolean indexed;        // Modo indexado (true/false)
-    private boolean extended;       // Formato estendido (e=1)
-
+    // Flag para indicar se a execução foi encerrada
+    private boolean halted = false;
 
     public ControlUnit(Memory memory) {
         this.memory = memory;
@@ -35,22 +39,19 @@ public class ControlUnit {
         this.instructionSet = new InstructionSet(memory);
     }
 
+    // Limpa todos os registradores
     public void clearRegisters() {
-        A.clearRegister();
-        X.clearRegister();
-        L.clearRegister();
-        B.clearRegister();
-        S.clearRegister();
-        T.clearRegister();
-        F.clearRegister();
-        PC.clearRegister();
-        SW.clearRegister();
+        for (Register r : registers) {
+            r.clearRegister();
+        }
     }
 
-    // Retorna uma cópia do estado atual dos registradores.
-    public Register[] getCurrentRegisters() { return Arrays.copyOf(registers, registers.length); }
+    // Retorna uma cópia do estado atual dos registradores
+    public Register[] getCurrentRegisters() {
+        return Arrays.copyOf(registers, registers.length);
+    }
 
-    // Obtém registrador por ID (mapeamento conforme tabela SIC/XE)
+    // Mapeia um ID de registrador para o objeto Register correspondente
     private Register getRegisterById(int id) {
         return switch (id) {
             case 0 -> A;
@@ -59,51 +60,71 @@ public class ControlUnit {
             case 3 -> B;
             case 4 -> S;
             case 5 -> T;
+            case 6 -> F;
             case 8 -> PC;
             case 9 -> SW;
             default -> throw new IllegalArgumentException("ID de registrador inválido: " + id);
         };
     }
 
-    /// Manipulação do Program Counter
+    // Manipulação do PC
+    public void setPC(int value) {
+        PC.setValue(value);
+    }
 
-    public void setPC(int value) { PC.setValue(value); }
+    private void incrementPC(int instructionSize) {
+        setPC(PC.getIntValue() + instructionSize);
+    }
 
-    void incrementPC(int instructionSize) { setPC((PC.getIntValue() + instructionSize)); }
+    // Manipulação do Condition Code
+    private int getConditionCode() {
+        return SW.getIntValue() & 0x03;
+    }
 
-    /// Manipulação do Condition Code
-
-    int getConditionCode() { return SW.getIntValue() & 0x03; }
-
-    void updateConditionCode(int result) {
+    private void updateConditionCode(int result) {
         int conditionCode;
         if (result == 0) {
-            conditionCode = 0; // CC = 00 (Equal)
+            conditionCode = 0; // Equal
         } else if (result < 0) {
-            conditionCode = 1; // CC = 01 (Less)
+            conditionCode = 1; // Less
         } else {
-            conditionCode = 2; // CC = 10 (Greater)
+            conditionCode = 2; // Greater
         }
         setConditionCode(conditionCode);
     }
 
-    void setConditionCode(int conditionCode) {
+    private void setConditionCode(int conditionCode) {
         int currentSW = SW.getIntValue();
         SW.setValue((currentSW & 0xFFFFFC) | (conditionCode & 0x03));
     }
 
+    // ----- CICLO DE INSTRUÇÃO -----
 
-    ///  FETCH
-
-    public void fetch() {
-        currentOpcode = memory.readByte(PC.getIntValue());
+    /**
+     * Executa um ciclo completo: fetch, decode e execute.
+     * Se a execução for finalizada (por exemplo, através de uma instrução RSUB que retorne 0), marca halted como true.
+     */
+    public void runCycle() {
+        if (halted) return;
+        fetch();
+        decode();
+        execute();
     }
 
-    ///  DECODE
+    /**
+     * Fetch: lê o opcode da memória no endereço apontado pelo PC.
+     */
+    public void fetch() {
+        currentOpcode = memory.readByte(PC.getIntValue()) & 0xFF;
+    }
 
+    /**
+     * Decode: determina o formato da instrução e extrai os operandos.
+     * Após a decodificação, o PC é incrementado pelo tamanho da instrução.
+     */
     public void decode() {
-        // Determina o formato e decodifica operandos
         instructionFormat = determineInstructionFormat(currentOpcode);
+        // Reinicia os operandos e flags
         operands = new int[0];
         indexed = false;
         extended = false;
@@ -112,60 +133,78 @@ public class ControlUnit {
             case 1 -> decodeFormat1();
             case 2 -> decodeFormat2();
             case 3, 4 -> decodeFormat3or4();
+            default -> throw new IllegalStateException("Formato de instrução inválido: " + instructionFormat);
         }
-
-        // Atualiza PC com o tamanho total da instrução
         incrementPC(getInstructionSize());
     }
 
-
-    // ================ MÉTODOS AUXILIARES DE DECODIFICAÇÃO ================
+    /**
+     * Determina o formato da instrução com base no opcode.
+     * Para opcodes não explicitamente mapeados, verifica o flag "e" no byte seguinte para distinguir entre
+     * formato 3 e 4.
+     */
     private int determineInstructionFormat(int opcode) {
-        // Mapeamento de opcodes para formatos (exemplos)
         return switch (opcode) {
-            case 0x4C -> 3;          // RSUB (Formato 3)
-            case 0x90, 0x4 -> 2;     // ADDR, CLEAR (Formato 2)
-            case 0x00, 0x18, 0x3C -> 3; // LDA, ADD, J (Formato 3/4)
+            case 0x4C -> 3; // RSUB (Formato 3)
+            case 0x90, 0x04 -> 2; // ADDR, CLEAR (Formato 2) – note: 0x04 também pode ser LDX se não for formato 2
+            case 0x00, 0x18, 0x3C -> {
+                // Para LDA, ADD, J, etc. pode ser formato 3 ou 4.
+                // Verifica o flag "e" no segundo byte.
+                int flags = memory.readByte(PC.getIntValue() + 1) & 0xFF;
+                if ((flags & 0x01) != 0) yield 4;
+                else yield 3;
+            }
             default -> {
-                // Verifica se é formato 4 (e=1)
-                if ((memory.readByte(PC.getIntValue() + 1) & 0x01) != 0) yield 4;
+                int flags = memory.readByte(PC.getIntValue() + 1) & 0xFF;
+                if ((flags & 0x01) != 0) yield 4;
                 else yield 3;
             }
         };
     }
 
+    // Decodificação do formato 1: 1 byte sem operandos.
     private void decodeFormat1() {
-        // Formato 1: 1 byte (sem operandos)
         operands = new int[0];
     }
 
+    // Decodificação do formato 2: 2 bytes – operandos são os dois nibbles do segundo byte.
     private void decodeFormat2() {
-        // Formato 2: 2 bytes (r1, r2)
-        int byte2 = memory.readByte(PC.getIntValue() + 1);
-        operands = new int[]{(byte2 >> 4) & 0xF, byte2 & 0xF};
+        int byte2 = memory.readByte(PC.getIntValue() + 1) & 0xFF;
+        operands = new int[]{ (byte2 >> 4) & 0xF, byte2 & 0xF };
     }
 
+    /**
+     * Decodifica instruções dos formatos 3 e 4.
+     * - Formato 3 (3 bytes): Byte0 = opcode, Byte1 = flags, Byte2 = deslocamento (12 bits, formado pelo nibble inferior de Byte1 e os 8 bits de Byte2).
+     * - Formato 4 (4 bytes): Byte0 = opcode, Byte1 = flags, Byte2 e Byte3 = endereço (20 bits, formado pelo nibble inferior de Byte1 concatenado com Byte2 e Byte3).
+     */
     private void decodeFormat3or4() {
-        // Formato 3/4: 3 ou 4 bytes (ni xbpe disp/address)
-        int flags = memory.readByte(PC.getIntValue() + 1);
-        extended = (flags & 0x01) != 0; // e=1 (formato 4)
-        indexed = (flags & 0x10) != 0;  // x=1 (indexado)
+        int byte1 = memory.readByte(PC.getIntValue() + 1) & 0xFF;
+        // Os bits: ni: bits 7-6; x: bit 5; b: bit 4; p: bit 3; e: bit 0.
+        extended = (byte1 & 0x01) != 0; // e flag
+        indexed = (byte1 & 0x10) != 0;  // x flag
 
         int addressField;
         if (extended) {
-            // Formato 4: 20 bits de endereço
-            addressField = (memory.readByte(PC.getIntValue() + 2) << 16)
-                    | (memory.readByte(PC.getIntValue() + 3) << 8)
-                    | memory.readByte(PC.getIntValue() + 4);
+            // Formato 4: 4 bytes no total.
+            // Endereço (20 bits) = (lower nibble de byte1 << 16) | (byte2 << 8) | (byte3)
+            int lowNibble = byte1 & 0x0F;
+            int byte2 = memory.readByte(PC.getIntValue() + 2) & 0xFF;
+            int byte3 = memory.readByte(PC.getIntValue() + 3) & 0xFF;
+            addressField = (lowNibble << 16) | (byte2 << 8) | byte3;
         } else {
-            // Formato 3: 12 bits de deslocamento
-            addressField = (memory.readByte(PC.getIntValue() + 2) << 8)
-                    | memory.readByte(PC.getIntValue() + 3);
+            // Formato 3: 3 bytes no total.
+            // Deslocamento de 12 bits = (lower nibble de byte1 << 8) | (byte2)
+            int lowNibble = byte1 & 0x0F;
+            int byte2 = memory.readByte(PC.getIntValue() + 2) & 0xFF;
+            addressField = (lowNibble << 8) | byte2;
         }
-
-        operands = new int[]{addressField, flags};
+        operands = new int[]{ addressField, byte1 }; // Armazena também o byte de flags
     }
 
+    /**
+     * Retorna o tamanho da instrução atual, com base no formato.
+     */
     private int getInstructionSize() {
         return switch (instructionFormat) {
             case 1 -> 1;
@@ -176,22 +215,12 @@ public class ControlUnit {
         };
     }
 
-    // ================ GETTERS PARA DADOS DECODIFICADOS ================
-    public int getInstructionFormat() {
-        return instructionFormat;
-    }
+    // Getters para os dados decodificados
+    public int getInstructionFormat() { return instructionFormat; }
+    public int[] getOperands() { return operands; }
+    public boolean isIndexed() { return indexed; }
+    public boolean isExtended() { return extended; }
 
-    public int[] getOperands() {
-        return operands;
-    }
-
-    public boolean isIndexed() {
-        return indexed;
-    }
-
-    public boolean isExtended() {
-        return extended;
-    }
 
     ///  EXECUÇÃO
 
@@ -257,6 +286,11 @@ public class ControlUnit {
                 updateConditionCode(comparison);
             }
 
+            // COMPR
+            case 0xA0 -> {
+                //TODO
+            }
+
             // DIV (Format 3/4 - Opcode 0x24)
             case 0x24 -> {
                 int result = instructionSet.executeDIV(
@@ -268,6 +302,13 @@ public class ControlUnit {
                 A.setValue(result);
                 updateConditionCode(result);
             }
+
+            // DIVR
+            case 0x9C -> {
+                // TODO
+            }
+
+
 
             // J (Format 3/4 - Opcode 0x3C)
             case 0x3C -> {
@@ -288,16 +329,6 @@ public class ControlUnit {
                 if (newPC != -1) PC.setValue(newPC);
             }
 
-            // JLT (Format 3/4 - Opcode 0x38)
-            case 0x38 -> {
-                int newPC = instructionSet.executeCONDITIONAL_JUMP(
-                        1, // CC = 01 (Less)
-                        getOperands()[0], // address
-                        getConditionCode()
-                );
-                if (newPC != -1) PC.setValue(newPC);
-            }
-
             // JGT (Format 3/4 - Opcode 0x34)
             case 0x34 -> {
                 int newPC = instructionSet.executeCONDITIONAL_JUMP(
@@ -308,6 +339,27 @@ public class ControlUnit {
                 if (newPC != -1) PC.setValue(newPC);
             }
 
+            // JLT (Format 3/4 - Opcode 0x38)
+            case 0x38 -> {
+                int newPC = instructionSet.executeCONDITIONAL_JUMP(
+                        1, // CC = 01 (Less)
+                        getOperands()[0], // address
+                        getConditionCode()
+                );
+                if (newPC != -1) PC.setValue(newPC);
+            }
+
+            // JSUB (Format 3/4 - Opcode 0x48)
+            case 0x48 -> {
+                L.setValue(PC.getIntValue() + 3); // Salva endereço de retorno
+                PC.setValue(instructionSet.executeJSUB(
+                        PC.getIntValue(),
+                        getOperands()[0], // address
+                        isIndexed(),      // indexed
+                        X.getIntValue()
+                ));
+            }
+
             // LDA (Format 3/4 - Opcode 0x00)
             case 0x00 -> {
                 A.setValue(instructionSet.executeLDA(
@@ -316,6 +368,12 @@ public class ControlUnit {
                         X.getIntValue()
                 ));
             }
+
+            // LDB
+            case 0x68 -> {
+                // TODO
+            }
+
 
             // LDCH (Format 3/4 - Opcode 0x50)
             case 0x50 -> {
@@ -336,8 +394,58 @@ public class ControlUnit {
                 ));
             }
 
+            // LDS
+            case 0x6c -> {
+                // TODO
+            }
+
+            // LDT
+            case 0x74 -> {
+                // TODO
+            }
+
+            // LDX
+            // Já coberto no condicional de clear, já que ambas possuem mesmo OPCODE
+
+            // MUL (Format 3/4 - Opcode 0x20)
+            case 0x20 -> {
+                int result = instructionSet.executeMUL(
+                        A.getIntValue(),
+                        getOperands()[0], // address
+                        isIndexed(),      // indexed
+                        X.getIntValue()
+                );
+                A.setValue(result);
+                updateConditionCode(result);
+            }
+
+            // MULR
+            case 0x98 -> {
+                // TODO
+            }
+
+            // OR
+            case 0x44 -> {
+                // TODO
+            }
+
+            // RMO
+            case 0xAC -> {
+                // TODO
+            }
+
             // RSUB (Format 3/4 - Opcode 0x4C)
             case 0x4C -> PC.setValue(instructionSet.executeRSUB(L.getIntValue()));
+
+            // SHIFTL
+            case 0xA4 -> {
+                // TODO
+            }
+
+            // SHIFTR
+            case 0xA8 -> {
+                // TODO
+            }
 
             // STA (Format 3/4 - Opcode 0x0C)
             case 0x0C -> {
@@ -349,6 +457,11 @@ public class ControlUnit {
                 memory.writeWord(address, instructionSet.executeSTA(A.getIntValue()));
             }
 
+            // STB
+            case 0x78 -> {
+                // TODO
+            }
+
             // STCH (Format 3/4 - Opcode 0x54)
             case 0x54 -> {
                 int address = instructionSet.calculateEffectiveAddress(
@@ -357,6 +470,21 @@ public class ControlUnit {
                         isIndexed()
                 );
                 memory.writeByte(address, instructionSet.executeSTCH(A.getIntValue()));
+            }
+
+            // STL
+            case 0x14 -> {
+                // TODO
+            }
+
+            // STS
+            case 0x7C -> {
+                // TODO
+            }
+
+            // STT
+            case 0x84 -> {
+                // TODO
             }
 
             // STX (Format 3/4 - Opcode 0x10)
@@ -381,6 +509,11 @@ public class ControlUnit {
                 updateConditionCode(result);
             }
 
+            // SUBR
+            case 0x94 -> {
+                // TODO
+            }
+
             // TIX (Format 3/4 - Opcode 0x2C)
             case 0x2C -> {
                 int comparison = instructionSet.executeTIX(
@@ -393,55 +526,18 @@ public class ControlUnit {
                 updateConditionCode(comparison);
             }
 
-            // MUL (Format 3/4 - Opcode 0x20)
-            case 0x20 -> {
-                int result = instructionSet.executeMUL(
-                        A.getIntValue(),
-                        getOperands()[0], // address
-                        isIndexed(),      // indexed
-                        X.getIntValue()
-                );
-                A.setValue(result);
-                updateConditionCode(result);
-            }
-
-            // JSUB (Format 3/4 - Opcode 0x48)
-            case 0x48 -> {
-                L.setValue(PC.getIntValue() + 3); // Salva endereço de retorno
-                PC.setValue(instructionSet.executeJSUB(
-                        PC.getIntValue(),
-                        getOperands()[0], // address
-                        isIndexed(),      // indexed
-                        X.getIntValue()
-                ));
-            }
-
-            // ADDF (Format 3/4 - Opcode 0x58)
-            case 0x58 -> {
-                F.setValue(instructionSet.executeADDF(
-                        F.getLongValue(),
-                        getOperands()[0], // address
-                        isIndexed(),      // indexed
-                        X.getIntValue()
-                ));
-            }
-
-            // SUBF (Format 3/4 - Opcode 0x5C)
-            case 0x5C -> {
-                F.setValue(instructionSet.executeSUBF(
-                        F.getLongValue(),
-                        getOperands()[0], // address
-                        isIndexed(),      // indexed
-                        X.getIntValue()
-                ));
+            // TIXR
+            case 0xB8 -> {
+                // TODO
             }
 
             // Instruções não implementadas
-            default -> throw new IllegalStateException("Instrução não suportada: " + Integer.toHexString(currentOpcode));
+            default -> throw new IllegalStateException(String.format("Instrução não suportada: %02X", currentOpcode));
         }
     }
 
-    // TODO: Algumas instruções estão faltando.
-
-
+    // Getter para verificar se a execução foi encerrada
+    public boolean isHalted() {
+        return halted;
+    }
 }

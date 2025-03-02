@@ -11,6 +11,8 @@ public class SimulationModel {
     private final Machine machine;
     private final Assembler assembler;
     private final Loader loader;
+    public boolean isPaused;
+    public boolean isFinished;
 
     // Armazena o último código objeto montado e informações relacionadas
     private byte[] objectCode;
@@ -21,6 +23,8 @@ public class SimulationModel {
         this.machine = machine;
         this.assembler = assembler;
         this.loader = loader;
+        this.isPaused = false;
+        this.isFinished = false;
     }
 
     /**
@@ -39,6 +43,8 @@ public class SimulationModel {
         programLength = objectCode.length;
         // Carrega o programa na memória a partir do endereço de início
         machine.loadProgram(startAddress, objectCode);
+
+        // TODO: O carregamento do programa deve acontecer via loader.
     }
 
     /**
@@ -58,9 +64,24 @@ public class SimulationModel {
      *
      * @return true se a execução estiver concluída, false caso contrário.
      */
-    public boolean isFinished() {
-        // Stub – ajuste conforme a lógica de término do seu simulador.
-        return false;
+    public boolean finished() {
+        return isFinished;
+    }
+
+    public void setFinished() {
+        isFinished = true;
+    }
+
+    public boolean isPaused() {
+        return isPaused;
+    }
+
+    public void pause() {
+        isPaused = true;
+    }
+
+    public void unpause() {
+        isPaused = false;
     }
 
     /**
@@ -73,6 +94,8 @@ public class SimulationModel {
         objectCode = null;
         startAddress = 0;
         programLength = 0;
+        isPaused = false;
+        isFinished = false;
     }
 
     public Machine getMachine() {

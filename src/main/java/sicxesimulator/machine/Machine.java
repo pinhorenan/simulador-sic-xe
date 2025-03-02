@@ -33,6 +33,7 @@ public class Machine {
      * Pode haver um delay, dependendo da cycleSpeed definida nesta máquina.
      */
     public void runCycle() {
+        if (controlUnit.isHalted()) return;
         controlUnit.fetch();
         controlUnit.decode();
         controlUnit.execute();

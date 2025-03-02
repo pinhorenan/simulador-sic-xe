@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
+}
+
+repositories {
+    // Usar o Maven Central para resolver dependências
+    mavenCentral()
+}
+
+dependencies {
+    // JUnit 5 (JUnit Jupiter API e Engine)
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+
+    // Dependências do JavaFX
+    implementation 'org.openjfx:javafx-controls:17.0.2'
+    implementation 'org.openjfx:javafx-fxml:17.0.2'
+    implementation 'org.openjfx:javafx-media:17.0.2'
+}
+
+javafx {
+    version = "17.0.2"
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.media']
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Definição correta dos diretórios de código-fonte
+sourceSets {
+    main {
+        java.srcDirs = ['src/main/java']
+    }
+    test {
+        java.srcDirs = ['src/test/java']
+    }
+}
+
+// Configuração da versão do Java
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+// Define corretamente a classe principal do aplicativo
+application {
+    mainClass = 'sicxesimulator.Main'
+}

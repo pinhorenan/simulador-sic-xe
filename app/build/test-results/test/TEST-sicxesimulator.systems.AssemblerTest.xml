@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="sicxesimulator.systems.AssemblerTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-02-15T18:23:33" hostname="LENOVO_RENAN" time="0.006">
-  <properties/>
-  <testcase name="testAssembleSimpleProgram()" classname="sicxesimulator.systems.AssemblerTest" time="0.006"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

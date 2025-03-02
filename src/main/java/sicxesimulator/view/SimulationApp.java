@@ -39,6 +39,9 @@ public class SimulationApp extends Application {
     public record MemoryEntry(String address, String value) { }
     public record SymbolEntry(String symbol, String address) { }
 
+    // Variáveis auxiliares
+    private String viewFormat = "HEX";
+
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -84,6 +87,9 @@ public class SimulationApp extends Application {
 
         Button runButton = new Button("Executar");
         runButton.setOnAction(e -> controller.handleRunAction());
+
+        Button pauseButton = new Button("Pausar");
+        pauseButton.setOnAction(e -> controller.handlePauseAction());
 
         Button nextButton = new Button("Próximo");
         nextButton.setOnAction(e -> controller.handleNextAction());
@@ -134,10 +140,10 @@ public class SimulationApp extends Application {
         Menu fileMenu = new Menu("Arquivo");
 
         MenuItem importAssemblyFile = new MenuItem("Importar .asm");
-        importAssemblyFile.setOnAction(e -> System.out.println("Importar .asm acionado"));
+        importAssemblyFile.setOnAction(e -> controller.handleImportAsmAction());
 
         MenuItem loadExampleASM = new MenuItem("Carregar código exemplo");
-        loadExampleASM.setOnAction(e -> loadExampleCode());
+        loadExampleASM.setOnAction(e -> controller.handleLoadSampleCodeAction());
 
         fileMenu.getItems().addAll(importAssemblyFile, loadExampleASM);
 
@@ -145,10 +151,10 @@ public class SimulationApp extends Application {
         Menu optionsMenu = new Menu("Opções");
 
         MenuItem memorySizeItem = new MenuItem("Tamanho da memória");
-        memorySizeItem.setOnAction(e -> {}); // TODO: implementar configurações
+        memorySizeItem.setOnAction(e -> controller.handleChangeMemorySizeAction());
 
         MenuItem executionSpeedItem = new MenuItem("Velocidade de execução");
-        executionSpeedItem.setOnAction(e -> {}); // TODO: implementar configurações
+        executionSpeedItem.setOnAction(e -> controller.handleChangeRunningSpeedAction());
 
         optionsMenu.getItems().addAll(memorySizeItem, executionSpeedItem);
 
@@ -156,20 +162,19 @@ public class SimulationApp extends Application {
         Menu viewMenu = new Menu("Exibição");
 
         MenuItem hexadecimalView = new MenuItem("Hexadecimal");
-        hexadecimalView.setOnAction(e -> {}); // TODO: implementação da exibição hexadecimal
+        hexadecimalView.setOnAction(e -> controller.handleHexViewAction());
 
         MenuItem octalView = new MenuItem("Octal");
-        octalView.setOnAction(e -> {}); // TODO: implementação da exibição octal
+        octalView.setOnAction(e -> controller.handleOctalViewAction());
 
         MenuItem decimalView = new MenuItem("Decimal");
-        decimalView.setOnAction(e -> {}); // TODO: implementação da exibição decimal
+        decimalView.setOnAction(e -> controller.handleDecimalViewAction());
 
         viewMenu.getItems().addAll(hexadecimalView, octalView, decimalView);
 
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
-        helpMenu.setOnAction(e -> {}); // TODO: Abrir janela mostrando funcionalidades suportadas, comandos e tutorial.
-
+        helpMenu.setOnAction(e -> controller.handleHelpAction());
         // Menu "Sobre"
         Menu aboutMenu = new Menu("Sobre");
 
@@ -313,32 +318,6 @@ public class SimulationApp extends Application {
         updateSymbolTable();
     }
 
-    private void loadExampleCode() {
-        // Código de exemplo
-        String exampleCode =
-                "COPY START 1000\n" +
-                        "FIRST  LDA   FIVE\n" +
-                        "       ADD   FOUR\n" +
-                        "       STA   RESULT\n" +
-                        "       RSUB\n" +
-                        "FIVE   WORD  5\n" +
-                        "FOUR   WORD  4\n" +
-                        "RESULT RESW  1";
-
-        // Coloca o código exemplo no campo de entrada
-        inputField.setText(exampleCode);
-
-        // Atualiza o título da janela (opcional)
-        primaryStage.setTitle("Simulador SIC/XE - Exemplo Carregado");
-
-        // Exibe uma mensagem (opcional)
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Código de Exemplo");
-        alert.setHeaderText("Código Assembly de Exemplo Carregado");
-        alert.setContentText("O código de exemplo foi carregado no campo de entrada.");
-        alert.showAndWait();
-    }
-
     public void appendOutput(String message) {
         Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
     }
@@ -358,7 +337,6 @@ public class SimulationApp extends Application {
         });
         pause.play();
     }
-
 
     public void showError(String errorMessage) {
         Platform.runLater(() -> {
@@ -396,6 +374,21 @@ public class SimulationApp extends Application {
         return symbolTable;
     }
 
+    public String getViewFormat() { return viewFormat; }
+
+    public void setViewFormatToHex() {
+        viewFormat = "HEX";
+    }
+
+    public void setViewFormatToDecimal() {
+        viewFormat = "DEC";
+    }
+
+    public void setViewFormatToOctal() {
+        viewFormat = "OCT";
+    }
+
+    ///  MAIN
     public static void main(String[] args) {
         launch(args);
     }

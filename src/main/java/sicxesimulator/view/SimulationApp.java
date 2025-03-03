@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -17,7 +18,7 @@ import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.machine.cpu.Register;
-import sicxesimulator.util.ValueFormatter;
+import sicxesimulator.utils.ValueFormatter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,11 +35,18 @@ public class SimulationApp extends Application {
     private TableView<MemoryEntry> memoryTable;
     private TableView<SymbolEntry> symbolTable;
     private String viewFormat = "HEX";
+    private boolean darkModeEnabled = false;
 
     // Records auxiliares para as tabelas
     public record RegisterEntry(String name, String value) { }
     public record MemoryEntry(String address, String value) { }
     public record SymbolEntry(String symbol, String address) { }
+
+    // Para poder exibir valores atuais
+    private Label executionSpeedLabel;
+    private Label memorySizeLabel;
+    private Label viewFormatLabel;
+    private HBox bottomBar;
 
     ///  CRIAÇÃO DE COMPONENTES DA INTERFACE
 
@@ -57,10 +65,10 @@ public class SimulationApp extends Application {
         Menu optionsMenu = new Menu("Opções");
 
         MenuItem memorySizeItem = new MenuItem("Tamanho da memória");
-        memorySizeItem.setOnAction(e -> controller.handleChangeMemorySizeAction());
+        memorySizeItem.setOnAction(e -> showMemorySizeDialog());
 
         MenuItem executionSpeedItem = new MenuItem("Velocidade de execução");
-        executionSpeedItem.setOnAction(e -> controller.handleChangeRunningSpeedAction());
+        executionSpeedItem.setOnAction(e -> showExecutionSpeedDialog());
 
         optionsMenu.getItems().addAll(memorySizeItem, executionSpeedItem);
 
@@ -76,11 +84,18 @@ public class SimulationApp extends Application {
         MenuItem decimalView = new MenuItem("Decimal");
         decimalView.setOnAction(e -> controller.handleDecimalViewAction());
 
-        viewMenu.getItems().addAll(hexadecimalView, octalView, decimalView);
+        MenuItem darkModeItem = new MenuItem("Dark Mode");
+        darkModeItem.setOnAction(e -> toggleDarkMode());
+
+        viewMenu.getItems().addAll(hexadecimalView, octalView, decimalView, darkModeItem);
 
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
-        helpMenu.setOnAction(e -> controller.handleHelpAction());
+        MenuItem helpItem = new MenuItem("Ajuda e Tutorial");
+        helpItem.setOnAction(e -> controller.handleHelpAction());
+        helpMenu.getItems().add(helpItem);
+
+
         // Menu "Sobre"
         Menu aboutMenu = new Menu("Sobre");
 
@@ -163,6 +178,20 @@ public class SimulationApp extends Application {
         symbolScroll.setFitToWidth(true);
         return symbolScroll;
     }
+
+    private void createBottomBar(BorderPane root) {
+        executionSpeedLabel = new Label("Atraso de ciclo: Tempo Real");
+        memorySizeLabel = new Label("Memória: 1024 bytes");
+        viewFormatLabel = new Label("Formato: Hexadecimal");
+
+        bottomBar = new HBox(20, executionSpeedLabel, memorySizeLabel, viewFormatLabel);
+        bottomBar.setPadding(new Insets(10));
+        bottomBar.setAlignment(Pos.CENTER_LEFT);
+        bottomBar.setStyle("-fx-background-color: #EEE; -fx-border-color: #CCC; -fx-padding: 5px;");
+
+        root.setBottom(bottomBar); // Adiciona no layout principal
+    }
+
 
     /// SETUP E ATUALIZAÇÃO DAS TABE
 
@@ -270,6 +299,113 @@ public class SimulationApp extends Application {
         });
     }
 
+    public void showExecutionSpeedDialog() {
+        // Cria um ChoiceDialog com as opções de velocidade
+        ChoiceDialog<String> dialog = new ChoiceDialog<>("Tempo real", "Rápido", "Médio", "Lento", "Muito lento");
+        dialog.setTitle("Tempo real");
+        dialog.setHeaderText("Selecione a velocidade de execução:");
+        dialog.setContentText("Velocidade:");
+
+        // Exibe o diálogo e, se o usuário escolher uma ação, mapeia para o valor numérico correspondente
+        dialog.showAndWait().ifPresent(selected -> {
+                    int speedValue = switch (selected) {
+                        case "Tempo real" -> //noinspection DuplicateBranchesInSwitch
+                                0;
+                        case "Rápido" -> 4;
+                        case "Médio" -> 3;
+                        case "Lento" -> 2;
+                        case "Muito lento" -> 1;
+                        default -> 0;
+                    };
+
+                    // Chama o métod-o no controlador para atualizar a velocidade de execução
+                    controller.handleChangeRunningSpeedAction(speedValue);
+                    String delayInMs;
+
+
+                    delayInMs = switch (speedValue) {
+                        case 0 -> "Tempo real";
+                        case 1 -> "1000ms";
+                        case 2 -> "500ms";
+                        case 3 -> "250ms";
+                        case 4 -> "100ms";
+                        default -> "Usando default, algo deu errado.";
+                    };
+
+                    executionSpeedLabel.setText("Atraso de ciclo: " + delayInMs);
+
+                });
+    }
+
+    public void showMemorySizeDialog() {
+        TextInputDialog dialog = new TextInputDialog("1024"); // valor padrão "1024"
+        dialog.setTitle("Alterar Tamanho da Memória");
+        dialog.setHeaderText("Defina o tamanho da memória");
+        dialog.setContentText("Digite um número inteiro positivo:");
+
+        dialog.showAndWait().ifPresent(input -> {
+            try {
+                int newSize = Integer.parseInt(input);
+                if (newSize <= 0) {
+                    throw new NumberFormatException("O valor deve ser maior que zero.");
+                }
+                controller.handleChangeMemorySizeAction(newSize);
+                memorySizeLabel.setText("Memória: " + newSize + " bytes");
+
+                appendOutput("Tamanho da memória alterado para: " + newSize + " bytes.");
+            } catch (NumberFormatException ex) {
+                showError("Valor inválido! Por favor, insira um número inteiro positivo.");
+            }
+        });
+    }
+
+    public void showHelpWindow() {
+        Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
+        helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
+        helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
+
+        String helpText = """
+            Funcionalidades Suportadas:
+              - Montar: Compila o código assembly e gera o código objeto.
+              - Executar: Executa o código objeto carregado na memória.
+              - Próximo: Executa o próximo ciclo de instrução.
+              - Resetar: Reinicia a simulação, limpando registradores, memória e tabelas.
+              - Importar .asm / .obj: Permite carregar arquivos de código assembly ou objeto.
+            
+            Comandos e Diretivas:
+              - START: Define o endereço inicial (ex.: START 1000).
+              - WORD: Define uma palavra de 3 bytes.
+              - RESW: Reserva um número de palavras na memória.
+              - BYTE: Define um valor literal (ex.: C'ABC' ou X'1F').
+              - Instruções: LDA, ADD, STA, RSUB, etc.
+            
+            Tutorial:
+              1. Digite seu código assembly na área de edição.
+              2. Utilize o botão Montar para compilar e carregar o programa.
+              3. Utilize os botões Executar/Próximo para executar os ciclos de instrução.
+              4. Utilize os menus para ajustar visualização, tamanho da memória e velocidade de execução.
+            """;
+        helpAlert.setContentText(helpText);
+        helpAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+        helpAlert.showAndWait();
+    }
+
+    public void toggleDarkMode() {
+        Scene scene = primaryStage.getScene();
+        String darkModeStylesheet = getClass().getResource("/darkmode.css").toExternalForm();
+
+        if (!darkModeEnabled) {
+            scene.getStylesheets().add(darkModeStylesheet);
+            darkModeEnabled = true;
+            appendOutput("Dark Mode ativado. Essa funcionalidade ainda não foi totalmente implementada!");
+        } else {
+            scene.getStylesheets().remove(darkModeStylesheet);
+            darkModeEnabled = false;
+            appendOutput("Dark Mode desativado.");
+        }
+    }
+
+
     ///  GETTERS
 
     public Stage getStage() {
@@ -288,11 +424,20 @@ public class SimulationApp extends Application {
 
     ///  SETTERS
 
-    public void setViewFormatToHex() { viewFormat = "HEX"; }
+    public void setViewFormatToHex() {
+        viewFormat = "HEX";
+        viewFormatLabel.setText("Formato: Hexadecimal");
+    }
 
-    public void setViewFormatToDecimal() { viewFormat = "DEC"; }
+    public void setViewFormatToDecimal() {
+        viewFormat = "DEC";
+        viewFormatLabel.setText("Formato: Decimal");
+    }
 
-    public void setViewFormatToOctal() { viewFormat = "OCT"; }
+    public void setViewFormatToOctal() {
+        viewFormat = "OCT";
+        viewFormatLabel.setText("Formato: Octal");
+    }
 
 
     @Override
@@ -313,20 +458,28 @@ public class SimulationApp extends Application {
         primaryStage.setHeight(600);
         primaryStage.getIcons().add(new Image("https://img.icons8.com/?size=100&id=rd2k11wyt7We&format=png&color=000000"));
 
+
+
+
+
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
+        root.setPadding(new Insets(0, 0, 10, 0));
 
         /// Coluna Esquerda: entrada, botões de ação e saída
 
         VBox leftColumn = new VBox(10);
         leftColumn.setPadding(new Insets(10));
 
+        /// PAINEL DE ENTRADA
         TitledPane inputPane = new TitledPane("Código Assembly", createInputArea());
         inputPane.setCollapsible(false);
+        VBox.setVgrow(inputPane, Priority.NEVER);
 
         ///  BOTÕES
         HBox actionButtons = new HBox(10);
         actionButtons.setPadding(new Insets(5));
+        VBox.setVgrow(actionButtons, Priority.NEVER);
 
         // Montar
         Button assembleButton = new Button("Montar");
@@ -362,13 +515,22 @@ public class SimulationApp extends Application {
 
         ///  Painel de saída
 
-        TitledPane outputPane = new TitledPane("Saída", createOutputAreaPane());
-        outputPane.setCollapsible(false);
+        // Painel de saída
+        ScrollPane outputScroll = createOutputAreaPane();
+        outputScroll.setFitToHeight(true);
+        outputScroll.setFitToWidth(true);
+        VBox.setVgrow(outputScroll, Priority.ALWAYS);
 
-        leftColumn.getChildren().addAll(inputPane, actionButtons, outputPane);
-        VBox.setVgrow(inputPane, Priority.ALWAYS);
+        TitledPane outputPane = new TitledPane("Saída", outputScroll);
+        outputPane.setCollapsible(false);
+        // Permite que o TitledPane cresça verticalmente
+        outputPane.setMaxHeight(Double.MAX_VALUE);
         VBox.setVgrow(outputPane, Priority.ALWAYS);
 
+        // Agora adicione tudo isso na esquerda.
+        leftColumn.getChildren().addAll(inputPane, actionButtons, outputPane);
+
+        root.setLeft(leftColumn);
 
         ///  Coluna direita: Tabelas de memória, registradores e símbolos
 
@@ -389,6 +551,8 @@ public class SimulationApp extends Application {
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
         HBox.setHgrow(rightColumn, Priority.ALWAYS);
         root.setCenter(mainContent);
+
+        createBottomBar(root);
 
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);

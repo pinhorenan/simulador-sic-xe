@@ -66,7 +66,7 @@ public class SimulationController {
                             Thread.sleep(50);
                         }
                         // Indica o fim da execução na UI
-                        Platform.runLater(() -> view.appendOutput("Execução concluída!"));
+                        if (model.isFinished()) Platform.runLater(() -> view.appendOutput("Execução concluída!"));
                         return null;
                     }
                 };
@@ -79,26 +79,6 @@ public class SimulationController {
             view.showError("Nenhum programa montado!");
         }
     }
-
-
-    /**public void handleRunAction() {
-        if (model.hasAssembledCode() && !model.finished()) {
-            new Thread(() -> {
-                while (!model.finished() && !model.isPaused()) {
-                    Platform.runLater(() -> {
-                        model.runNextInstruction();
-                        view.updateAllTables();
-                    });
-                    try {
-                        Thread.sleep(model.getMachine().getCycleSpeed());
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }).start();
-        }
-    }
-     */ // TODO: Esse método não travaria a UI.
 
     public void handleNextAction() {
         if(model.hasAssembledCode()) {
@@ -120,8 +100,11 @@ public class SimulationController {
 
     public void handlePauseAction() {
         if (model.isPaused()) {
+            view.appendOutput("Execução retomada!");
             model.unpause();
+
         } else {
+            view.appendOutput("Execução pausada!");
             model.pause();
         }
     }
@@ -160,19 +143,22 @@ public class SimulationController {
         model.loadSambleCode(view);
     }
 
-    public void handleChangeMemorySizeAction() {
-        // Apresentar caixa de input para digitar APENAS INTEIROS.
-        // Realizar checagem do valor recebido.
+    public void handleChangeMemorySizeAction(int newSize) {
+        try {
+            // Altera o tamanho da memória na máquina
+            model.getMachine().changeMemorySize(newSize);
+            view.appendOutput("Memória alterada para " + newSize + " bytes.");
+            // Atualiza as tabelas se necessário
+            view.updateMemoryTable();
+        } catch (Exception e) {
+            view.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
+        }
+    }
 
-        // Ao selecionar aplicar a alteração na máquina.
-        model.getMachine().changeMemorySize(1024); // TODO: O valor 1024 é o padrão e placeholder aqui.
-    } // TODO
 
-    public void handleChangeRunningSpeedAction() {
-        // Apresentar as opções: Tempo real, rápido, médio, lento, muito lento (os delays relativos)
-
-        // Ao selecionar aplicar a alteração na máquina.
-        model.setCycleSpeed(0); } // TODO: O valor atual está como placeholder, os valores deverão ser 0, 1, 2, 3 ou 4.
+    public void handleChangeRunningSpeedAction(int speedValue) {
+        model.setCycleSpeed(speedValue);
+    }
 
     public void handleHexViewAction() {
         view.setViewFormatToHex();
@@ -189,9 +175,9 @@ public class SimulationController {
         view.updateAllTables();
     }
 
-    public void handleHelpAction() {} // TODO: Abrir janela mostrando funcionalidades suportadas, comandos e tutorial.
-
-    public void handleError(String Message) {} // TODO
+    public void handleHelpAction() {
+        view.showHelpWindow();
+    }
 
     ///  GETTERS
 

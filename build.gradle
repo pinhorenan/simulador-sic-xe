@@ -5,7 +5,6 @@ plugins {
 }
 
 repositories {
-    // Usar o Maven Central para resolver dependências
     mavenCentral()
 }
 
@@ -19,10 +18,11 @@ dependencies {
     implementation 'org.openjfx:javafx-fxml:17.0.2'
     implementation 'org.openjfx:javafx-media:17.0.2'
 }
-
-javafx {
-    version = "17.0.2"
-    modules = ['javafx.controls', 'javafx.fxml', 'javafx.media']
+// Configuração da versão do Java
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 test {
@@ -39,14 +39,15 @@ sourceSets {
     }
 }
 
-// Configuração da versão do Java
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
 
 // Define corretamente a classe principal do aplicativo
 application {
     mainClass = 'sicxesimulator.Main'
+    mainModule = 'sicxesimulator'
+}
+
+// Configuração do JavaFX (o plugin `org.openjfx.javafxplugin` já faz a configuração de módulos)
+javafx {
+    version = "17.0.2"
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.media']
 }

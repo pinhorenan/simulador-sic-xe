@@ -19,7 +19,6 @@ public class SimulationModel {
     // Armazena o último código objeto montado e informações relacionadas
     private byte[] objectCode = null;
     private int startAddress;
-    private int programLength;
 
     public SimulationModel(Machine machine, Assembler assembler, Loader loader) {
         this.machine = machine;
@@ -42,9 +41,6 @@ public class SimulationModel {
 
         // Obtém o endereço de início (definido via diretiva START no código assembly)
         startAddress = assembler.getStartAddress();
-
-        // Armazena o tamanho do programa para um eventual mecanismo de término
-        programLength = objectCode.length;
 
         // Carrega o programa na memória a partir do endereço de início
         loader.load(machine.getMemory(), startAddress, objectCode);
@@ -149,7 +145,6 @@ public class SimulationModel {
         machine.reset();
         assembler.reset();
         startAddress = 0;
-        programLength = 0;
         objectCode = null;
         isPaused = false;
     }

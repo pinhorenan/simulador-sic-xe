@@ -80,10 +80,6 @@ public class ControlUnit {
         return baseAddress;
     }
 
-    public int getPC() {
-        return PC.getIntValue();
-    }
-
     public void setPC(int value) {
         PC.setValue(value);
     }
@@ -222,7 +218,6 @@ public class ControlUnit {
     public int getInstructionFormat() { return instructionFormat; }
     public int[] getOperands() { return operands; }
     public boolean isIndexed() { return indexed; }
-    public boolean isExtended() { return extended; }
 
     /**
      * Executa a instrução decodificada. Além de realizar a operação,

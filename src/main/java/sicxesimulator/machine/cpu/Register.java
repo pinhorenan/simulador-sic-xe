@@ -77,14 +77,6 @@ public class Register {
 		return value & 0xFFFFFFFFFFFFL;
 	}
 
-	public String getHexValue() {
-		if ("F".equals(name)) {
-			return String.format("%012X", getLongValue());
-		} else {
-			return String.format("%04X", getIntValue());
-		}
-	}
-
 
 	// ================ SETTERS ================
 	public void setValue(long newValue) {

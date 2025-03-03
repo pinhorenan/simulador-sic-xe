@@ -23,6 +23,7 @@ import sicxesimulator.utils.ValueFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @SuppressWarnings("unchecked")
 public class SimulationApp extends Application {
@@ -392,7 +393,7 @@ public class SimulationApp extends Application {
 
     public void toggleDarkMode() {
         Scene scene = primaryStage.getScene();
-        String darkModeStylesheet = getClass().getResource("/darkmode.css").toExternalForm();
+        String darkModeStylesheet = Objects.requireNonNull(getClass().getResource("/darkmode.css")).toExternalForm();
 
         if (!darkModeEnabled) {
             scene.getStylesheets().add(darkModeStylesheet);

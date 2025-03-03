@@ -78,9 +78,13 @@ public class Register {
 	}
 
 	public String getHexValue() {
-		int hexDigits = size / 4;
-		return String.format("%0" + hexDigits + "X", size == 48 ? getLongValue() : getIntValue());
+		if ("F".equals(name)) {
+			return String.format("%012X", getLongValue());
+		} else {
+			return String.format("%04X", getIntValue());
+		}
 	}
+
 
 	// ================ SETTERS ================
 	public void setValue(long newValue) {

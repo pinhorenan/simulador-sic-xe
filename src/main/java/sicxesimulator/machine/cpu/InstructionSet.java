@@ -4,9 +4,11 @@ import sicxesimulator.machine.Memory;
 
 public class InstructionSet {
     private final Memory memory;
+    private final ControlUnit controlUnit;
 
-    public InstructionSet(Memory memory) {
+    public InstructionSet(Memory memory, ControlUnit controlUnit) {
         this.memory = memory;
+        this.controlUnit = controlUnit;
     }
 
     ///  OPERAÇÕES BÁSICAS
@@ -44,8 +46,12 @@ public class InstructionSet {
 
     /// CÁLCULO DO ENDEREÇO EFETIVO
 
-    public int calculateEffectiveAddress(int base, int index, boolean indexed) {
-        return indexed ? (base + index) : base;
+    public int calculateEffectiveAddress(int disp, int X, boolean indexed) {
+        int effectiveAddress = controlUnit.getBaseAddress() + disp; // Adiciona baseAddress
+        if (indexed) {
+            effectiveAddress += X;
+        }
+        return effectiveAddress;
     }
 
     /// LÓGICA DAS INSTRUÇÕES

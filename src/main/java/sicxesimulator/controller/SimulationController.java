@@ -1,5 +1,7 @@
 package sicxesimulator.controller;
 
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.model.SimulationModel;
@@ -22,6 +24,7 @@ public class SimulationController {
         try {
             model.assembleAndLoadProgram(sourceLines);
             view.updateAllTables();
+
             view.appendOutput("Programa montado e carregado com sucesso!");
         } catch (IOException | IllegalArgumentException e) {
             view.showError("Erro na montagem: " + e.getMessage());
@@ -42,39 +45,81 @@ public class SimulationController {
     }
 
     public void handleRunAction() {
-        if(!model.finished()) {
-            try {
-                // Executa um ciclo de instrução repetidamente (aqui, de forma simplificada)
-                while (!model.finished() & !model.isPaused) {
-                    model.runNextInstruction();
+        if (model.hasAssembledCode()) {
+            if (!model.isFinished()) {
+                Task<Void> runTask = new Task<>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        // Enquanto o programa não terminar ou estiver pausado
+                        while (!model.isFinished() && !model.isPaused()) {
+                            model.runNextInstruction();
+                            // Captura o log da última instrução
+                            final String log = model.getMachine().getControlUnit().getLastExecutionLog();
+                            // Atualiza interface na thread JavaFX
+                            Platform.runLater(() -> {
+                                view.appendOutput(log);
+                                view.updateRegisterTable();
+                                view.updateMemoryTable();
+                            });
+                            // Pequeno delay para evitar consumo excessivo de CPU e dar chance à UI de atualizar
+                            //noinspection BusyWait
+                            Thread.sleep(50);
+                        }
+                        // Indica o fim da execução na UI
+                        Platform.runLater(() -> view.appendOutput("Execução concluída!"));
+                        return null;
+                    }
+                };
 
-                    view.updateRegisterTable();
-                    view.updateMemoryTable();
-                    // TODO: Inserir um delay parametrizável para permitir a visualização da execução de cada instrução.
-                }
-                view.appendOutput("Execução concluída!");
-            } catch (Exception e) {
-                view.showError("Erro na execução: " + e.getMessage());
+                new Thread(runTask).start();
+            } else {
+                view.showError("Fim do programa!");
             }
+        } else {
+            view.showError("Nenhum programa montado!");
         }
-        else view.showError("Fim do programa!");
     }
 
-    public void handleNextAction() {
-        if (!model.finished()) {
-            try {
-                model.runNextInstruction();
-                view.updateRegisterTable();
-                view.updateMemoryTable();
-            } catch (Exception e) {
-                view.showError("Erro na execução: " + e.getMessage());
-            }
+
+    /**public void handleRunAction() {
+        if (model.hasAssembledCode() && !model.finished()) {
+            new Thread(() -> {
+                while (!model.finished() && !model.isPaused()) {
+                    Platform.runLater(() -> {
+                        model.runNextInstruction();
+                        view.updateAllTables();
+                    });
+                    try {
+                        Thread.sleep(model.getMachine().getCycleSpeed());
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }).start();
         }
-        else view.showError("Fim do programa!");
+    }
+     */ // TODO: Esse método não travaria a UI.
+
+    public void handleNextAction() {
+        if(model.hasAssembledCode()) {
+            if (!model.isFinished()) {
+                try {
+                    model.runNextInstruction();
+                    String log = model.getMachine().getControlUnit().getLastExecutionLog();
+                    view.appendOutput(log);
+                    view.updateRegisterTable();
+                    view.updateMemoryTable();
+                } catch (Exception e) {
+                    view.showError("Erro na execução: " + e.getMessage());
+                }
+            }
+            else view.showError("Fim do programa!");
+        } else view.showError("Nenhum programa montado!");
+
     }
 
     public void handlePauseAction() {
-        if (model.isPaused) {
+        if (model.isPaused()) {
             model.unpause();
         } else {
             model.pause();
@@ -112,33 +157,8 @@ public class SimulationController {
     }
 
     public void handleLoadSampleCodeAction() {
-        // Código de exemplo
-        String exampleCode =
-                """
-                        COPY START 1000
-                        FIRST  LDA   FIVE
-                               ADD   FOUR
-                               STA   RESULT
-                               RSUB
-                        FIVE   WORD  5
-                        FOUR   WORD  4
-                        RESULT RESW  1""";
-
-        // Coloca o código exemplo no campo de entrada
-        view.getInputField().setText(exampleCode);
-
-        // Atualiza o título da janela (opcional)
-        view.getStage().setTitle("Simulador SIC/XE - Exemplo Carregado");
-
-        // Exibe uma mensagem (opcional)
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Código de Exemplo");
-        alert.setHeaderText("Código Assembly de Exemplo Carregado");
-        alert.setContentText("O código de exemplo foi carregado no campo de entrada.");
-        alert.showAndWait();
-        }
-
-    public void handleImportAsmAction() {} // TODO
+        model.loadSambleCode(view);
+    }
 
     public void handleChangeMemorySizeAction() {
         // Apresentar caixa de input para digitar APENAS INTEIROS.
@@ -152,16 +172,26 @@ public class SimulationController {
         // Apresentar as opções: Tempo real, rápido, médio, lento, muito lento (os delays relativos)
 
         // Ao selecionar aplicar a alteração na máquina.
-        model.getMachine().setCycleSpeed(0); // TODO: O valor atual está como placeholder, os valores deverão ser 0, 1, 2, 3 ou 4.
-    } // TODO
+        model.setCycleSpeed(0); } // TODO: O valor atual está como placeholder, os valores deverão ser 0, 1, 2, 3 ou 4.
 
-    public void handleHexViewAction() { view.setViewFormatToHex();} // TODO: Atualizar todas tabelas para que exibam valores em Hexadecimal.
+    public void handleHexViewAction() {
+        view.setViewFormatToHex();
+        view.updateAllTables();
+    }
 
-    public void handleOctalViewAction() { view.setViewFormatToOctal();} // TODO: Atualizar todas tabelas para que exibam valores em Octal.
+    public void handleOctalViewAction() {
+        view.setViewFormatToOctal();
+        view.updateAllTables();
+    }
 
-    public void handleDecimalViewAction() { view.setViewFormatToOctal();} // TODO: Atualizar todas tabelas para que exibam valores em Decimal.
+    public void handleDecimalViewAction() {
+        view.setViewFormatToDecimal();
+        view.updateAllTables();
+    }
 
     public void handleHelpAction() {} // TODO: Abrir janela mostrando funcionalidades suportadas, comandos e tutorial.
+
+    public void handleError(String Message) {} // TODO
 
     ///  GETTERS
 

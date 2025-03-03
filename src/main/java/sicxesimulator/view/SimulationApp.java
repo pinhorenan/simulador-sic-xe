@@ -4,7 +4,6 @@ import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.css.Size;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -18,6 +17,7 @@ import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.machine.cpu.Register;
+import sicxesimulator.util.ValueFormatter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,105 +33,14 @@ public class SimulationApp extends Application {
     private TableView<RegisterEntry> registerTable;
     private TableView<MemoryEntry> memoryTable;
     private TableView<SymbolEntry> symbolTable;
+    private String viewFormat = "HEX";
 
     // Records auxiliares para as tabelas
     public record RegisterEntry(String name, String value) { }
     public record MemoryEntry(String address, String value) { }
     public record SymbolEntry(String symbol, String address) { }
 
-    // Variáveis auxiliares
-    private String viewFormat = "HEX";
-
-    @Override
-    public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;
-
-        // Inicialização do modelo e controlador
-        Machine virtualMachine = new Machine();
-        SimulationModel model = new SimulationModel(
-                virtualMachine,
-                new Assembler(),
-                new Loader()
-        );
-        controller = new SimulationController(model, this);
-
-        primaryStage.setTitle("SIC/XE Simulator v2.1");
-        primaryStage.setWidth(900);
-        primaryStage.setHeight(600);
-        primaryStage.getIcons().add(new Image("https://img.icons8.com/?size=100&id=rd2k11wyt7We&format=png&color=000000"));
-
-        BorderPane root = new BorderPane();
-        root.setTop(createMenuBar());
-
-        // Coluna Esquerda: entrada, botões de ação e saída
-        VBox leftColumn = new VBox(10);
-        leftColumn.setPadding(new Insets(10));
-
-        TitledPane inputPane = new TitledPane("Código Assembly", createInputArea());
-        inputPane.setCollapsible(false);
-
-        HBox actionButtons = new HBox(10);
-        actionButtons.setPadding(new Insets(5));
-
-        Button assembleButton = new Button("Montar");
-        assembleButton.setOnAction(e -> {
-            String inputText = inputField.getText();
-            if (!inputText.trim().isEmpty()) {
-                List<String> sourceLines = Arrays.asList(inputText.split("\\r?\\n"));
-                controller.handleAssembleAction(sourceLines);
-            }
-        });
-
-        Button showObjectCodeButton = new Button("Mostrar Código Objeto");
-        showObjectCodeButton.setOnAction(e -> controller.handleShowObjectCodeAction());
-
-        Button runButton = new Button("Executar");
-        runButton.setOnAction(e -> controller.handleRunAction());
-
-        Button pauseButton = new Button("Pausar");
-        pauseButton.setOnAction(e -> controller.handlePauseAction());
-
-        Button nextButton = new Button("Próximo");
-        nextButton.setOnAction(e -> controller.handleNextAction());
-
-        Button resetButton = new Button("Resetar");
-        resetButton.setOnAction(e -> controller.handleResetAction());
-
-        actionButtons.getChildren().addAll(assembleButton, runButton, showObjectCodeButton, nextButton, resetButton);
-
-        TitledPane outputPane = new TitledPane("Saída", createOutputAreaPane());
-        outputPane.setCollapsible(false);
-
-        leftColumn.getChildren().addAll(inputPane, actionButtons, outputPane);
-        VBox.setVgrow(inputPane, Priority.ALWAYS);
-        VBox.setVgrow(outputPane, Priority.ALWAYS);
-
-        // Coluna Direita: tabelas de memória, registradores e símbolos
-        VBox rightColumn = new VBox(10);
-        rightColumn.setPadding(new Insets(10));
-        TitledPane memoryPane = new TitledPane("Memória", createMemoryTablePane());
-        memoryPane.setCollapsible(false);
-        TitledPane registersPane = new TitledPane("Registradores", createRegisterTablePane());
-        registersPane.setCollapsible(false);
-        TitledPane symbolsPane = new TitledPane("Símbolos", createSymbolTablePane());
-        symbolsPane.setCollapsible(false);
-        rightColumn.getChildren().addAll(memoryPane, registersPane, symbolsPane);
-        VBox.setVgrow(memoryPane, Priority.ALWAYS);
-        VBox.setVgrow(registersPane, Priority.ALWAYS);
-        VBox.setVgrow(symbolsPane, Priority.ALWAYS);
-
-        HBox mainContent = new HBox(10, leftColumn, rightColumn);
-        HBox.setHgrow(leftColumn, Priority.ALWAYS);
-        HBox.setHgrow(rightColumn, Priority.ALWAYS);
-        root.setCenter(mainContent);
-
-        Scene scene = new Scene(root);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-        updateAllTables();
-        showWelcomeMessage();
-    }
+    ///  CRIAÇÃO DE COMPONENTES DA INTERFACE
 
     private MenuBar createMenuBar() {
         MenuBar menuBar = new MenuBar();
@@ -139,13 +48,10 @@ public class SimulationApp extends Application {
         // Menu "Arquivo"
         Menu fileMenu = new Menu("Arquivo");
 
-        MenuItem importAssemblyFile = new MenuItem("Importar .asm");
-        importAssemblyFile.setOnAction(e -> controller.handleImportAsmAction());
-
         MenuItem loadExampleASM = new MenuItem("Carregar código exemplo");
         loadExampleASM.setOnAction(e -> controller.handleLoadSampleCodeAction());
 
-        fileMenu.getItems().addAll(importAssemblyFile, loadExampleASM);
+        fileMenu.getItems().add(loadExampleASM);
 
         // Menu "Configurações"
         Menu optionsMenu = new Menu("Opções");
@@ -258,6 +164,8 @@ public class SimulationApp extends Application {
         return symbolScroll;
     }
 
+    /// SETUP E ATUALIZAÇÃO DAS TABE
+
     private void setupRegisterTable() {
         registerTable = new TableView<>();
         TableColumn<RegisterEntry, String> nameCol = new TableColumn<>("Registrador");
@@ -288,28 +196,38 @@ public class SimulationApp extends Application {
         symbolTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
+    ///  ATUALIZAÇÃO DAS TABELAS
+
     public void updateRegisterTable() {
         registerTable.getItems().clear();
         for (Register reg : controller.getSimulationModel().getMachine().getControlUnit().getCurrentRegisters()) {
-            registerTable.getItems().add(new RegisterEntry(reg.getName(), reg.getHexValue()));
+            String value;
+            if ("F".equals(reg.getName())) {
+                value = String.format("%012X", reg.getLongValue());
+            } else {
+                value = String.format("%04X", reg.getIntValue());
+            }
+            registerTable.getItems().add(new RegisterEntry(reg.getName(), value));
         }
     }
 
     public void updateMemoryTable() {
         memoryTable.getItems().clear();
-        for (int address = 0; address < controller.getSimulationModel().getMachine().getMemoryState().getSize(); address++) {
-            int byteValue = controller.getSimulationModel().getMachine().getMemoryState().readByte(address);
-            String value = String.format("%02X", byteValue);
-            memoryTable.getItems().add(new MemoryEntry(String.format("%04X", address), value));
+        for (int address = 0; address < controller.getSimulationModel().getMachine().getMemory().getSize(); address++) {
+            int byteValue = controller.getSimulationModel().getMachine().getMemory().readByte(address);
+            String value = ValueFormatter.formatByte(byteValue, viewFormat);
+            String formattedAddress = ValueFormatter.formatAddress(address, "HEX"); // Endereço sempre em HEX
+            memoryTable.getItems().add(new MemoryEntry(formattedAddress, value));
         }
     }
 
     public void updateSymbolTable() {
         symbolTable.getItems().clear();
         Map<String, Integer> symbols = controller.getSimulationModel().getAssembler().getSymbolTable();
-        symbols.forEach((name, address) ->
-                symbolTable.getItems().add(new SymbolEntry(name, String.format("%04X", address)))
-        );
+        symbols.forEach((name, address) -> {
+            String formattedAddress = ValueFormatter.formatAddress(address, viewFormat);
+            symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
+        });
     }
 
     public void updateAllTables() {
@@ -318,6 +236,10 @@ public class SimulationApp extends Application {
         updateSymbolTable();
     }
 
+    /**
+     * Usada para enviar texto para a caixa de saída.
+     * @param message - String a ser escrita na caixa de saída.
+     */
     public void appendOutput(String message) {
         Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
     }
@@ -354,38 +276,128 @@ public class SimulationApp extends Application {
         return primaryStage;
     }
 
-    public TextArea getOutputArea() {
-        return outputArea;
-    }
+    public TextArea getOutputArea() { return outputArea; }
 
-    public TextArea getInputField() {
-        return inputField;
-    }
+    public TextArea getInputField() { return inputField; }
 
-    public TableView<RegisterEntry> getRegisterTable() {
-        return registerTable;
-    }
+    public TableView<RegisterEntry> getRegisterTable() { return registerTable; }
 
-    public TableView<MemoryEntry> getMemoryTable() {
-        return memoryTable;
-    }
+    public TableView<MemoryEntry> getMemoryTable() { return memoryTable; }
 
-    public TableView<SymbolEntry> getSymbolTable() {
-        return symbolTable;
-    }
+    public TableView<SymbolEntry> getSymbolTable() { return symbolTable; }
 
-    public String getViewFormat() { return viewFormat; }
+    ///  SETTERS
 
-    public void setViewFormatToHex() {
-        viewFormat = "HEX";
-    }
+    public void setViewFormatToHex() { viewFormat = "HEX"; }
 
-    public void setViewFormatToDecimal() {
-        viewFormat = "DEC";
-    }
+    public void setViewFormatToDecimal() { viewFormat = "DEC"; }
 
-    public void setViewFormatToOctal() {
-        viewFormat = "OCT";
+    public void setViewFormatToOctal() { viewFormat = "OCT"; }
+
+
+    @Override
+    public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+
+        // Inicialização do modelo e controlador
+        Machine machine = new Machine();
+        SimulationModel model = new SimulationModel(
+                machine,
+                new Assembler(),
+                new Loader(machine.getControlUnit())
+        );
+        controller = new SimulationController(model, this);
+
+        primaryStage.setTitle("SIC/XE Simulator v2.1");
+        primaryStage.setWidth(900);
+        primaryStage.setHeight(600);
+        primaryStage.getIcons().add(new Image("https://img.icons8.com/?size=100&id=rd2k11wyt7We&format=png&color=000000"));
+
+        BorderPane root = new BorderPane();
+        root.setTop(createMenuBar());
+
+        /// Coluna Esquerda: entrada, botões de ação e saída
+
+        VBox leftColumn = new VBox(10);
+        leftColumn.setPadding(new Insets(10));
+
+        TitledPane inputPane = new TitledPane("Código Assembly", createInputArea());
+        inputPane.setCollapsible(false);
+
+        ///  BOTÕES
+        HBox actionButtons = new HBox(10);
+        actionButtons.setPadding(new Insets(5));
+
+        // Montar
+        Button assembleButton = new Button("Montar");
+        assembleButton.setOnAction(e -> {
+            String inputText = inputField.getText();
+            if (!inputText.trim().isEmpty()) {
+                List<String> sourceLines = Arrays.asList(inputText.split("\\r?\\n"));
+                controller.handleAssembleAction(sourceLines);
+            }
+        });
+
+        // Mostrar objCode
+        Button showObjectCodeButton = new Button("Mostrar Código Objeto");
+        showObjectCodeButton.setOnAction(e -> controller.handleShowObjectCodeAction());
+
+        // Run
+        Button runButton = new Button("Executar");
+        runButton.setOnAction(e -> controller.handleRunAction());
+
+        // Pause
+        Button pauseButton = new Button("Pausar");
+        pauseButton.setOnAction(e -> controller.handlePauseAction());
+
+        // Próx
+        Button nextButton = new Button("Próximo");
+        nextButton.setOnAction(e -> controller.handleNextAction());
+
+        // Reset
+        Button resetButton = new Button("Resetar");
+        resetButton.setOnAction(e -> controller.handleResetAction());
+
+        actionButtons.getChildren().addAll(assembleButton, showObjectCodeButton, runButton, pauseButton, nextButton, resetButton);
+
+        ///  Painel de saída
+
+        TitledPane outputPane = new TitledPane("Saída", createOutputAreaPane());
+        outputPane.setCollapsible(false);
+
+        leftColumn.getChildren().addAll(inputPane, actionButtons, outputPane);
+        VBox.setVgrow(inputPane, Priority.ALWAYS);
+        VBox.setVgrow(outputPane, Priority.ALWAYS);
+
+
+        ///  Coluna direita: Tabelas de memória, registradores e símbolos
+
+        VBox rightColumn = new VBox(10);
+        rightColumn.setPadding(new Insets(10));
+        TitledPane memoryPane = new TitledPane("Memória", createMemoryTablePane());
+        memoryPane.setCollapsible(false);
+        TitledPane registersPane = new TitledPane("Registradores", createRegisterTablePane());
+        registersPane.setCollapsible(false);
+        TitledPane symbolsPane = new TitledPane("Símbolos", createSymbolTablePane());
+        symbolsPane.setCollapsible(false);
+        rightColumn.getChildren().addAll(memoryPane, registersPane, symbolsPane);
+        VBox.setVgrow(memoryPane, Priority.ALWAYS);
+        VBox.setVgrow(registersPane, Priority.ALWAYS);
+        VBox.setVgrow(symbolsPane, Priority.ALWAYS);
+
+        HBox mainContent = new HBox(10, leftColumn, rightColumn);
+        HBox.setHgrow(leftColumn, Priority.ALWAYS);
+        HBox.setHgrow(rightColumn, Priority.ALWAYS);
+        root.setCenter(mainContent);
+
+        Scene scene = new Scene(root);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        ///  Finalização
+
+        updateAllTables();
+        showWelcomeMessage();
     }
 
     ///  MAIN

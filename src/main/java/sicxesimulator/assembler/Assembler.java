@@ -5,8 +5,10 @@ import java.util.*;
 public class Assembler {
 
     // Tabela de símbolos: mapeia rótulos para endereços
+    @SuppressWarnings("FieldMayBeFinal") // TODO: Verificar se pode ser atributo final.
     private Map<String, Integer> symbolTable;
     // Lista de linhas processadas (com informações de label, mnemonic, operando e endereço)
+    @SuppressWarnings("FieldMayBeFinal") // TODO: Verificar se pode ser atributo final.
     private List<InstructionLine> instructionLines;
     // Endereço de início do programa e contador de localização.
     private int startAddress;
@@ -44,7 +46,7 @@ public class Assembler {
             // Divide a linha em tokens; aqui supomos o formato: [label] mnemonic [operando]
             String[] parts = line.split("\\s+");
             String label = null;
-            String mnemonic = null;
+            String mnemonic;
             String operand = null;
 
             if (parts.length == 3) {
@@ -66,6 +68,7 @@ public class Assembler {
 
             // Se encontrar a diretiva START, define o endereço de início do programa.
             if (mnemonic.equalsIgnoreCase("START")) {
+                assert operand != null;
                 startAddress = Integer.parseInt(operand, 16); // TODO: assumindo que o operando esteja em hexadecimal;
                 locationCounter = startAddress;
             } else {
@@ -173,87 +176,46 @@ public class Assembler {
      * Mapeia mnemônicos para as opcodes correspondentes.
      */
     private int getOpcode(String mnemonic) {
-        switch (mnemonic.toUpperCase()) {
-            case "ADD":
-                return 0x18;
-            case "ADDR":
-                return 0x90;
-            case "AND":
-                return 0x40;
-            case "CLEAR":
-                return 0x04;
-            case "COMP":
-                return 0x28;
-            case "COMPR":
-                return 0xA0;
-            case "DIV":
-                return 0x24;
-            case "DIVR":
-                return 0x9C;
-            case "J":
-                return 0x3C;
-            case "JEQ":
-                return 0x30;
-            case "JGT":
-                return 0x34;
-            case "JLT":
-                return 0x38;
-            case "JSUB":
-                return 0x48;
-            case "LDA":
-                return 0x00;
-            case "LDB":
-                return 0x68;
-            case "LDCH":
-                return 0x50;
-            case "LDL":
-                return 0x08;
-            case "LDS":
-                return 0x6C;
-            case "LDT":
-                return 0x74;
-            case "LDX":
-                return 0x04;
-            case "MUL":
-                return 0x20;
-            case "MULR":
-                return 0x98;
-            case "OR":
-                return 0x44;
-            case "RMO":
-                return 0xAC;
-            case "RSUB":
-                return 0x4C;
-            case "SHIFTL":
-                return 0xA4;
-            case "SHIFTR":
-                return 0xA8;
-            case "STA":
-                return 0x0C;
-            case "STB":
-                return 0x78;
-            case "STCH":
-                return 0x54;
-            case "STL":
-                return 0x14;
-            case "STS":
-                return 0x7C;
-            case "STT":
-                return 0x84;
-            case "STX":
-                return 0x10;
-            case "SUB":
-                return 0x1C;
-            case "SUBR":
-                return 0x94;
-            case "TIX":
-                return 0x2C;
-            case "TIXR":
-                return 0xB8;
-
-            default:
-                throw new IllegalArgumentException("Instrução desconhecida: " + mnemonic);
-        }
+        return switch (mnemonic.toUpperCase()) {
+            case "ADD" -> 0x18;
+            case "ADDR" -> 0x90;
+            case "AND" -> 0x40;
+            case "CLEAR", "LDX" -> 0x04;
+            case "COMP" -> 0x28;
+            case "COMPR" -> 0xA0;
+            case "DIV" -> 0x24;
+            case "DIVR" -> 0x9C;
+            case "J" -> 0x3C;
+            case "JEQ" -> 0x30;
+            case "JGT" -> 0x34;
+            case "JLT" -> 0x38;
+            case "JSUB" -> 0x48;
+            case "LDA" -> 0x00;
+            case "LDB" -> 0x68;
+            case "LDCH" -> 0x50;
+            case "LDL" -> 0x08;
+            case "LDS" -> 0x6C;
+            case "LDT" -> 0x74;
+            case "MUL" -> 0x20;
+            case "MULR" -> 0x98;
+            case "OR" -> 0x44;
+            case "RMO" -> 0xAC;
+            case "RSUB" -> 0x4C;
+            case "SHIFTL" -> 0xA4;
+            case "SHIFTR" -> 0xA8;
+            case "STA" -> 0x0C;
+            case "STB" -> 0x78;
+            case "STCH" -> 0x54;
+            case "STL" -> 0x14;
+            case "STS" -> 0x7C;
+            case "STT" -> 0x84;
+            case "STX" -> 0x10;
+            case "SUB" -> 0x1C;
+            case "SUBR" -> 0x94;
+            case "TIX" -> 0x2C;
+            case "TIXR" -> 0xB8;
+            default -> throw new IllegalArgumentException("Instrução desconhecida: " + mnemonic);
+        };
     }
 
     /**
@@ -285,9 +247,9 @@ public class Assembler {
       */
     public String formatObjectCode(byte[] objectCode) {
         StringBuilder formattedCode = new StringBuilder();
-        for (int i = 0; i < objectCode.length; i++) {
+        for (byte b : objectCode) {
             // Adiciona cada byte em hexadecimal, com espaço entre eles.
-            formattedCode.append(String.format("%02X ", objectCode[i] & 0xFF));
+            formattedCode.append(String.format("%02X ", b & 0xFF));
         }
         return formattedCode.toString().trim();
     }

@@ -2,72 +2,38 @@ package sicxesimulator.loader;
 
 import sicxesimulator.machine.Memory;
 import sicxesimulator.machine.cpu.ControlUnit;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
 
 public class Loader {
+    private final ControlUnit controlUnit;
 
-    private int loadAddress;
-    private int programLength;
+    public Loader(ControlUnit controlUnit) {
+        this.controlUnit = controlUnit;
+    }
 
-    public void load(String objectFilePath, Memory memory, ControlUnit controlUnit) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new FileReader(objectFilePath))) {
-            String line;
-            List<String> modificationRecords = new ArrayList<>();
-
-            // Processa o cabeçalho (Header)
-            line = reader.readLine();
-            if (line == null || !line.startsWith("H")) {
-                throw new LoaderException("Arquivo objeto inválido: cabeçalho ausente");
-            }
-
-            String[] headerParts = line.split(" ");
-            if (headerParts.length < 3) {
-                throw new LoaderException("Formato do cabeçalho inválido");
-            }
-
-            loadAddress = Integer.parseInt(headerParts[1], 16);
-            programLength = Integer.parseInt(headerParts[2], 16);
-
-            // Processa os registros Text (T) e Modification (M)
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(" ");
-                if (parts.length < 2) continue;
-
-                switch (parts[0]) {
-                    case "T":
-                        int textStart = Integer.parseInt(parts[1], 16);
-                        String objectCode = parts[2];
-                        for (int i = 0; i < objectCode.length(); i += 2) {
-                            int value = Integer.parseInt(objectCode.substring(i, i + 2), 16);
-                            memory.writeByte(loadAddress + textStart + (i / 2), value);
-                        }
-                        break;
-                    case "M":
-                        modificationRecords.add(line);
-                        break;
-                    case "E":
-                        int execAddress = Integer.parseInt(parts[1], 16);
-                        controlUnit.setPC(loadAddress + execAddress);
-                        return;
-                }
-            }
-
-            // Processa os registros de modificação (M)
-            for (String modRec : modificationRecords) {
-                String[] modParts = modRec.split(" ");
-                if (modParts.length < 3) continue;
-
-                int modAddress = Integer.parseInt(modParts[1], 16);
-                int modLength = Integer.parseInt(modParts[2], 16);
-                int targetAddress = loadAddress + modAddress;
-
-                if (modLength == 5) {
-                    int originalValue = memory.readExtended(targetAddress);
-                    int modifiedValue = originalValue + loadAddress;
-                    memory.writeExtended(targetAddress, modifiedValue);
-                }
-            }
+    /**
+     * Carrega o código objeto na memória a partir do endereço especificado.
+     *
+     * @param memory       Referência à memória onde o código objeto será carregado.
+     * @param startAddress Endereço de início do carregamento (definido pela diretiva START).
+     * @param objectCode   Código objeto gerado pelo Assembler.
+     * @throws IOException Se ocorrer um erro durante o carregamento.
+     */
+    public void load(Memory memory, int startAddress, byte[] objectCode) throws IOException {
+        if (memory == null) {
+            throw new IOException("A referência da memória é nula.");
         }
+        if (objectCode == null || objectCode.length == 0) {
+            throw new IOException("O código objeto está nulo ou vazio.");
+        }
+        if (startAddress < 0 || startAddress + objectCode.length > memory.getSize()) {
+            throw new IOException("O programa não cabe na memória a partir do endereço de início especificado.");
+        }
+
+        // Define o endereço base na ControlUnit
+        controlUnit.setBaseAddress(startAddress);
+
+        // Escreve o código objeto na memória
+        memory.writeBytes(startAddress, objectCode);
     }
 }

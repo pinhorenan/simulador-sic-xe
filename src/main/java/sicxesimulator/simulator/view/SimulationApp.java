@@ -1,4 +1,4 @@
-package sicxesimulator.view;
+package sicxesimulator.simulator.view;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
@@ -12,8 +12,8 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import sicxesimulator.controller.SimulationController;
-import sicxesimulator.model.SimulationModel;
+import sicxesimulator.simulator.controller.SimulationController;
+import sicxesimulator.simulator.model.SimulationModel;
 import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
@@ -47,7 +47,6 @@ public class SimulationApp extends Application {
     private Label executionSpeedLabel;
     private Label memorySizeLabel;
     private Label viewFormatLabel;
-    private HBox bottomBar;
 
     ///  CRIAÇÃO DE COMPONENTES DA INTERFACE
 
@@ -185,7 +184,7 @@ public class SimulationApp extends Application {
         memorySizeLabel = new Label("Memória: 1024 bytes");
         viewFormatLabel = new Label("Formato: Hexadecimal");
 
-        bottomBar = new HBox(20, executionSpeedLabel, memorySizeLabel, viewFormatLabel);
+        HBox bottomBar = new HBox(20, executionSpeedLabel, memorySizeLabel, viewFormatLabel);
         bottomBar.setPadding(new Insets(10));
         bottomBar.setAlignment(Pos.CENTER_LEFT);
         bottomBar.setStyle("-fx-background-color: #EEE; -fx-border-color: #CCC; -fx-padding: 5px;");

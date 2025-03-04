@@ -1,1 +1,17 @@
-.idea
+# Diretórios de build e caches
+.gradle/
+build/
+out/
+
+# Arquivos temporários do sistema
+.DS_Store
+Thumbs.db
+
+# Configurações da IDE (opcional - se você não quiser versionar configurações da sua IDE)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Logs
+*.log

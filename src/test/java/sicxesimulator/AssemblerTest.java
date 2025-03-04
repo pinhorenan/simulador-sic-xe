@@ -35,6 +35,6 @@ public class AssemblerTest {
                 0x00, 0x00, 0x00    // RESULT RESW 1
         };
 
-        assertArrayEquals(expected, objectCode, "O codigo objeto gerado nao esta correto.");
+        assertArrayEquals(expected, objectCode, "O código objeto gerado nao esta correto.");
     }
 }

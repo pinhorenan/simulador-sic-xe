@@ -1,6 +1,6 @@
 package sicxesimulator.loader;
 
-import sicxesimulator.machine.Memory;
+import sicxesimulator.machine.memory.Memory;
 import sicxesimulator.machine.cpu.ControlUnit;
 import java.io.IOException;
 

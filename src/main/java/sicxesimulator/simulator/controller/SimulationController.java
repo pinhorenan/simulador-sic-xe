@@ -1,11 +1,11 @@
-package sicxesimulator.controller;
+package sicxesimulator.simulator.controller;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import sicxesimulator.assembler.Assembler;
-import sicxesimulator.model.SimulationModel;
-import sicxesimulator.view.SimulationApp;
+import sicxesimulator.simulator.model.SimulationModel;
+import sicxesimulator.simulator.view.SimulationApp;
 
 import java.io.IOException;
 import java.util.Arrays;

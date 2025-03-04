@@ -1,11 +1,11 @@
-package sicxesimulator.model;
+package sicxesimulator.simulator.model;
 
 import javafx.scene.control.Alert;
 import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.macroprocessor.MacroProcessor;
-import sicxesimulator.view.SimulationApp;
+import sicxesimulator.simulator.view.SimulationApp;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

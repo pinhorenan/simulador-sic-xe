@@ -1,11 +1,16 @@
 package sicxesimulator.machine.cpu;
 
-import sicxesimulator.machine.Memory;
-
+import sicxesimulator.machine.memory.Memory;
 import java.util.Arrays;
 
+/**
+ * A ControlUnit gerencia o ciclo de execução da máquina SIC/XE, realizando as fases de fetch, decode e execute,
+ * além de atualizar os registradores e o PC conforme as instruções são executadas.
+ */
 public class ControlUnit {
-    private  Memory memory;
+    // Referência à memória
+    private Memory memory;
+    // Conjunto de instruções a serem executadas
     private final InstructionSet instructionSet;
 
     // Registradores do SIC/XE
@@ -14,18 +19,23 @@ public class ControlUnit {
     private final Register SW;
     private final Register[] registers;
 
-    // Variáveis para o ciclo de instrução
-    private int baseAddress;       // Endereço onde o programa foi carregado
-    private int currentOpcode;
-    private int instructionFormat; // 1, 2, 3 ou 4
+    // Variáveis do ciclo de instrução
+    private int baseAddress;       // Endereço onde o programa foi carregado (em bytes)
+    private int currentOpcode;     // Opcode atual lido da memória
+    private int instructionFormat; // Formato da instrução: 1, 2, 3 ou 4
     private int[] operands;        // Operandos decodificados
     private boolean indexed;       // Modo indexado
-    private boolean extended;      // Flag "e" (formato 4)
+    private boolean extended;      // Flag "e" (indica formato 4)
 
-    // Campo para armazenar o log da última instrução executada
-    private String lastExecutionLog = "";
-    private boolean halted;
+    // Variáveis de controle
+    private String lastExecutionLog = "";  // Log da última instrução executada
+    private boolean halted;                // Indica se a execução foi encerrada
 
+    /**
+     * Construtor da ControlUnit.
+     *
+     * @param memory Instância de Memory utilizada pela máquina.
+     */
     public ControlUnit(Memory memory) {
         this.memory = memory;
         A = new Register("A");
@@ -38,23 +48,36 @@ public class ControlUnit {
         PC = new Register("PC");
         SW = new Register("SW");
         registers = new Register[]{A, X, L, B, S, T, F, PC, SW};
+        // O InstructionSet recebe a memória e a referência desta ControlUnit.
         this.instructionSet = new InstructionSet(memory, this);
         halted = false;
     }
 
-    // Limpa todos os registradores
+    /**
+     * Limpa todos os registradores.
+     */
     public void clearRegisters() {
         for (Register r : registers) {
             r.clearRegister();
         }
     }
 
-    // Retorna uma cópia do estado atual dos registradores
+    /**
+     * Retorna uma cópia dos registradores atuais.
+     *
+     * @return Array com os registradores.
+     */
     public Register[] getCurrentRegisters() {
         return Arrays.copyOf(registers, registers.length);
     }
 
-    // Mapeia um ID de registrador para o objeto Register correspondente
+    /**
+     * Mapeia um ID de registrador para o objeto Register correspondente.
+     * IDs: 0 -> A, 1 -> X, 2 -> L, 3 -> B, 4 -> S, 5 -> T, 6 -> F, 8 -> PC, 9 -> SW.
+     *
+     * @param id Identificador do registrador.
+     * @return Registrador correspondente.
+     */
     private Register getRegisterById(int id) {
         return switch (id) {
             case 0 -> A;
@@ -70,7 +93,7 @@ public class ControlUnit {
         };
     }
 
-    // Manipulação do PC
+    // Métodos para manipulação do PC e endereço base
 
     public void setBaseAddress(int baseAddress) {
         this.baseAddress = baseAddress;
@@ -88,20 +111,14 @@ public class ControlUnit {
         setPC(PC.getIntValue() + instructionSize);
     }
 
-    // Manipulação do Condition Code
+    // Métodos de manipulação do Condition Code
+
     private int getConditionCode() {
         return SW.getIntValue() & 0x03;
     }
 
     private void updateConditionCode(int result) {
-        int conditionCode;
-        if (result == 0) {
-            conditionCode = 0; // Equal
-        } else if (result < 0) {
-            conditionCode = 1; // Less
-        } else {
-            conditionCode = 2; // Greater
-        }
+        int conditionCode = (result == 0) ? 0 : (result < 0 ? 1 : 2);
         setConditionCode(conditionCode);
     }
 
@@ -110,22 +127,21 @@ public class ControlUnit {
         SW.setValue((currentSW & 0xFFFFFC) | (conditionCode & 0x03));
     }
 
-    // ----- CICLO DE INSTRUÇÃO -----
+    // ----- CICLO DE INSTRUÇÃO: FETCH, DECODE, EXECUTE -----
 
     /**
-     * Fetch: lê o opcode da memória no endereço apontado pelo PC.
+     * Fetch: Lê o opcode da memória no endereço apontado pelo PC.
      */
     public void fetch() {
         currentOpcode = memory.readByte(PC.getIntValue()) & 0xFF;
     }
 
     /**
-     * Decode: determina o formato da instrução e extrai os operandos.
-     * Após a decodificação, o PC é incrementado pelo tamanho da instrução.
+     * Decode: Determina o formato da instrução e extrai os operandos.
+     * Incrementa o PC conforme o tamanho da instrução decodificada.
      */
     public void decode() {
         instructionFormat = determineInstructionFormat(currentOpcode);
-        // Reinicia os operandos e flags
         operands = new int[0];
         indexed = false;
         extended = false;
@@ -140,21 +156,15 @@ public class ControlUnit {
     }
 
     /**
-     * Determina o formato da instrução com base no opcode.
-     * Para opcodes não explicitamente mapeados, verifica a flag "e" no byte seguinte para distinguir entre
-     * formato 3 e 4.
+     * Determina o formato da instrução com base no opcode e na flag "e" do segundo byte, se necessário.
+     *
+     * @param opcode Opcode da instrução.
+     * @return Formato da instrução (1, 2, 3 ou 4).
      */
     private int determineInstructionFormat(int opcode) {
         return switch (opcode) {
             case 0x4C -> 3; // RSUB (Formato 3)
-            case 0x90, 0x04 -> 2; // ADDR, CLEAR (Formato 2) – note: 0x04 também pode ser LDX se não for formato 2
-            case 0x00, 0x18, 0x3C -> {
-                // Para LDA, ADD, J, etc. pode ser formato 3 ou 4.
-                // Verifica o flag "e" no segundo byte.
-                int flags = memory.readByte(PC.getIntValue() + 1) & 0xFF;
-                if ((flags & 0x01) != 0) yield 4;
-                else yield 3;
-            }
+            case 0x90, 0x04 -> 2; // ADDR, CLEAR (Formato 2). Nota: 0x04 pode ser LDX se não for formato 2.
             default -> {
                 int flags = memory.readByte(PC.getIntValue() + 1) & 0xFF;
                 if ((flags & 0x01) != 0) yield 4;
@@ -163,46 +173,46 @@ public class ControlUnit {
         };
     }
 
-    // Decodificação do formato 1: 1 byte sem operandos.
+    /**
+     * Decodifica instruções de formato 1: 1 byte sem operandos.
+     */
     private void decodeFormat1() {
         operands = new int[0];
     }
 
-    // Decodificação do formato 2: 2 bytes – operandos são os dois nibbles do segundo byte.
+    /**
+     * Decodifica instruções de formato 2: 2 bytes, onde os dois nibbles do segundo byte são os operandos.
+     */
     private void decodeFormat2() {
         int byte2 = memory.readByte(PC.getIntValue() + 1) & 0xFF;
-        operands = new int[]{ (byte2 >> 4) & 0xF, byte2 & 0xF };
+        operands = new int[]{(byte2 >> 4) & 0xF, byte2 & 0xF};
     }
 
     /**
      * Decodifica instruções dos formatos 3 e 4.
-     * - Formato 3 (3 bytes): Byte0 = opcode, Byte1 = flags, Byte2 = deslocamento (12 bits, formado pelo nibble inferior de Byte1 e os 8 bits de Byte2).
-     * - Formato 4 (4 bytes): Byte0 = opcode, Byte1 = flags, Byte2 e Byte3 = endereço (20 bits, formado pelo nibble inferior de Byte1 concatenado com Byte2 e Byte3).
+     * No formato 3, a instrução tem 3 bytes; no formato 4, 4 bytes.
+     * O deslocamento ou endereço é extraído dos bytes seguintes ao opcode.
      */
     private void decodeFormat3or4() {
         int byte1 = memory.readByte(PC.getIntValue() + 1) & 0xFF;
-        // Os bits: ni: bits 7-6; x: bit 5; b: bit 4; p: bit 3; e: bit 0.
-        extended = (byte1 & 0x01) != 0; // e flag
-        indexed = (byte1 & 0x10) != 0;  // x flag
-
-        int addressField;
+        extended = (byte1 & 0x01) != 0; // Flag "e"
+        indexed = (byte1 & 0x10) != 0;  // Flag "x"
         int lowNibble = byte1 & 0x0F;
         int byte2 = memory.readByte(PC.getIntValue() + 2) & 0xFF;
+        int addressField;
         if (extended) {
-            // Formato 4: 4 bytes no total.
-            // Endereço (20 bits) = (lower nibble de byte1 << 16) | (byte2 << 8) | (byte3)
             int byte3 = memory.readByte(PC.getIntValue() + 3) & 0xFF;
             addressField = (lowNibble << 16) | (byte2 << 8) | byte3;
         } else {
-            // Formato 3: 3 bytes no total.
-            // Deslocamento de 12 bits = (lower nibble de byte1 << 8) | (byte2)
             addressField = (lowNibble << 8) | byte2;
         }
-        operands = new int[]{ addressField, byte1 }; // Armazena também o byte de flags
+        operands = new int[]{addressField, byte1};
     }
 
     /**
-     * Retorna o tamanho da instrução atual, com base no formato.
+     * Retorna o tamanho da instrução atual com base no formato.
+     *
+     * @return Tamanho da instrução em bytes.
      */
     private int getInstructionSize() {
         return switch (instructionFormat) {
@@ -214,99 +224,85 @@ public class ControlUnit {
         };
     }
 
-    ///  GETTERS AUXILIARES PARA DADOS DECODIFICADOS
-    public int getInstructionFormat() { return instructionFormat; }
-    public int[] getOperands() { return operands; }
-    public boolean isIndexed() { return indexed; }
+    // MÉTODOS AUXILIARES (NOVIDADE: isIndexed e getInstructionFormat)
 
     /**
-     * Executa a instrução decodificada. Além de realizar a operação,
-     * registra uma mensagem com os detalhes da execução.
+     * Retorna se a instrução atual utiliza endereçamento indexado.
+     *
+     * @return true se indexado; false caso contrário.
+     */
+    public boolean isIndexed() {
+        return indexed;
+    }
+
+    /**
+     * Retorna o formato da instrução atualmente decodificada.
+     *
+     * @return Formato da instrução (1, 2, 3 ou 4).
+     */
+    public int getInstructionFormat() {
+        return instructionFormat;
+    }
+
+    // Métodos de execução
+
+    /**
+     * Executa a instrução decodificada, atualizando registradores, PC e memória conforme necessário.
+     * Registra um log da operação para fins de depuração.
      */
     public void execute() {
         String logMessage;
-
         switch (currentOpcode) {
-            // ADD (Formato 3/4 - Opcode 0x18)
-            case 0x18 -> {
-                int operand = getOperands()[0];
-                int result = instructionSet.executeADD(
-                        A.getIntValue(),
-                        operand,
-                        isIndexed(),
-                        X.getIntValue()
-                );
-                logMessage = String.format("ADD: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resulto=%04X",
+            case 0x18 -> { // ADD
+                int operand = operands[0];
+                int result = instructionSet.executeADD(A.getIntValue(), operand, isIndexed(), X.getIntValue());
+                logMessage = String.format("ADD: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resultado=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), result);
                 A.setValue(result);
                 updateConditionCode(result);
             }
-
-            // ADDR (Formato 2 - Opcode 0x90)
-            case 0x90 -> {
-                int[] regs = getOperands(); // [r1, r2]
+            case 0x90 -> { // ADDR (Formato 2)
+                int[] regs = operands;
                 int r1Val = getRegisterById(regs[0]).getIntValue();
                 int r2Val = getRegisterById(regs[1]).getIntValue();
                 int result = instructionSet.executeADDR(r1Val, r2Val);
-                logMessage = String.format("ADDR: R%d=%04X, R%d=%04X => Resulto=%04X",
+                logMessage = String.format("ADDR: R%d=%04X, R%d=%04X => Resultado=%04X",
                         regs[0], r1Val, regs[1], r2Val, result);
                 getRegisterById(regs[1]).setValue(result);
                 updateConditionCode(result);
             }
-
-            // AND (Formato 3/4 - Opcode 0x40)
-            case 0x40 -> {
-                int operand = getOperands()[0];
-                int result = instructionSet.executeAND(
-                        A.getIntValue(),
-                        operand,
-                        isIndexed(),
-                        X.getIntValue()
-                );
+            case 0x40 -> { // AND
+                int operand = operands[0];
+                int result = instructionSet.executeAND(A.getIntValue(), operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("AND: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resultado=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), result);
                 A.setValue(result);
                 updateConditionCode(result);
             }
-
-            // CLEAR ou LDX (Opcode 0x04)
-            case 0x04 -> {
-                if (getInstructionFormat() == 2) { // CLEAR (Formato 2)
-                    int reg = getOperands()[0];
+            case 0x04 -> { // CLEAR ou LDX
+                if (getInstructionFormat() == 2) { // CLEAR
+                    int reg = operands[0];
                     int oldVal = getRegisterById(reg).getIntValue();
                     int newVal = instructionSet.executeCLEAR();
                     logMessage = String.format("CLEAR: R%d antigo=%04X => novo=%04X", reg, oldVal, newVal);
                     getRegisterById(reg).setValue(newVal);
-                } else { // LDX (Formato 3/4)
-                    int operand = getOperands()[0];
-                    int result = instructionSet.executeLDX(
-                            operand,
-                            isIndexed(),
-                            X.getIntValue()
-                    );
+                } else { // LDX
+                    int operand = operands[0];
+                    int result = instructionSet.executeLDX(operand, isIndexed(), X.getIntValue());
                     logMessage = String.format("LDX: X antigo=%04X, Operando=%04X, Indexed=%b => novo X=%04X",
                             X.getIntValue(), operand, isIndexed(), result);
                     X.setValue(result);
                 }
             }
-
-            // COMP (Formato 3/4 - Opcode 0x28)
-            case 0x28 -> {
-                int operand = getOperands()[0];
-                int comparison = instructionSet.executeCOMP(
-                        A.getIntValue(),
-                        operand,
-                        isIndexed(),
-                        X.getIntValue()
-                );
+            case 0x28 -> { // COMP
+                int operand = operands[0];
+                int comparison = instructionSet.executeCOMP(A.getIntValue(), operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("COMP: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Comparação=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), comparison);
                 updateConditionCode(comparison);
             }
-
-            // COMPR (Formato 2 - Opcode 0xA0)
-            case 0xA0 -> {
-                int[] regs = getOperands(); // [r1, r2]
+            case 0xA0 -> { // COMPR (Formato 2)
+                int[] regs = operands;
                 int r1Val = getRegisterById(regs[0]).getIntValue();
                 int r2Val = getRegisterById(regs[1]).getIntValue();
                 int comparison = instructionSet.executeCOMPR(r1Val, r2Val);
@@ -314,52 +310,31 @@ public class ControlUnit {
                         regs[0], r1Val, regs[1], r2Val, comparison);
                 updateConditionCode(comparison);
             }
-
-            // DIV (Formato 3/4 - Opcode 0x24)
-            case 0x24 -> {
-                int operand = getOperands()[0];
-                int result = instructionSet.executeDIV(
-                        A.getIntValue(),
-                        operand,
-                        isIndexed(),
-                        X.getIntValue()
-                );
-                logMessage = String.format("DIV: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resulto=%04X",
+            case 0x24 -> { // DIV
+                int operand = operands[0];
+                int result = instructionSet.executeDIV(A.getIntValue(), operand, isIndexed(), X.getIntValue());
+                logMessage = String.format("DIV: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resultado=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), result);
                 A.setValue(result);
                 updateConditionCode(result);
             }
-
-            // DIVR (Formato 2 - Opcode 0x9C)
-            case 0x9C -> {
-                int[] regs = getOperands();
+            case 0x9C -> { // DIVR (Formato 2)
+                int[] regs = operands;
                 int r1Val = getRegisterById(regs[0]).getIntValue();
                 int r2Val = getRegisterById(regs[1]).getIntValue();
                 int result = instructionSet.executeDIVR(r1Val, r2Val);
-                logMessage = String.format("DIVR: R%d=%04X, R%d=%04X => Resulto=%04X",
+                logMessage = String.format("DIVR: R%d=%04X, R%d=%04X => Resultado=%04X",
                         regs[0], r1Val, regs[1], r2Val, result);
                 getRegisterById(regs[1]).setValue(result);
                 updateConditionCode(result);
             }
-
-            // J (Formato 3/4 - Opcode 0x3C)
-            case 0x3C -> {
-                int newPC = instructionSet.executeJ(
-                        getOperands()[0],
-                        isIndexed(),
-                        X.getIntValue()
-                );
+            case 0x3C -> { // J
+                int newPC = instructionSet.executeJ(operands[0], isIndexed(), X.getIntValue());
                 logMessage = String.format("J: Pulando para o endereço %04X", newPC);
                 PC.setValue(newPC);
             }
-
-            // JEQ (Formato 3/4 - Opcode 0x30)
-            case 0x30 -> {
-                int newPC = instructionSet.executeCONDITIONAL_JUMP(
-                        0, // Equal
-                        getOperands()[0],
-                        getConditionCode()
-                );
+            case 0x30 -> { // JEQ
+                int newPC = instructionSet.executeCONDITIONAL_JUMP(0, operands[0], getConditionCode());
                 if (newPC != -1) {
                     logMessage = String.format("JEQ: Condição satisfeita, pulando para %04X", newPC);
                     PC.setValue(newPC);
@@ -367,14 +342,8 @@ public class ControlUnit {
                     logMessage = "JEQ: Condição não satisfeita, sem pulo.";
                 }
             }
-
-            // JGT (Formato 3/4 - Opcode 0x34)
-            case 0x34 -> {
-                int newPC = instructionSet.executeCONDITIONAL_JUMP(
-                        2, // Greater
-                        getOperands()[0],
-                        getConditionCode()
-                );
+            case 0x34 -> { // JGT
+                int newPC = instructionSet.executeCONDITIONAL_JUMP(2, operands[0], getConditionCode());
                 if (newPC != -1) {
                     logMessage = String.format("JGT: Condição satisfeita, pulando para %04X", newPC);
                     PC.setValue(newPC);
@@ -382,14 +351,8 @@ public class ControlUnit {
                     logMessage = "JGT: Condição não satisfeita, sem pulo.";
                 }
             }
-
-            // JLT (Formato 3/4 - Opcode 0x38)
-            case 0x38 -> {
-                int newPC = instructionSet.executeCONDITIONAL_JUMP(
-                        1, // Less
-                        getOperands()[0],
-                        getConditionCode()
-                );
+            case 0x38 -> { // JLT
+                int newPC = instructionSet.executeCONDITIONAL_JUMP(1, operands[0], getConditionCode());
                 if (newPC != -1) {
                     logMessage = String.format("JLT: Condição satisfeita, pulando para %04X", newPC);
                     PC.setValue(newPC);
@@ -397,123 +360,83 @@ public class ControlUnit {
                     logMessage = "JLT: Condição não satisfeita, sem pulo.";
                 }
             }
-
-            // JSUB (Formato 3/4 - Opcode 0x48)
-            case 0x48 -> {
+            case 0x48 -> { // JSUB
                 int returnAddress = PC.getIntValue() + getInstructionSize();
                 L.setValue(returnAddress);
-                int newPC = instructionSet.executeJSUB(
-                        getOperands()[0],
-                        isIndexed(),
-                        X.getIntValue()
-                );
-                logMessage = String.format("JSUB: Endereço de retorno = %04X, Pulando para %04X", returnAddress, newPC);
+                int newPC = instructionSet.executeJSUB(operands[0], isIndexed(), X.getIntValue());
+                logMessage = String.format("JSUB: Endereço de retorno = %04X, pulando para %04X", returnAddress, newPC);
                 PC.setValue(newPC);
             }
-
-            // LDA (Formato 3/4 - Opcode 0x00)
-            case 0x00 -> {
-                int operand = getOperands()[0];
+            case 0x00 -> { // LDA
+                int operand = operands[0];
                 int result = instructionSet.executeLDA(operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("LDA: Carregando do endereço %04X => A = %04X", operand, result);
                 A.setValue(result);
             }
-
-            // LDB (Formato 3/4 - Opcode 0x68)
-            case 0x68 -> {
-                int operand = getOperands()[0];
+            case 0x68 -> { // LDB
+                int operand = operands[0];
                 int result = instructionSet.executeLDB(operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("LDB: Carregando do endereço %04X => B = %04X", operand, result);
                 B.setValue(result);
             }
-
-            // LDCH (Formato 3/4 - Opcode 0x50)
-            case 0x50 -> {
-                int operand = getOperands()[0];
+            case 0x50 -> { // LDCH
+                int operand = operands[0];
                 int result = instructionSet.executeLDCH(A.getIntValue(), operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("LDCH: Carregando do endereço %04X => A = %04X", operand, result);
                 A.setValue(result);
             }
-
-            // LDL (Formato 3/4 - Opcode 0x08)
-            case 0x08 -> {
-                int operand = getOperands()[0];
+            case 0x08 -> { // LDL
+                int operand = operands[0];
                 int result = instructionSet.executeLDL(operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("LDL: Carregando do endereço %04X => L = %04X", operand, result);
                 L.setValue(result);
             }
-
-            // LDS (Formato 3/4 - Opcode 0x6C)
-            case 0x6C -> {
-                int operand = getOperands()[0];
+            case 0x6C -> { // LDS
+                int operand = operands[0];
                 int result = instructionSet.executeLDS(operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("LDS: Carregando do endereço %04X => S = %04X", operand, result);
                 S.setValue(result);
             }
-
-            // LDT (Formato 3/4 - Opcode 0x74)
-            case 0x74 -> {
-                int operand = getOperands()[0];
+            case 0x74 -> { // LDT
+                int operand = operands[0];
                 int result = instructionSet.executeLDT(operand, isIndexed(), X.getIntValue());
                 logMessage = String.format("LDT: Carregando do endereço %04X => T = %04X", operand, result);
                 T.setValue(result);
             }
-
-            // MUL (Formato 3/4 - Opcode 0x20)
-            case 0x20 -> {
-                int operand = getOperands()[0];
+            case 0x20 -> { // MUL
+                int operand = operands[0];
                 int result = instructionSet.executeMUL(A.getIntValue(), operand, isIndexed(), X.getIntValue());
-                logMessage = String.format("MUL: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resulto=%04X",
+                logMessage = String.format("MUL: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resultado=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), result);
                 A.setValue(result);
                 updateConditionCode(result);
             }
-
-            // MULR (Formato 2 - Opcode 0x98)
-            case 0x98 -> {
-                int[] regs = getOperands();
+            case 0x98 -> { // MULR (Formato 2)
+                int[] regs = operands;
                 int r1Val = getRegisterById(regs[0]).getIntValue();
                 int r2Val = getRegisterById(regs[1]).getIntValue();
                 int result = instructionSet.executeMULR(r1Val, r2Val);
-                logMessage = String.format("MULR: R%d=%04X, R%d=%04X => Resulto=%04X",
+                logMessage = String.format("MULR: R%d=%04X, R%d=%04X => Resultado=%04X",
                         regs[0], r1Val, regs[1], r2Val, result);
                 getRegisterById(regs[1]).setValue(result);
                 updateConditionCode(result);
             }
-
-            // OR (Formato 3/4 - Opcode 0x44)
-            case 0x44 -> {
-                int operand = getOperands()[0];
+            case 0x44 -> { // OR
+                int operand = operands[0];
                 int result = instructionSet.executeOR(A.getIntValue(), operand, isIndexed(), X.getIntValue());
-                logMessage = String.format("OR: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resulto=%04X",
+                logMessage = String.format("OR: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resultado=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), result);
                 A.setValue(result);
                 updateConditionCode(result);
             }
-
-            // RMO (Formato 2 - Opcode 0xAC)
-            case 0xAC -> {
-                int[] regs = getOperands();
+            case 0xAC -> { // RMO (Formato 2)
+                int[] regs = operands;
                 int sourceVal = getRegisterById(regs[0]).getIntValue();
                 logMessage = String.format("RMO: Copiando R%d (%04X) para R%d", regs[0], sourceVal, regs[1]);
                 getRegisterById(regs[1]).setValue(sourceVal);
             }
-
-            // RSUB (Formato 3/4 - Opcode 0x4C)
-            case 0x4C -> {
-                int newPC = instructionSet.executeRSUB(L.getIntValue());
-                logMessage = String.format("RSUB: L=%04X, novo PC=%04X", L.getIntValue(), newPC);
-                PC.setValue(newPC);
-                if (newPC == 0) {
-                    halted = true;
-                    logMessage += " [Execução Encerrada]";
-                }
-            }
-
-
-            // SHIFTL (Formato 2 - Opcode 0xA4)
-            case 0xA4 -> {
-                int[] op = getOperands(); // [reg, count]
+            case 0xA4 -> { // SHIFTL (Formato 2)
+                int[] op = operands; // [reg, count]
                 int reg = op[0];
                 int count = op[1];
                 int oldVal = getRegisterById(reg).getIntValue();
@@ -522,10 +445,8 @@ public class ControlUnit {
                 getRegisterById(reg).setValue(shifted);
                 updateConditionCode(shifted);
             }
-
-            // SHIFTR (Formato 2 - Opcode 0xA8)
-            case 0xA8 -> {
-                int[] op = getOperands(); // [reg, count]
+            case 0xA8 -> { // SHIFTR (Formato 2)
+                int[] op = operands; // [reg, count]
                 int reg = op[0];
                 int count = op[1];
                 int oldVal = getRegisterById(reg).getIntValue();
@@ -534,98 +455,95 @@ public class ControlUnit {
                 getRegisterById(reg).setValue(shifted);
                 updateConditionCode(shifted);
             }
-
-            // STA (Formato 3/4 - Opcode 0x0C)
-            case 0x0C -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x0C -> { // STA (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
+                // Verifica alinhamento do endereço
+                if (effectiveAddress % 3 != 0) {
+                    throw new IllegalArgumentException("Endereço não alinhado para STA: " + effectiveAddress);
+                }
                 int staValue = instructionSet.executeSTA(A.getIntValue());
-                memory.writeWord(effectiveAddress, staValue);
-                logMessage = String.format("STA: Escrevendo A (%04X) para memõria[%04X]", A.getIntValue(), effectiveAddress);
+                memory.writeWord(effectiveAddress, intTo3Bytes(staValue));
+                logMessage = String.format("STA: Escrevendo A (%06X) para memória[%06X]", A.getIntValue(), effectiveAddress);
             }
-
-            // STB (Formato 3/4 - Opcode 0x78)
-            case 0x78 -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x78 -> { // STB (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
+                if (effectiveAddress % 3 != 0) {
+                    throw new IllegalArgumentException("Endereço não alinhado para STB: " + effectiveAddress);
+                }
                 int stbValue = instructionSet.executeSTB(B.getIntValue());
-                memory.writeWord(effectiveAddress, stbValue);
-                logMessage = String.format("STB: Escrevendo B (%04X) para memória[%04X]", B.getIntValue(), effectiveAddress);
+                memory.writeWord(effectiveAddress, intTo3Bytes(stbValue));
+                logMessage = String.format("STB: Escrevendo B (%06X) para memória[%06X]", B.getIntValue(), effectiveAddress);
             }
-
-            // STCH (Formato 3/4 - Opcode 0x54)
-            case 0x54 -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x54 -> { // STCH (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
                 int stchValue = instructionSet.executeSTCH(A.getIntValue());
                 memory.writeByte(effectiveAddress, stchValue);
-                logMessage = String.format("STCH: Escrevendo A (%04X) para memória[%04X] como byte", A.getIntValue(), effectiveAddress);
+                logMessage = String.format("STCH: Escrevendo byte de A (%02X) para memória[%06X]", stchValue, effectiveAddress);
             }
-
-            // STL (Formato 3/4 - Opcode 0x14)
-            case 0x14 -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x14 -> { // STL (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
+                if (effectiveAddress % 3 != 0) {
+                    throw new IllegalArgumentException("Endereço não alinhado para STL: " + effectiveAddress);
+                }
                 int stlValue = instructionSet.executeSTL(L.getIntValue());
-                memory.writeWord(effectiveAddress, stlValue);
-                logMessage = String.format("STL: Escrevendo L (%04X) para memória[%04X]", L.getIntValue(), effectiveAddress);
+                memory.writeWord(effectiveAddress, intTo3Bytes(stlValue));
+                logMessage = String.format("STL: Escrevendo L (%06X) para memória[%06X]", L.getIntValue(), effectiveAddress);
             }
-
-            // STS (Formato 3/4 - Opcode 0x7C)
-            case 0x7C -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x7C -> { // STS (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
+                if (effectiveAddress % 3 != 0) {
+                    throw new IllegalArgumentException("Endereço não alinhado para STS: " + effectiveAddress);
+                }
                 int stsValue = instructionSet.executeSTS(S.getIntValue());
-                memory.writeWord(effectiveAddress, stsValue);
-                logMessage = String.format("STS: Escrevendo S (%04X) para memória[%04X]", S.getIntValue(), effectiveAddress);
+                memory.writeWord(effectiveAddress, intTo3Bytes(stsValue));
+                logMessage = String.format("STS: Escrevendo S (%06X) para memória[%06X]", S.getIntValue(), effectiveAddress);
             }
-
-            // STT (Formato 3/4 - Opcode 0x84)
-            case 0x84 -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x84 -> { // STT (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
+                if (effectiveAddress % 3 != 0) {
+                    throw new IllegalArgumentException("Endereço não alinhado para STT: " + effectiveAddress);
+                }
                 int sttValue = instructionSet.executeSTT(T.getIntValue());
-                memory.writeWord(effectiveAddress, sttValue);
-                logMessage = String.format("STT: Escrevendo T (%04X) para memória[%04X]", T.getIntValue(), effectiveAddress);
+                memory.writeWord(effectiveAddress, intTo3Bytes(sttValue));
+                logMessage = String.format("STT: Escrevendo T (%06X) para memória[%06X]", T.getIntValue(), effectiveAddress);
             }
-
-            // STX (Formato 3/4 - Opcode 0x10)
-            case 0x10 -> {
-                int effectiveAddress = instructionSet.calculateEffectiveAddress(getOperands()[0], X.getIntValue(), isIndexed());
+            case 0x10 -> { // STX (Formato 3/4)
+                int effectiveAddress = instructionSet.calculateEffectiveAddress(operands[0], X.getIntValue(), isIndexed());
+                if (effectiveAddress % 3 != 0) {
+                    throw new IllegalArgumentException("Endereço não alinhado para STX: " + effectiveAddress);
+                }
                 int stxValue = instructionSet.executeSTX(X.getIntValue());
-                memory.writeWord(effectiveAddress, stxValue);
-                logMessage = String.format("STX: Escrevendo X (%04X) para memória[%04X]", X.getIntValue(), effectiveAddress);
+                memory.writeWord(effectiveAddress, intTo3Bytes(stxValue));
+                logMessage = String.format("STX: Escrevendo X (%06X) para memória[%06X]", X.getIntValue(), effectiveAddress);
             }
-
-            // SUB (Formato 3/4 - Opcode 0x1C)
-            case 0x1C -> {
-                int operand = getOperands()[0];
+            case 0x1C -> { // SUB
+                int operand = operands[0];
                 int result = instructionSet.executeSUB(A.getIntValue(), operand, isIndexed(), X.getIntValue());
-                logMessage = String.format("SUB: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resulto=%04X",
+                logMessage = String.format("SUB: A=%04X, Operando=%04X, Indexed=%b, X=%04X => Resultado=%04X",
                         A.getIntValue(), operand, isIndexed(), X.getIntValue(), result);
                 A.setValue(result);
                 updateConditionCode(result);
             }
-
-            // SUBR (Formato 2 - Opcode 0x94)
-            case 0x94 -> {
-                int[] regs = getOperands();
+            case 0x94 -> { // SUBR (Formato 2)
+                int[] regs = operands;
                 int r1Val = getRegisterById(regs[0]).getIntValue();
                 int r2Val = getRegisterById(regs[1]).getIntValue();
                 int result = instructionSet.executeSUBR(r1Val, r2Val);
-                logMessage = String.format("SUBR: R%d=%04X, R%d=%04X => Resulto=%04X",
+                logMessage = String.format("SUBR: R%d=%04X, R%d=%04X => Resultado=%04X",
                         regs[0], r1Val, regs[1], r2Val, result);
                 getRegisterById(regs[1]).setValue(result);
                 updateConditionCode(result);
             }
-
-            // TIX (Formato 3/4 - Opcode 0x2C)
-            case 0x2C -> {
-                int operand = getOperands()[0];
+            case 0x2C -> { // TIX
+                int operand = operands[0];
                 int result = instructionSet.executeTIX(X.getIntValue(), operand, isIndexed(), X.getIntValue());
-                logMessage = String.format("TIX: X=%04X, Operando=%04X, Indexed=%b => Resulto=%04X",
+                logMessage = String.format("TIX: X=%04X, Operando=%04X, Indexed=%b => Resultado=%04X",
                         X.getIntValue(), operand, isIndexed(), result);
                 X.setValue(X.getIntValue() + 1); // Incrementa X
                 updateConditionCode(result);
             }
-
-            // TIXR (Formato 2 - Opcode 0xB8)
-            case 0xB8 -> {
-                int[] regs = getOperands(); // [r]
+            case 0xB8 -> { // TIXR (Formato 2)
+                int[] regs = operands;
                 int rVal = getRegisterById(regs[0]).getIntValue();
                 X.setValue(X.getIntValue() + 1);
                 int comparison = instructionSet.executeTIXR(X.getIntValue(), rVal);
@@ -633,34 +551,55 @@ public class ControlUnit {
                         regs[0], rVal, X.getIntValue(), comparison);
                 updateConditionCode(comparison);
             }
-
             default -> throw new IllegalStateException(String.format("Instrução não suportada: %02X", currentOpcode));
         }
         lastExecutionLog = logMessage;
     }
 
     /**
+     * Converte um inteiro em um array de 3 bytes (big-endian).
+     *
+     * @param value Valor inteiro a ser convertido.
+     * @return Array de 3 bytes representando o valor.
+     */
+    private byte[] intTo3Bytes(int value) {
+        byte[] bytes = new byte[3];
+        bytes[0] = (byte) ((value >> 16) & 0xFF); // Byte mais significativo
+        bytes[1] = (byte) ((value >> 8) & 0xFF);
+        bytes[2] = (byte) (value & 0xFF);         // Byte menos significativo
+        return bytes;
+    }
+
+    /**
      * Retorna a mensagem de log da última instrução executada.
+     *
+     * @return Log da última execução.
      */
     public String getLastExecutionLog() {
         return lastExecutionLog;
     }
 
     /**
-     * Retorna se a execução foi encerrada.
+     * Indica se a execução foi encerrada (por exemplo, via RSUB que retorna 0).
+     *
+     * @return true se a execução foi encerrada; false caso contrário.
      */
     public boolean isHalted() {
         return halted;
     }
 
     /**
-     * Setter para eventual mudança da memória da máquina, invocado por Machine.
-     * @param memory - Nova instância de memória criada e enviada por Machine.
+     * Permite atualizar a referência de memória (por exemplo, após alteração do tamanho).
+     *
+     * @param memory Nova instância de Memory.
      */
     public void setMemory(Memory memory) {
         this.memory = memory;
     }
 
+    /**
+     * Reseta a ControlUnit, reiniciando o estado de execução e limpando os registradores.
+     */
     public void reset() {
         halted = false;
         clearRegisters();

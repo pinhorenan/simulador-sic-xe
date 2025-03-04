@@ -1,6 +1,6 @@
 package sicxesimulator.machine.cpu;
 
-import sicxesimulator.machine.Memory;
+import sicxesimulator.machine.memory.Memory;
 
 public class InstructionSet {
     private final Memory memory;
@@ -40,8 +40,15 @@ public class InstructionSet {
 
     /// OPERAÇÕES DE MEMÓRIA
 
+    /**
+     * Lê uma palavra (3 bytes) da memória e converte para um inteiro de 24 bits.
+     * @param address Endereço em bytes.
+     * @return Inteiro representando os 3 bytes.
+     */
     public int readMemoryWord(int address) {
-        return memory.readWord(address);
+        byte[] wordBytes = memory.readWord(address);
+        // Converte os 3 bytes para um inteiro de 24 bits
+        return ((wordBytes[0] & 0xFF) << 16) | ((wordBytes[1] & 0xFF) << 8) | (wordBytes[2] & 0xFF);
     }
 
     /// CÁLCULO DO ENDEREÇO EFETIVO
@@ -59,7 +66,7 @@ public class InstructionSet {
     // ADD (Formato 2)
     public int executeADD(int currentA, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
-        int memValue = memory.readWord(effectiveAddress);
+        int memValue = readMemoryWord(effectiveAddress);
         return add(currentA, memValue);
     }
 

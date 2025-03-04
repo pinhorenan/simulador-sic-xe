@@ -2,6 +2,7 @@ package sicxesimulator.machine;
 
 import sicxesimulator.machine.cpu.ControlUnit;
 import sicxesimulator.machine.cpu.Register;
+import sicxesimulator.machine.memory.Memory;
 
 @SuppressWarnings("unused")
 public class Machine {
@@ -9,7 +10,7 @@ public class Machine {
     private Memory memory;
 
     public Machine() {
-        this.memory = new Memory(10248); // 800MB? deve ser suficiente.
+        this.memory = new Memory(4096); // Valor arbitrário, parametrizável.
         this.controlUnit = new ControlUnit(this.memory);
     }
 

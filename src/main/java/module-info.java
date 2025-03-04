@@ -3,5 +3,5 @@ module sicxesimulator {
     requires javafx.fxml;
     requires javafx.media;
 
-    exports sicxesimulator.view to javafx.graphics;
+    exports sicxesimulator.simulator.view to javafx.graphics;
 }

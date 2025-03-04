@@ -14,7 +14,7 @@ Este programa simula um sistema SIC/XE utilizando uma interface gráfica desenvo
 Clone o repositório para sua máquina:
 
 ```bash
-git clone https://github.com/seu-usuario/SIC-XE-Simulator.git
+git clone https://github.com/pinhorenan/SIC-XE-Simulator.git
 cd SIC-XE-Simulator
 ```
 

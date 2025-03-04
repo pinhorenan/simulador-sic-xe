@@ -1,10 +1,7 @@
 package sicxesimulator.macroprocessor;
 
 import java.io.*;
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class MacroProcessor {
 
@@ -12,35 +9,46 @@ public class MacroProcessor {
     private Map<String, MacroDefinition> mnt  = new HashMap<>();
 
     // Para suportar macros aninhados, pode-se usar uma pilha
-    private Deque<MacroDefinition> macroStack = new ArrayDeque<>;
+    private Deque<MacroDefinition> macroStack = new ArrayDeque<>();
 
+    /**
+     * TODO: DOCUMENTAR
+     * @param inputFile
+     * @param outputFile
+     * @throws IOException
+     */
     public void process(String inputFile, String outputFile) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFile));
              BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
 
             String line;
-        while((line = reader.readLine()) != null) {
-            if(isMacroStart(line)) {
-                // Inicia uma nova definição de macro
-                MacroDefinition macro = new MacroDefinitio();
-                macro.parseHeader(line); // extrai nome e parâmetros
-                macroStack.push(macro);
-            } else if (isMacroEnd(line)) {
-                // Finaliza a definição da macro corrente
-                MacroDefinition finishedMacro = macroStack.pop();
-                mnt.put(finishedMacro.getName(), finishedMacro);
-                // Se estiver definindo um macro dentro de outra,
-                // pode ser necessário adicioná-la ao corpo da macro externa como uma definição literal.
-            } else if (isMacroCall(line)) {
-                // Linha é uma chamada de macro: expanda a macro
-                String expandedLines = expandedMacroCall(line);
-                writer.write(expandedLines);
-                writer.newLine();
+            while((line = reader.readLine()) != null) {
+                if(isMacroStart(line)) {
+                    // Inicia uma nova definição de macro
+                    MacroDefinition macro = new MacroDefinition();
+                    macro.parseHeader(line); // extrai nome e parâmetros
+                    macroStack.push(macro);
+                } else if (isMacroEnd(line)) {
+                    // Finaliza a definição da macro corrente
+                    MacroDefinition finishedMacro = macroStack.pop();
+                    mnt.put(finishedMacro.getName(), finishedMacro);
+                    // Se estiver definindo um macro dentro de outra,
+                    // pode ser necessário adicioná-la ao corpo da macro externa como uma definição literal.
+                } else if (isMacroCall(line)) {
+                    // Linha é uma chamada de macro: expanda a macro
+                    String expandedLines = expandMacroCall(line);
+                    writer.write(expandedLines);
+                    writer.newLine();
+                }
             }
-        }
         }
     }
 
+    /**
+     * TODO: DOCUMENTAR
+     * @param line
+     * @return
+     */
     private boolean isMacroStart(String line) {
         // TODO: Implementar a lógica para detectar a diretiva de início (ex.: "MACRO)
         return line.trim().equalsIgnoreCase("Macro");
@@ -73,12 +81,12 @@ public class MacroProcessor {
             String expandedLine = macroLine;
             for (int i = 0; i < macro.getParameters().size(); i++) {
                 String param = macro.getParameters().get(i);
-                String arg = (i < arg.size()) ? args.get(i) : "";
+                String arg = (i < args.size()) ? args.get(i) : "";
                 expandedLine = expandedLine.replace(param, arg);
             }
             // Se a linha expandida contém outra chamada de macro, expanda-a recursivamente
             if (isMacroCall(expandedLine)) {
-                expandedLine = expandedMacroCall(expandedLine);
+                expandedLine = expandMacroCall(expandedLine);
             }
             expansion.append(expandedLine).append(System.lineSeparator());
         }

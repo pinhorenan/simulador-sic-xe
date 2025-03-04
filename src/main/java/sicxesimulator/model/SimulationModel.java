@@ -4,15 +4,20 @@ import javafx.scene.control.Alert;
 import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
+import sicxesimulator.macroprocessor.MacroProcessor;
 import sicxesimulator.view.SimulationApp;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public class SimulationModel {
     private final Machine machine;
-    private final Assembler assembler;
     private final Loader loader;
+    private final Assembler assembler;
+    private final MacroProcessor macroProcessor;
     private boolean isPaused;
     private int simulationSpeed;
 
@@ -24,8 +29,46 @@ public class SimulationModel {
         this.machine = machine;
         this.assembler = assembler;
         this.loader = loader;
+        this.macroProcessor = new MacroProcessor();
         this.isPaused = false;
         this.simulationSpeed = 0;
+    }
+
+    /// GETTERS
+
+    public Machine getMachine() { return machine; }
+
+    public Assembler getAssembler() { return assembler; }
+
+    public Loader getLoader() { return loader; }
+
+    public MacroProcessor getMacroProcessor() { return macroProcessor; }
+
+
+    /**
+     * Processa o código-fonte que contém macros.
+     * <p>
+     * Essa implementação salva o código de entrada em um arquivo temporário,
+     * invoca o processador de macros para gerar o arquivo com as macros expandidas
+     * (MASMAPRG.ASM) e retorna o conteúdo expandido como uma lista de linhas.
+     * </p>
+     * @param sourceLines Lista de linhas do código-fonte original.
+     * @return Lista de linhas com macros expandidas.
+     * @throws IOException se ocorrer algum erro de leitura/escrita.
+     */
+    public List<String> processMacros(List<String> sourceLines) throws IOException {
+        String tempInputFile = "temp.asm";
+        String macroOutputFile = "MASMAPRG.ASM"; // Nome definido nas especificações: não mudar!!!!
+
+        // Escreve o código-fonte original em um arquivo temporário.
+        Files.write(Path.of(tempInputFile), sourceLines, StandardCharsets.UTF_8);
+
+        // Processa os macros: o MacroProcessor lê temp.asm e gera MASMAPRG.ASM.
+        macroProcessor.process(tempInputFile, macroOutputFile);
+
+        // Lê o arquivo com as macros expandidas e retorna como lista de linhas
+        return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
+
     }
 
     /**
@@ -39,7 +82,7 @@ public class SimulationModel {
         // Gera o código objeto diretamente a partir do código fonte.
         objectCode = assembler.assemble(sourceLines);
 
-        // Obtém o endereço de início (definido via diretiva START no código assembly)
+        // Obtém o endereço de início (definido via diretiva START no código assembly)d
         startAddress = assembler.getStartAddress();
 
         // Carrega o programa na memória a partir do endereço de início
@@ -180,11 +223,7 @@ public class SimulationModel {
             alert.showAndWait();
     }
 
-    /// GETTERS
 
-    public Machine getMachine() { return machine; }
-
-    public Assembler getAssembler() { return assembler; }
 
     ///  SETTERS
 

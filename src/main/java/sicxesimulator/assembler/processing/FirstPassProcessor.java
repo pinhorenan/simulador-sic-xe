@@ -85,24 +85,33 @@ public class FirstPassProcessor {
             }
 
             // Processa a diretiva END: encerra a passagem.
+            // Processa a diretiva END: encerra a passagem.
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
-                ir.setFinalAddress(locationCounter); // TODO: REVISAR IMPLEMENTAÇÃO
+                ir.setFinalAddress(locationCounter); // Define o endereço final como o contador de localização atual
 
-                if (operand != null) {
-                    logger.info("Diretiva END com operando '" + operand + "' encontrada na linha " + lineNumber);
-                    ir.setFinalAddress(Integer.parseInt(operand, 16)); // TODO: REVISAR IMPLEMENTAÇÃO
+                if (operand != null && !operand.trim().isEmpty()) { // Verifica se o operando não é nulo nem vazio
+                    try {
+                        int finalAddress = Integer.parseInt(operand.trim(), 16); // Tenta converter o operando para hexadecimal
+                        ir.setFinalAddress(finalAddress); // Define o endereço final com o valor do operando
+                        logger.info("Diretiva END com operando '" + operand + "' encontrada na linha " + lineNumber);
+                    } catch (NumberFormatException e) {
+                        // Log de erro se o operando não for um valor hexadecimal válido
+                        logger.warning("Operando inválido na diretiva END: '" + operand + "' na linha " + lineNumber + ". Usando contador de localização como endereço final.");
+                    }
+                } else {
+                    logger.info("Diretiva END sem operando encontrada na linha " + lineNumber);
                 }
+
                 // Não adiciona uma AssemblyLine para a diretiva END.
                 continue;
             }
-
             // Diretivas ainda não implementadas: EQU, BASE, NOBASE, LTORG.
             if (mnemonic.equalsIgnoreCase("EQU") ||
                     mnemonic.equalsIgnoreCase("BASE") ||
                     mnemonic.equalsIgnoreCase("NOBASE") ||
                     mnemonic.equalsIgnoreCase("LTORG")) {
-                logger.info("Diretiva " + mnemonic + " encontrada na linha " + lineNumber + " - ainda não implementada.");
+                logger.info("Diretiva " + mnemonic + " encontrada na linha " + lineNumber + " ainda não implementada.");
                 continue;
             }
 

@@ -1,6 +1,7 @@
 package sicxesimulator.simulator.model;
 
 import javafx.scene.control.Alert;
+import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
@@ -18,7 +19,7 @@ public class SimulationModel {
     private final Loader loader;
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
-    private byte[] lastObjectCode = null;
+    private ObjectFile lastObjectFile = null;
     private int startAddress;
     private int simulationSpeed;
     private boolean isPaused;
@@ -72,29 +73,31 @@ public class SimulationModel {
      * @throws IOException Se ocorrer erro durante a montagem ou carregamento.
      */
     public void assembleAndLoadProgram(List<String> sourceLines) throws IOException {
-        updateLastObjectCode(getAssembledCode(sourceLines));
+        // Monta o código
+        ObjectFile machineCode = assembleCode(sourceLines);
+        // Atualiza o atributo de último código
+        updateLastObjectFile(machineCode);
         // Carrega o código objeto na memória e define o PC
-        this.startAddress = loader.load(machine.getMemory(), assembler.getStartAddress(), lastObjectCode);
-        // Define o PC com base no endereço efetivo (convertendo de bytes para palavras)
-        machine.getControlUnit().setPC(startAddress);
+        loadProgram();
     }
 
-    public void loadProgram(byte[] objectCode) throws IOException {
-        int startWordAddress = assembler.getStartAddress(); // Agora retorna o endereço da palavra!
-        loader.load(machine.getMemory(), startWordAddress, objectCode);
-        machine.getControlUnit().setPC(startWordAddress); // PC agora é endereço de palavra
+    public void loadProgram() {
+        loader.load(lastObjectFile);
     }
 
-    public void updateLastObjectCode(byte[] objectCode) {
-        this.lastObjectCode = objectCode;
+
+    public void updateLastObjectFile(ObjectFile objectFile) {
+        this.lastObjectFile = objectFile;
     }
 
-    public byte[] getLastObjectCode() {
-        return lastObjectCode;
+    public ObjectFile getLastObjectFile() {
+        return lastObjectFile;
     }
 
-    public byte[] getAssembledCode(List<String> sourceLines) {
-        return assembler.assemble(sourceLines);
+    public ObjectFile assembleCode(List<String> sourceLines) {
+        ObjectFile machineCode = assembler.assemble(sourceLines);
+        updateLastObjectFile(machineCode);
+        return machineCode;
     }
 
     /**
@@ -156,7 +159,7 @@ public class SimulationModel {
 
 
     public boolean hasValidProgram() {
-        return lastObjectCode != null && startAddress >= 0;
+        return lastObjectFile != null && startAddress >= 0;
     }
 
     /**
@@ -170,14 +173,14 @@ public class SimulationModel {
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isFinished() {
-        int pc = machine.getControlUnit().getPC().getIntValue();
-        int programLength = lastObjectCode != null ? lastObjectCode.length : 0;
+        int pc = machine.getControlUnit().getIntValuePC();
+        int programLength = lastObjectFile != null ? lastObjectFile.getProgramLength() : 0;
         return pc >= (startAddress + programLength);
     }
 
 
     public boolean hasAssembledCode() {
-        return lastObjectCode != null;
+        return lastObjectFile != null;
     }
 
     public boolean isPaused() {
@@ -200,7 +203,7 @@ public class SimulationModel {
         machine.reset();
         assembler.reset();
         startAddress = 0;
-        lastObjectCode = null;
+        lastObjectFile = null;
         isPaused = false;
     }
 

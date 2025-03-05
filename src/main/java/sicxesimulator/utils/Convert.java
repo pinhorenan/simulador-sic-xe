@@ -26,4 +26,25 @@ public abstract class Convert {
         return data;
     }
 
+    public static int bytesToInt(byte[] wordBytes) {
+        if (wordBytes.length != 3) {
+            throw new IllegalArgumentException("O array deve ter exatamente 3 bytes.");
+        }
+
+        // Combina os bytes em um inteiro de 24 bits (com sinal)
+        int value = ((wordBytes[0] & 0xFF) << 16) | // Byte 0 (mais significativo)
+                ((wordBytes[1] & 0xFF) << 8)  | // Byte 1
+                (wordBytes[2] & 0xFF);          // Byte 2 (menos significativo)
+
+        // Faz o sign extend para 32 bits (Java usa inteiros com sinal)
+        return (value << 8) >> 8;
+    }
+
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder hex = new StringBuilder();
+        for (byte b : bytes) {
+            hex.append(String.format("%02X", b));
+        }
+        return hex.toString();
+    }
 }

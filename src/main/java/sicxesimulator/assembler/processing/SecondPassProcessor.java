@@ -21,23 +21,23 @@ public class SecondPassProcessor {
      * Gera o código objeto a partir da IntermediateRepresentation.
      * Assume que os endereços são mantidos em palavras (cada palavra = 3 bytes).
      *
-     * @param ir Representação intermediária gerada pela primeira passagem.
+     * @param midObject Representação intermediária gerada pela primeira passagem.
      * @return ObjectFile contendo o endereço inicial e o código objeto.
      */
-    public ObjectFile generateObjectFile(IntermediateRepresentation ir) {
-        int startAddress = ir.getStartAddress();
-        int finalAddress = ir.getFinalAddress();
+    public ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
+        int startAddress = midObject.getStartAddress();
+        int finalAddress = midObject.getFinalAddress();
 
         int programBytes = (finalAddress - startAddress) * 3;
         byte[] objectCode = new byte[programBytes];
 
         // Para cada linha de assembly, gera o código objeto e posiciona no array final
-        for (AssemblyLine line : ir.getAssemblyLines()) {
+        for (AssemblyLine line : midObject.getAssemblyLines()) {
             int offset = (line.getAddress() - startAddress) * 3;
-            byte[] code = generateObjectCode(line, ir.getSymbolTable());
+            byte[] code = generateObjectCode(line, midObject.getSymbolTable());
             System.arraycopy(code, 0, objectCode, offset, code.length);
         }
-        return new ObjectFile(startAddress, objectCode);
+        return new ObjectFile(startAddress, objectCode, midObject.getSymbolTable());
     }
 
     public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable) {

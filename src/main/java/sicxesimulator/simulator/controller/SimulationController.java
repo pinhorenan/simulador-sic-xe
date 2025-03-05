@@ -24,10 +24,9 @@ public class SimulationController {
         try {
             model.assembleAndLoadProgram(sourceLines);
             view.updateAllTables();
-            byte [] objectCode = model.getLastObjectCode();
 
             // Formata o código objeto
-            String formattedCode = getAssembler().formatObjectCode(objectCode);
+            String formattedCode = model.getLastObjectFile().toString(); // TODO;
             view.appendOutput("Programa montado e carregado com sucesso!");
             view.appendOutput(formattedCode);
 
@@ -37,21 +36,11 @@ public class SimulationController {
     }
 
     public void handleShowObjectCodeAction() {
-        if (model.hasAssembledCode()) {
-            String formattedCode = model.getAssembler().formatObjectCode(model.getLastObjectCode());
-            view.getOutputArea().setText(formattedCode);
+        if (model.getLastObjectFile() != null) {
+            String formattedCode = model.getLastObjectFile().toString(); // TODO;
+            view.appendOutput(formattedCode);
         } else {
-            String inputText = view.getInputField().getText();
-            if (!inputText.trim().isEmpty()) {
-                List<String> sourceLines = Arrays.asList(inputText.split("\\r?\\n"));
-                try {
-                    byte[] objectCode = model.getAssembler().assemble(sourceLines);
-                    String formattedCode = model.getAssembler().formatObjectCode(objectCode);
-                    view.getOutputArea().setText(formattedCode);
-                } catch (Exception e) {
-                    view.showError("Erro ao montar código: " + e.getMessage());
-                }
-            }
+            view.appendOutput("Nenhum programa montado!");
         }
     }
 

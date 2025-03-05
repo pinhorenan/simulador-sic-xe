@@ -41,7 +41,7 @@ public class Assembler {
      * Realiza a segunda passagem delegando para a classe SecondPassProcessor.
      */
     public ObjectFile secondPass(IntermediateRepresentation ir) {
-        return secondPassProcessor.generateObjectCode(ir);
+        return secondPassProcessor.generateObjectFile(ir);
     }
 
     /**

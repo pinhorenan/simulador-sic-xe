@@ -10,6 +10,10 @@ public class SymbolTable {
         symbols = new HashMap<>();
     }
 
+    public Map<String, Integer> getSymbols() {
+        return symbols;
+    }
+
     public void addSymbol(String symbol, int address) {
         symbols.put(symbol, address);
     }

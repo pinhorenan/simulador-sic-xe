@@ -18,12 +18,12 @@ import sicxesimulator.machine.Machine;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.machine.cpu.Register;
+import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.ValueFormatter;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("unchecked")
 public class SimulationApp extends Application {
@@ -227,15 +227,32 @@ public class SimulationApp extends Application {
 
     public void updateRegisterTable() {
         registerTable.getItems().clear();
-        for (Register reg : controller.getSimulationModel().getMachine().getControlUnit().getCurrentRegisters()) {
+
+        // Obtém a lista de registradores da unidade de controle
+        Collection<Register> registers = controller.getSimulationModel()
+                .getMachine()
+                .getControlUnit()
+                .getRegisterSet()
+                .getAllRegisters();
+
+        for (Register reg : registers) {
             String value;
-            // Exibe 12 dígitos para o registrador F (48 bits) e 6 dígitos para os outros (24 bits)
-            if ("F".equals(reg.getName())) {
-                value = String.format("%012X", reg.getLongValue()); // 12 dígitos hexadecimais
-            } else {
-                value = String.format("%06X", reg.getIntValue()); // 6 dígitos hexadecimais
+            String regName = reg.getName().toUpperCase();
+
+            // Formatação especial para registradores específicos
+            if ("PC".equals(regName)) {
+                // PC é um endereço de byte - 24 bits (6 dígitos hex)
+                value = String.format("%06X", reg.getIntValue());
             }
-            // Adiciona uma nova entrada na tabela
+            else if ("F".equals(regName)) {
+                // Registrador de ponto flutuante - 48 bits (12 dígitos hex)
+                value = String.format("%012X", reg.getLongValue());
+            }
+            else {
+                // Demais registradores - 24 bits (6 dígitos hex)
+                value = String.format("%06X", reg.getIntValue());
+            }
+
             registerTable.getItems().add(new RegisterEntry(reg.getName(), value));
         }
     }
@@ -243,35 +260,43 @@ public class SimulationApp extends Application {
     public void updateMemoryTable() {
         memoryTable.getItems().clear();
         var memory = controller.getSimulationModel().getMachine().getMemory();
-        int wordCount = memory.getAddressRange(); // Número de palavras na memória
 
-        for (int wordIndex = 0; wordIndex < wordCount; wordIndex++) {
-            byte[] word = memory.readWord(wordIndex); // Lê a palavra (3 bytes)
-            int wordValue = ((word[0] & 0xFF) << 16) | ((word[1] & 0xFF) << 8) | (word[2] & 0xFF); // Converte para inteiro
-            String value = String.format("%06X", wordValue); // Formata para 6 dígitos hexadecimais
-
-            // Converte o índice da palavra para endereço em bytes
-            int byteAddress = wordIndex * 3;
-            String formattedAddress = ValueFormatter.formatAddress(byteAddress, "HEX");
-
-            // Adiciona uma nova entrada na tabela
+        for (int wordIndex = 0; wordIndex < memory.getAddressRange(); wordIndex++) {
+            byte[] word = memory.readWord(wordIndex);
+            int byteAddress = wordIndex * 3; // Converte para bytes
+            String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewFormat);
+            String value = Convert.bytesToHex(word); // Método auxiliar para converter 3 bytes para hex
             memoryTable.getItems().add(new MemoryEntry(formattedAddress, value));
         }
     }
 
     public void updateSymbolTable() {
-        symbolTable.getItems().clear();
-        Map<String, Integer> symbols = controller.getSimulationModel().getAssembler().getSymbolTable();
+        // Verifica se o symbolTable é nulo
+        if (symbolTable == null) {
+            return; // Sai do método se symbolTable for nulo
+        }
 
-        symbols.forEach((name, addressInBytes) -> {
-            // Formata o endereço conforme o formato especificado
-            String formattedAddress = ValueFormatter.formatAddress(addressInBytes, viewFormat);
+        // Verifica se o controller e o simulationModel não são nulos
+        if (controller != null && controller.getSimulationModel() != null && controller.getSimulationModel().hasAssembledCode()) {
+            // Limpa a tabela de símbolos
+            symbolTable.getItems().clear();
 
-            // Adiciona uma nova entrada na tabela
-            symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
-        });
+            // Verifica se o último arquivo objeto e sua tabela de símbolos não são nulos
+            if (controller.getSimulationModel().getLastObjectFile() != null &&
+                    controller.getSimulationModel().getLastObjectFile().getSymbolTable() != null) {
+
+                // Obtém os símbolos
+                Map<String, Integer> symbols = controller.getSimulationModel().getLastObjectFile().getSymbolTable().getSymbols();
+
+                // Itera sobre os símbolos e adiciona à tabela
+                symbols.forEach((name, wordAddress) -> {
+                    int byteAddress = wordAddress * 3; // Converte para bytes
+                    String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewFormat);
+                    symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
+                });
+            }
+        }
     }
-
 
     public void updateAllTables() {
         updateRegisterTable();
@@ -283,7 +308,24 @@ public class SimulationApp extends Application {
      * Envia texto para a caixa de saída.
      */
     public void appendOutput(String message) {
-        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
+        // Usar Pattern e Matcher explicitamente para compatibilidade
+        Pattern pattern = Pattern.compile("0x([0-9A-Fa-f]{1,8})"); // Captura apenas o número hex após 0x
+        Matcher matcher = pattern.matcher(message);
+        StringBuffer convertedMessage = new StringBuffer();
+
+        while (matcher.find()) {
+            // Converte o endereço de palavra para bytes
+            int wordAddress = Integer.parseInt(matcher.group(1), 16);
+            int byteAddress = wordAddress * 3;
+            matcher.appendReplacement(
+                    convertedMessage,
+                    "0x" + Integer.toHexString(byteAddress).toUpperCase()
+            );
+        }
+        matcher.appendTail(convertedMessage);
+
+        String finalMessage = "> " + convertedMessage.toString() + "\n";
+        Platform.runLater(() -> outputArea.appendText(finalMessage));
     }
 
     private void showWelcomeMessage() {
@@ -444,7 +486,7 @@ public class SimulationApp extends Application {
         SimulationModel model = new SimulationModel(
                 machine,
                 new Assembler(),
-                new Loader(machine.getMemory())
+                new Loader(machine)
         );
         controller = new SimulationController(model, this);
 

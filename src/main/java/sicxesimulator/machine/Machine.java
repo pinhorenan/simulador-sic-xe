@@ -1,7 +1,6 @@
 package sicxesimulator.machine;
 
 import sicxesimulator.machine.cpu.ControlUnit;
-import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.machine.memory.Memory;
 
 public class Machine {
@@ -15,11 +14,15 @@ public class Machine {
 
     public void runCycle() {
         if (controlUnit.isHalted()) return;
-        System.out.println("Iniciando ciclo de execução...");
-        controlUnit.fetch();
-        controlUnit.decode();
-        controlUnit.execute();
-        System.out.println("Ciclo de execução concluído.");
+
+        try {
+            controlUnit.fetch();
+            controlUnit.decode();
+            controlUnit.execute();
+        } catch (Exception e) {
+            System.err.println("Erro na execução: " + e.getMessage());
+            controlUnit.reset();
+        }
     }
 
     public void reset() {
@@ -30,13 +33,12 @@ public class Machine {
 
     public void changeMemorySize(int newMemorySizeInBytes) {
         this.memory = new Memory(newMemorySizeInBytes);
-        controlUnit.setMemory(this.memory);
-        System.out.println("Tamanho da memória alterado para " + newMemorySizeInBytes + " bytes.");
+        // controlUnit.setMemory(this.memory);
+        // System.out.println("Tamanho da memória alterado para " + newMemorySizeInBytes + " bytes.");
+        System.out.println("Opção temporariamente desabilitada.");
     }
 
     public Memory getMemory() { return this.memory; }
-
-    public Register[] getRegisters() { return controlUnit.getCurrentRegisters(); }
 
     public ControlUnit getControlUnit() { return controlUnit; }
 }

@@ -3,10 +3,12 @@ package sicxesimulator.assembler.models;
 public class ObjectFile {
     private final int startAddress; // Endereço de início (a palavra inicial, não o byte)
     private final byte[] objectCode; // Código objeto
+    private final SymbolTable symbolTable;
 
-    public ObjectFile(int startAddress, byte[] objectCode) {
+    public ObjectFile(int startAddress, byte[] objectCode, SymbolTable symbolTable) {
         this.startAddress = startAddress;
         this.objectCode = objectCode;
+        this.symbolTable = symbolTable;
     }
 
     public int getStartAddress() {
@@ -15,6 +17,10 @@ public class ObjectFile {
 
     public byte[] getObjectCode() {
         return objectCode;
+    }
+
+    public SymbolTable getSymbolTable() {
+        return symbolTable;
     }
 
     /**

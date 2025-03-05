@@ -11,7 +11,7 @@ public class InstructionSet {
         this.controlUnit = controlUnit;
     }
 
-    ///  OPERAÇÕES BÁSICAS
+    /// OPERAÇÕES BÁSICAS
 
     public int add(int a, int b) {
         return (a + b) & 0xFFFFFF; // Mantém 24 bits
@@ -42,19 +42,26 @@ public class InstructionSet {
 
     /**
      * Lê uma palavra (3 bytes) da memória e converte para um inteiro de 24 bits.
-     * @param address Endereço em bytes.
+     * @param wordAddress Índice da palavra na memória.
      * @return Inteiro representando os 3 bytes.
      */
-    public int readMemoryWord(int address) {
-        byte[] wordBytes = memory.readWord(address);
-        // Converte os 3 bytes para um inteiro de 24 bits
+    public int readMemoryWord(int wordAddress) {
+        byte[] wordBytes = memory.readWord(wordAddress);
         return ((wordBytes[0] & 0xFF) << 16) | ((wordBytes[1] & 0xFF) << 8) | (wordBytes[2] & 0xFF);
     }
 
     /// CÁLCULO DO ENDEREÇO EFETIVO
 
+    /**
+     * Calcula o endereço efetivo (índice de palavra) somando o deslocamento à base
+     * e, se o modo indexado estiver ativo, adiciona o valor do registrador X.
+     * @param disp Deslocamento (em palavras)
+     * @param X Valor do registrador X (em palavras)
+     * @param indexed Se a instrução é indexada.
+     * @return Índice da palavra com o endereço efetivo.
+     */
     public int calculateEffectiveAddress(int disp, int X, boolean indexed) {
-        int effectiveAddress = controlUnit.getBaseAddress() + disp; // Adiciona baseAddress
+        int effectiveAddress = controlUnit.getBaseAddress() + disp;
         if (indexed) {
             effectiveAddress += X;
         }
@@ -63,7 +70,7 @@ public class InstructionSet {
 
     /// LÓGICA DAS INSTRUÇÕES
 
-    // ADD (Formato 2)
+    // ADD (Formato 3)
     public int executeADD(int currentA, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         int memValue = readMemoryWord(effectiveAddress);
@@ -82,21 +89,21 @@ public class InstructionSet {
         return and(currentA, memValue);
     }
 
-    // CLEAR (Formato 2) - Retorna 0 (valor para definir no registrador)
+    // CLEAR (Formato 2) - Retorna 0
     public int executeCLEAR() {
         return 0;
     }
 
-    // COMP (Formato 3) - Retorna resultado da comparação para atualizar SW
+    // COMP (Formato 3) - Retorna a diferença para atualização do SW
     public int executeCOMP(int currentA, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         int memValue = readMemoryWord(effectiveAddress);
         return currentA - memValue;
     }
 
-    // COMPR (Format 2)
+    // COMPR (Formato 2)
     public int executeCOMPR(int reg1Value, int reg2Value) {
-        return reg1Value - reg2Value; // Retorna a diferença para atualizar o Condition Code
+        return reg1Value - reg2Value;
     }
 
     // DIV (Formato 3)
@@ -107,27 +114,27 @@ public class InstructionSet {
         return divide(currentA, divisor);
     }
 
-    // DIVR (Format 2)
+    // DIVR (Formato 2)
     public int executeDIVR(int reg1Value, int reg2Value) {
         if (reg2Value == 0) throw new ArithmeticException("Divisão por zero.");
         return divide(reg1Value, reg2Value);
     }
 
-    // J (Formato 3/4) - Retorna novo valor para PC
+    // J (Formato 3/4) - Retorna novo valor para o PC (índice de palavra)
     public int executeJ(int address, boolean indexed, int indexRegValue) {
         return calculateEffectiveAddress(address, indexRegValue, indexed);
     }
 
-    // JEQ/JGT/JLT/ (Formato 3/4) - Retorna novo PC ou -1 (sem branch)
+    // JEQ/JGT/JLT (Formato 3/4) - Retorna novo PC ou -1 se não houver branch
     public int executeCONDITIONAL_JUMP(int conditionCode, int targetAddress, int currentCC) {
         if (currentCC == conditionCode) {
             return targetAddress;
         }
-        return -1; // Indica que o salto não foi tomado
+        return -1;
     }
 
-    // JSUB (Formato 3)
-    public int executeJSUB (int address, boolean indexed, int indexRegValue) {
+    // JSUB (Formato 3) - Retorna o endereço efetivo para saltar
+    public int executeJSUB(int address, boolean indexed, int indexRegValue) {
         return calculateEffectiveAddress(address, indexRegValue, indexed);
     }
 
@@ -137,7 +144,7 @@ public class InstructionSet {
         return readMemoryWord(effectiveAddress);
     }
 
-    // LDB (Format 3/4)
+    // LDB (Formato 3/4)
     public int executeLDB(int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         return readMemoryWord(effectiveAddress);
@@ -146,7 +153,8 @@ public class InstructionSet {
     // LDCH (Formato 3)
     public int executeLDCH(int currentA, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
-        int byteValue = memory.readByte(effectiveAddress);
+        // Para LDCH, lemos um byte do offset 2 (mesmo utilizado em STCH)
+        int byteValue = memory.readByte(effectiveAddress, 2) & 0xFF;
         return (currentA & 0xFFFF00) | byteValue;
     }
 
@@ -156,13 +164,13 @@ public class InstructionSet {
         return readMemoryWord(effectiveAddress);
     }
 
-    // LDS (Format 3/4)
+    // LDS (Formato 3/4)
     public int executeLDS(int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         return readMemoryWord(effectiveAddress);
     }
 
-    // LDT (Format 3/4)
+    // LDT (Formato 3/4)
     public int executeLDT(int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         return readMemoryWord(effectiveAddress);
@@ -181,64 +189,62 @@ public class InstructionSet {
         return multiply(currentA, memValue);
     }
 
-    // MULR (Format 2)
+    // MULR (Formato 2)
     public int executeMULR(int reg1Value, int reg2Value) {
         return multiply(reg1Value, reg2Value);
     }
 
-    // OR (Format 3/4)
+    // OR (Formato 3/4)
     public int executeOR(int currentA, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         int memValue = readMemoryWord(effectiveAddress);
         return or(currentA, memValue);
     }
 
-    // RMO (Format 2)
-    // Não necessita de implementação aqui devido à sua simplicidade, talvez eu mude de ideia depois.
+    // RMO (Formato 2)
+    // Aqui não há implementação, pois a operação é simples.
 
-    // RSUB (Formato 3) - Retorna valor de L
-    public int executeRSUB(int currentL) {
-        return currentL;
-    }
+    // RSUB (Formato 3) - Retorna o valor de L
+    // Aqui não há implementação, pois a operação é simples.
 
-    // SHIFTL (Format 2)
+    // SHIFTL (Formato 2)
     public int executeSHIFTL(int regValue, int count) {
-        return (regValue << count) & 0xFFFFFF; // Deslocamento à esquerda
+        return (regValue << count) & 0xFFFFFF;
     }
 
-    // SHIFTR (Format 2)
+    // SHIFTR (Formato 2)
     public int executeSHIFTR(int regValue, int count) {
-        return (regValue >>> count) & 0xFFFFFF; // Deslocamento à direita (com preenchimento de zeros)
+        return (regValue >>> count) & 0xFFFFFF;
     }
 
-    // STA (Formato 3) - Retorna valor para escrever na memória
+    // STA (Formato 3) - Retorna o valor do registrador A para armazenar
     public int executeSTA(int currentA) {
         return currentA;
     }
 
-    // STB (Format 3/4)
+    // STB (Formato 3/4)
     public int executeSTB(int currentB) {
-        return currentB; // Retorna o valor do registrador B para escrever na memória
+        return currentB;
     }
 
-    // STCH (Formato 3) - Retorna byte para escrever na memória
+    // STCH (Formato 3) - Retorna o byte menos significativo de A para armazenar
     public int executeSTCH(int currentA) {
         return currentA & 0xFF;
     }
 
-    // STL (Format 3/4)
+    // STL (Formato 3/4)
     public int executeSTL(int currentL) {
-        return currentL; // Retorna o valor do registrador L para escrever na memória
+        return currentL;
     }
 
-    // STS (Format 3/4)
+    // STS (Formato 3/4)
     public int executeSTS(int currentS) {
-        return currentS; // Retorna o valor do registrador S para escrever na memória
+        return currentS;
     }
 
-    // STT (Format 3/4)
+    // STT (Formato 3/4)
     public int executeSTT(int currentT) {
-        return currentT; // Retorna o valor do registrador T para escrever na memória
+        return currentT;
     }
 
     // STX (Formato 3)
@@ -253,7 +259,7 @@ public class InstructionSet {
         return subtract(currentA, memValue);
     }
 
-    // SUBR (Format 2)
+    // SUBR (Formato 2)
     public int executeSUBR(int reg1Value, int reg2Value) {
         return subtract(reg1Value, reg2Value);
     }
@@ -262,11 +268,11 @@ public class InstructionSet {
     public int executeTIX(int currentX, int address, boolean indexed, int indexRegValue) {
         int effectiveAddress = calculateEffectiveAddress(address, indexRegValue, indexed);
         int memValue = readMemoryWord(effectiveAddress);
-        return (currentX + 1) - memValue; // Retorna comparação para atualizar SW
+        return (currentX + 1) - memValue;
     }
 
-    // TIXR (Format 2)
+    // TIXR (Formato 2)
     public int executeTIXR(int currentX, int regValue) {
-        return (currentX + 1) - regValue; // Retorna a comparação para atualizar o Condition Code
+        return (currentX + 1) - regValue;
     }
 }

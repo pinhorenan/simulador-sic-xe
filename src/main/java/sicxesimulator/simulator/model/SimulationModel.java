@@ -18,12 +18,10 @@ public class SimulationModel {
     private final Loader loader;
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
-    private boolean isPaused;
-    private int simulationSpeed;
-
-    // Armazena o último código objeto montado e informações relacionadas
-    private byte[] objectCode = null;
+    private byte[] lastObjectCode = null;
     private int startAddress;
+    private int simulationSpeed;
+    private boolean isPaused;
 
     public SimulationModel(Machine machine, Assembler assembler, Loader loader) {
         this.machine = machine;
@@ -39,11 +37,6 @@ public class SimulationModel {
     public Machine getMachine() { return machine; }
 
     public Assembler getAssembler() { return assembler; }
-
-    public Loader getLoader() { return loader; }
-
-    public MacroProcessor getMacroProcessor() { return macroProcessor; }
-
 
     /**
      * Processa o código-fonte que contém macros.
@@ -79,17 +72,29 @@ public class SimulationModel {
      * @throws IOException Se ocorrer erro durante a montagem ou carregamento.
      */
     public void assembleAndLoadProgram(List<String> sourceLines) throws IOException {
-        // Gera o código objeto diretamente a partir do código fonte.
-        objectCode = assembler.assemble(sourceLines);
-
-        // Obtém o endereço de início (definido via diretiva START no código assembly)d
-        startAddress = assembler.getStartAddress();
-
-        // Carrega o programa na memória a partir do endereço de início
-        loader.load(machine.getMemory(), startAddress, objectCode);
-
-        // Atualiza o PC para o início do programa
+        updateLastObjectCode(getAssembledCode(sourceLines));
+        // Carrega o código objeto na memória e define o PC
+        this.startAddress = loader.load(machine.getMemory(), assembler.getStartAddress(), lastObjectCode);
+        // Define o PC com base no endereço efetivo (convertendo de bytes para palavras)
         machine.getControlUnit().setPC(startAddress);
+    }
+
+    public void loadProgram(byte[] objectCode) throws IOException {
+        int startWordAddress = assembler.getStartAddress(); // Agora retorna o endereço da palavra!
+        loader.load(machine.getMemory(), startWordAddress, objectCode);
+        machine.getControlUnit().setPC(startWordAddress); // PC agora é endereço de palavra
+    }
+
+    public void updateLastObjectCode(byte[] objectCode) {
+        this.lastObjectCode = objectCode;
+    }
+
+    public byte[] getLastObjectCode() {
+        return lastObjectCode;
+    }
+
+    public byte[] getAssembledCode(List<String> sourceLines) {
+        return assembler.assemble(sourceLines);
     }
 
     /**
@@ -97,7 +102,6 @@ public class SimulationModel {
      */
     public void runNextInstruction() {
         machine.runCycle();
-        applyCycleDelay();
     }
 
     /**
@@ -105,7 +109,7 @@ public class SimulationModel {
      * Os delays podem de ser de 1s, 500ns, 250ns, 100ns ou 0.
      * A duração do delay depende da variável cycleSpeed.
      */
-    private void applyCycleDelay() {
+    public void applyCycleDelay() {
         if (simulationSpeed > 0) {
             try {
                 long delay = getDelayForSpeed(simulationSpeed);
@@ -150,6 +154,11 @@ public class SimulationModel {
         }
     }
 
+
+    public boolean hasValidProgram() {
+        return lastObjectCode != null && startAddress >= 0;
+    }
+
     /**
      * Indica se a execução foi concluída.
      * Nesta versão, como não há um mecanismo de término automático, retorna sempre false.
@@ -161,11 +170,14 @@ public class SimulationModel {
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isFinished() {
-        return machine.getControlUnit().isHalted();
+        int pc = machine.getControlUnit().getPC().getIntValue();
+        int programLength = lastObjectCode != null ? lastObjectCode.length : 0;
+        return pc >= (startAddress + programLength);
     }
 
+
     public boolean hasAssembledCode() {
-        return objectCode != null;
+        return lastObjectCode != null;
     }
 
     public boolean isPaused() {
@@ -188,7 +200,7 @@ public class SimulationModel {
         machine.reset();
         assembler.reset();
         startAddress = 0;
-        objectCode = null;
+        lastObjectCode = null;
         isPaused = false;
     }
 
@@ -200,14 +212,15 @@ public class SimulationModel {
         // Código de exemplo
         String exampleCode =
                 """
-                        COPY START 1000
+                        COPY START 999
                         FIRST  LDA   FIVE
                                ADD   FOUR
                                STA   RESULT
                                RSUB
                         FIVE   WORD  5
                         FOUR   WORD  4
-                        RESULT RESW  1""";
+                        RESULT RESW  1
+                        END    FIRST""";
 
         // Coloca o código exemplo no campo de entrada
             view.getInputField().setText(exampleCode);
@@ -222,10 +235,4 @@ public class SimulationModel {
             alert.setContentText("O código de exemplo foi carregado no campo de entrada.");
             alert.showAndWait();
     }
-
-
-
-    ///  SETTERS
-
-
 }

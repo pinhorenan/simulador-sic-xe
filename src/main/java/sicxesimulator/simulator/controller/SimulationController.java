@@ -24,23 +24,34 @@ public class SimulationController {
         try {
             model.assembleAndLoadProgram(sourceLines);
             view.updateAllTables();
+            byte [] objectCode = model.getLastObjectCode();
 
+            // Formata o código objeto
+            String formattedCode = getAssembler().formatObjectCode(objectCode);
             view.appendOutput("Programa montado e carregado com sucesso!");
+            view.appendOutput(formattedCode);
+
         } catch (IOException | IllegalArgumentException e) {
             view.showError("Erro na montagem: " + e.getMessage());
         }
     }
 
     public void handleShowObjectCodeAction() {
-        String inputText = view.getInputField().getText();
-        if (!inputText.trim().isEmpty()) {
-            List<String> sourceLines = Arrays.asList(inputText.split("\\r?\\n"));
-            // Monta o código objeto
-            byte[] objectCode = getAssembler().assemble(sourceLines);
-            // Formata o código objeto
-            String formattedCode = getAssembler().formatObjectCode(objectCode);
-            // Exibe o código objeto no campo de saída
+        if (model.hasAssembledCode()) {
+            String formattedCode = model.getAssembler().formatObjectCode(model.getLastObjectCode());
             view.getOutputArea().setText(formattedCode);
+        } else {
+            String inputText = view.getInputField().getText();
+            if (!inputText.trim().isEmpty()) {
+                List<String> sourceLines = Arrays.asList(inputText.split("\\r?\\n"));
+                try {
+                    byte[] objectCode = model.getAssembler().assemble(sourceLines);
+                    String formattedCode = model.getAssembler().formatObjectCode(objectCode);
+                    view.getOutputArea().setText(formattedCode);
+                } catch (Exception e) {
+                    view.showError("Erro ao montar código: " + e.getMessage());
+                }
+            }
         }
     }
 
@@ -49,21 +60,16 @@ public class SimulationController {
             if (!model.isFinished()) {
                 Task<Void> runTask = new Task<>() {
                     @Override
-                    protected Void call() throws Exception {
+                    protected Void call() {
                         // Enquanto o programa não terminar ou estiver pausado
                         while (!model.isFinished() && !model.isPaused()) {
                             model.runNextInstruction();
-                            // Captura o log da última instrução
-                            final String log = model.getMachine().getControlUnit().getLastExecutionLog();
-                            // Atualiza interface na thread JavaFX
+                            String log = model.getMachine().getControlUnit().getLastExecutionLog();
                             Platform.runLater(() -> {
                                 view.appendOutput(log);
-                                view.updateRegisterTable();
-                                view.updateMemoryTable();
+                                view.updateAllTables();
                             });
-                            // Pequeno delay para evitar consumo excessivo de CPU e dar chance à UI de atualizar
-                            //noinspection BusyWait
-                            Thread.sleep(50);
+                            model.applyCycleDelay();
                         }
                         // Indica o fim da execução na UI
                         if (model.isFinished()) Platform.runLater(() -> view.appendOutput("Execução concluída!"));
@@ -87,8 +93,7 @@ public class SimulationController {
                     model.runNextInstruction();
                     String log = model.getMachine().getControlUnit().getLastExecutionLog();
                     view.appendOutput(log);
-                    view.updateRegisterTable();
-                    view.updateMemoryTable();
+                    view.updateAllTables();
                 } catch (Exception e) {
                     view.showError("Erro na execução: " + e.getMessage());
                 }
@@ -99,10 +104,13 @@ public class SimulationController {
     }
 
     public void handlePauseAction() {
+        if (!model.hasAssembledCode()) {
+            view.showError("Nenhum programa em execução para pausar!");
+            return;
+        }
         if (model.isPaused()) {
             view.appendOutput("Execução retomada!");
             model.unpause();
-
         } else {
             view.appendOutput("Execução pausada!");
             model.pause();
@@ -154,7 +162,6 @@ public class SimulationController {
             view.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
         }
     }
-
 
     public void handleChangeRunningSpeedAction(int speedValue) {
         model.setCycleSpeed(speedValue);

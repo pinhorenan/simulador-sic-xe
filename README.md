@@ -5,7 +5,6 @@ Este programa simula um sistema SIC/XE utilizando uma interface gráfica desenvo
 ## Requisitos
 
 - **JDK 21** ou superior
-- **Gradle 8+** (não é necessário instalá-lo separadamente, pois o projeto usa o Gradle Wrapper)
 
 ## Build e Execução
 
@@ -34,8 +33,6 @@ Para compilar e executar o simulador, utilize o Gradle Wrapper. Isso garantirá 
   gradlew.bat run
   ```
 
-O comando acima compila o projeto e inicia a aplicação, executando a função `main` definida no seu projeto.
-
 ### 3. Gerando o JAR Executável
 
 Se desejar gerar um JAR executável, utilize:
@@ -47,30 +44,7 @@ Se desejar gerar um JAR executável, utilize:
 O JAR gerado estará na pasta `build/libs`. Para executá-lo, use:
 
 ```bash
-java --module-path "caminho/para/javafx/lib" --add-modules javafx.controls,javafx.fxml,javafx.media -jar build/libs/SIC-XE-Simulator.jar
-```
-
-> **Observação:** Se você configurou o `applicationDefaultJvmArgs` no `build.gradle`, o JAR pode já estar preparado para rodar sem especificar o `--module-path`.
-
-## Estrutura do Projeto
-
-```
-SIC-XE-Simulator/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── sicxesimulator/...
-│   │   └── resources/
-│   │       └── darkmode.css
-│   └── test/
-│       └── java/...
-├── build.gradle
-├── settings.gradle
-├── gradlew
-├── gradlew.bat
-├── .gitignore
-├── README.md
-└── (outros arquivos de configuração)
+java WIP
 ```
 
 ## Licença

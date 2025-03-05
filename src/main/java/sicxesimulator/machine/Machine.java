@@ -4,52 +4,39 @@ import sicxesimulator.machine.cpu.ControlUnit;
 import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.machine.memory.Memory;
 
-@SuppressWarnings("unused")
 public class Machine {
     private final ControlUnit controlUnit;
     private Memory memory;
 
     public Machine() {
-        this.memory = new Memory(4096); // Valor arbitrário, parametrizável.
+        this.memory = new Memory(24576); // Valor arbitrário, parametrizável.
         this.controlUnit = new ControlUnit(this.memory);
     }
 
-    /**
-     * Ciclo de execução básico.
-     * Primeiro ocorre o fetching da instrução.
-     * Em segundo lugar a instrução é decodificada.
-     * Então a unidade de controle de fato irá executar a instrução
-     * Pode haver um delay, dependendo da cycleSpeed definida nesta máquina.
-     */
     public void runCycle() {
         if (controlUnit.isHalted()) return;
+        System.out.println("Iniciando ciclo de execução...");
         controlUnit.fetch();
         controlUnit.decode();
         controlUnit.execute();
+        System.out.println("Ciclo de execução concluído.");
     }
 
-    /**
-     * Reinicia a máquina, limpando a memória e os registradores da unidade de controle.
-     */
     public void reset() {
         memory.clearMemory();
         controlUnit.reset();
+        System.out.println("Máquina reiniciada.");
     }
 
-    /**
-     * Altera o tamanho da memória da máquina, para isso uma nova memória maior deverá ser criada e substituirá a antiga.
-     * @param memorySize - Tamanho de bytes da memória, o tamanho mínimo aceitável é de 1024.
-     */
-    public void changeMemorySize(int memorySize) {
-        this.memory = new Memory(memorySize);
+    public void changeMemorySize(int newMemorySizeInBytes) {
+        this.memory = new Memory(newMemorySizeInBytes);
         controlUnit.setMemory(this.memory);
+        System.out.println("Tamanho da memória alterado para " + newMemorySizeInBytes + " bytes.");
     }
 
-    /// GETTERS
-    public Memory getMemory() { return memory; }
+    public Memory getMemory() { return this.memory; }
 
     public Register[] getRegisters() { return controlUnit.getCurrentRegisters(); }
 
     public ControlUnit getControlUnit() { return controlUnit; }
-
 }

@@ -1,26 +1,23 @@
 package sicxesimulator.machine.memory;
 
+import java.util.Arrays;
+
 public class Word {
-    private byte[] value = new byte[3];
-    private final int address;
+    private final byte[] value = new byte[3];
+    private final int address; // Endereço da palavra (ex: 0, 1, 2...)
 
     public Word(int address) {
         this.address = address;
     }
 
-    ///  GETTERS
-
     public byte[] getValue() {
-        return value;
+        return Arrays.copyOf(value, value.length);
     }
 
-    public int getAddress() {
-        return address;
-    }
-
-    /// SETTERS
-
-    public void setValue(byte[] value) {
-        this.value = value;
+    public void setValue(byte[] newValue) {
+        if (newValue.length != 3) {
+            throw new IllegalArgumentException("A palavra deve ter 3 bytes.");
+        }
+        System.arraycopy(newValue, 0, value, 0, 3);
     }
 }

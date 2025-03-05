@@ -2,176 +2,106 @@ package sicxesimulator.machine.memory;
 
 public class Memory {
 	private final Word[] memory;
-	private static final int MIN_SIZE = 1024; // Tamanho mínimo em bytes
+	private static final int MIN_SIZE_IN_BYTES = 1024; // Tamanho mínimo em bytes
 	private final int addressRange; // Número de palavras (cada uma com 3 bytes)
 
-	/**
-	 * Construtor da memória.
-	 * @param size Tamanho total da memória em bytes. Deve ser pelo menos MIN_SIZE.
-	 */
-	public Memory(int size) {
-		if (size < MIN_SIZE) {
-			throw new IllegalArgumentException("Tamanho mínimo da memória: " + MIN_SIZE + " bytes");
+	public Memory(int sizeInBytes) {
+		// Validação do tamanho mínimo
+		if (sizeInBytes < MIN_SIZE_IN_BYTES) {
+			throw new IllegalArgumentException("Tamanho mínimo da memória: " + MIN_SIZE_IN_BYTES + " bytes");
 		}
-		// Cada palavra possui 3 bytes. O número de palavras é o tamanho total dividido por 3.
-		this.addressRange = size / 3;
-		memory = new Word[addressRange];
-		clearMemory();
+
+		this.addressRange = sizeInBytes / 3; // Ex: 12288 bytes / 3 = 4096 words
+		memory = new Word[addressRange];     // Array de tamanho 4096 (índices 0-4095)
+		clearMemory();                       // Inicializa todas as posições
 	}
 
-	/// GETTERS
 
-	/**
-	 * Retorna o tamanho total da memória em bytes.
-	 */
-	public int getSize() {
+	public int getSizeInBytes() {
 		return addressRange * 3;
 	}
 
-	/**
-	 * Retorna o número total de palavras na memória.
-	 */
 	public int getAddressRange() {
 		return addressRange;
 	}
 
-	/// MANIPULAÇÃO DE PALAVRAS
-
-	/**
-	 * Escreve uma palavra (3 bytes) na memória, usando o endereço em bytes.
-	 * @param address Endereço em bytes.
-	 * @param wordData Array de 3 bytes.
-	 */
-	public void writeWord(int address, byte[] wordData) {
+	public void writeWord(int wordAddress, byte[] wordData) {
 		if (wordData == null || wordData.length != 3) {
-			throw new IllegalArgumentException("Uma palavra deve ter exatamente 3 bytes e não ser NULL.");
+			throw new IllegalArgumentException("Uma palavra deve ter exatamente 3 bytes e nao ser NULL.");
 		}
-		validateAddress(address);
-		int index = address / 3;
-		memory[index].setValue(wordData);
+		validateAddress(wordAddress);
+		memory[wordAddress].setValue(wordData);
+		System.out.println("Escrevendo palavra no endereco " + wordAddress + ": " + byteArrayToHex(wordData));
 	}
 
-	/**
-	 * Lê uma palavra (3 bytes) da memória, usando o endereço em bytes.
-	 * @param address Endereço em bytes.
-	 * @return Array de 3 bytes correspondente à palavra.
-	 */
-	public byte[] readWord(int address) {
-		validateAddress(address);
-		int index = address / 3;
-		return memory[index].getValue();
+	public byte[] readWord(int wordAddress) {
+		validateAddress(wordAddress);
+		//System.out.println("readWord(" + wordAddress + ")");
+		return memory[wordAddress].getValue();
 	}
 
-	///  ESCRITA EM MASSA DE BYTES (útil para carregar programas)
-
-	/**
-	 * Escreve um array de bytes na memória a partir de um endereço inicial.
-	 * @param startAddress Endereço inicial (em bytes).
-	 * @param data Array de bytes a serem escritos.
-	 */
-	public void writeBytes(int startAddress, byte[] data) {
-		if (data == null) {
-			throw new IllegalArgumentException("Dados não podem ser nulos.");
+	public int readByte(int wordAddress, int offset) {
+		// Valida se o offset está dentro do intervalo 0-2
+		if (offset < 0 || offset >= 3) {
+			throw new IllegalArgumentException("Offset invalido: " + offset);
 		}
-		validateAddress(startAddress);
-		validateAddress(startAddress + data.length - 1);
-		for (int i = 0; i < data.length; i++) {
-			writeByte(startAddress + i, data[i] & 0xFF);
+
+		// Valida o endereço da palavra
+		validateAddress(wordAddress);
+
+		byte[] wordValue = memory[wordAddress].getValue();
+		int byteValue = wordValue[offset] & 0xFF;
+		System.out.println("Lendo byte no endereço " + wordAddress + " com offset " + offset + ": " + byteValue);
+		return byteValue;
+	}
+
+	public int readByte(int byteAddress) {
+		int wordAddress = byteAddress / 3; // Índice da palavra
+		int offset = byteAddress % 3;      // Offset dentro da palavra
+		return readByte(wordAddress, offset);
+	}
+
+	public void writeByte(int wordAddress, int offset, int value) {
+		if (offset < 0 || offset >= 3) {
+			throw new IllegalArgumentException("Offset inválido: " + offset);
 		}
-	}
-
-	/**
-	 * Lê um array de bytes da memória.
-	 * @param startAddress Endereço inicial (em bytes).
-	 * @param numBytes Número de bytes a serem lidos.
-	 * @return Array de bytes lido da memória.
-	 */
-	public byte[] readBytes(int startAddress, int numBytes) {
-		validateAddress(startAddress);
-		validateAddress(startAddress + numBytes - 1);
-		byte[] result = new byte[numBytes];
-		for (int i = 0; i < numBytes; i++) {
-			result[i] = (byte) readByte(startAddress + i);
-		}
-		return result;
-	}
-
-	///  MÉTODOS BÁSICOS (BYTE)
-
-	/**
-	 * Lê um byte da memória, dado um endereço em bytes.
-	 * @param address Endereço em bytes.
-	 * @return O valor do byte (0-255).
-	 */
-	public int readByte(int address) {
-		validateAddress(address);
-		int index = address / 3;
-		int offset = address % 3;
-		byte[] wordValue = memory[index].getValue();
-		return wordValue[offset] & 0xFF;
-	}
-
-	/**
-	 * Escreve um byte na memória.
-	 * @param address Endereço em bytes.
-	 * @param value Valor a ser escrito (0-255).
-	 */
-	public void writeByte(int address, int value) {
-		validateAddress(address);
-		int index = address / 3;
-		int offset = address % 3;
-		byte [] wordValue = memory[index].getValue();
+		validateAddress(wordAddress);
+		// Obtém a cópia atual do array
+		byte[] wordValue = memory[wordAddress].getValue();
+		// Modifica o byte específico
 		wordValue[offset] = (byte) (value & 0xFF);
+		// Atualiza a palavra com o novo array
+		memory[wordAddress].setValue(wordValue);
+		System.out.println("Escrevendo byte no endereço " + wordAddress + " com offset " + offset + ": " + value);
 	}
 
-	/// MÉTODOS PARA PONTO FLUTUANTE (6 BYTES)
-
-	/**
-	 * Lê um valor de ponto flutuante (representado em 6 bytes) da memória.
-	 * @param address Endereço inicial (em bytes) do ponto flutuante.
-	 * @return Valor lido.
-	 */
-	public long readFloat(int address) {
-		validateAddress(address + 5);
-		long value = 0;
-		for (int i = 0; i < 6; i++) {
-			value = (value << 8) | (readByte(address + i) & 0xFF);
-		}
-		return value;
-	}
-
-	/**
-	 * Escreve um valor de ponto flutuante (6 bytes) na memória.
-	 * @param address Endereço inicial (em bytes).
-	 * @param value Valor a ser escrito.
-	 */
-	public void writeFloat(int address, long value) {
-		validateAddress(address + 5);
-		for (int i = 5; i >= 0; i--) {
-			writeByte(address + i, (int)(value & 0xFF));
-			value >>= 8;
+	private void validateAddress(int wordAddress) {
+		if (wordAddress < 0 || wordAddress >= addressRange) {
+			throw new IllegalArgumentException("Endereco invalido: " + wordAddress + ". Tamanho da memoria: " + addressRange + " palavras.");
 		}
 	}
 
-	///  MÉTODOS AUXILIARES
-
-	/**
-	 * Valida se o endereço (em bytes) está dentro dos limites da memória.
-	 * @param address Endereço em bytes.
-	 */
-	private void validateAddress(int address) {
-		if (address < 0 || address >= getSize()) {
-			throw new IllegalArgumentException("Endereço inválido: " + address + ". Tamanho da memória: " + getSize());
-		}
-	}
-
-	/**
-	 * Inicializa a memória criando um Word para cada posição.
-	 * Se o endereço de uma palavra for considerado em bytes, multiplicamos o índice por 3.
-	 */
 	public void clearMemory() {
-		for (int i = 0; i < addressRange; i++) {
-			memory[i] = new Word(i); // TODO: Se o endereço for em bytes, preciso multiplicar por 3: Word(i*3)
+		for (int i = 0; i < addressRange; i++) { // Iteração correta: 0 ≤ i < 4096
+			memory[i] = new Word(i); // Cria uma nova Word para cada posição
 		}
+	}
+
+	private String byteArrayToHex(byte[] byteArray) {
+		StringBuilder sb = new StringBuilder();
+		for (byte b : byteArray) {
+			sb.append(String.format("%02X", b));
+		}
+		return sb.toString();
+	}
+
+	// Novo método para escrever uma palavra diretamente pelo seu endereço
+	public void writeWordByAddress(int wordAddress, byte[] data) {
+		writeWord(wordAddress, data); // Já implementado
+	}
+
+	// Método para ler uma palavra pelo endereço
+	public byte[] readWordByAddress(int wordAddress) {
+		return readWord(wordAddress);
 	}
 }

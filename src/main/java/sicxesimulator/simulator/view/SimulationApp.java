@@ -48,7 +48,7 @@ public class SimulationApp extends Application {
     private Label memorySizeLabel;
     private Label viewFormatLabel;
 
-    ///  CRIAÇÃO DE COMPONENTES DA INTERFACE
+    /// CRIAÇÃO DE COMPONENTES DA INTERFACE
 
     private MenuBar createMenuBar() {
         MenuBar menuBar = new MenuBar();
@@ -94,7 +94,6 @@ public class SimulationApp extends Application {
         MenuItem helpItem = new MenuItem("Ajuda e Tutorial");
         helpItem.setOnAction(e -> controller.handleHelpAction());
         helpMenu.getItems().add(helpItem);
-
 
         // Menu "Sobre"
         Menu aboutMenu = new Menu("Sobre");
@@ -189,11 +188,10 @@ public class SimulationApp extends Application {
         bottomBar.setAlignment(Pos.CENTER_LEFT);
         bottomBar.setStyle("-fx-background-color: #EEE; -fx-border-color: #CCC; -fx-padding: 5px;");
 
-        root.setBottom(bottomBar); // Adiciona no layout principal
+        root.setBottom(bottomBar);
     }
 
-
-    /// SETUP E ATUALIZAÇÃO DAS TABE
+    /// SETUP E ATUALIZAÇÃO DAS TABELAS
 
     private void setupRegisterTable() {
         registerTable = new TableView<>();
@@ -225,27 +223,38 @@ public class SimulationApp extends Application {
         symbolTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
-    ///  ATUALIZAÇÃO DAS TABELAS
+    /// ATUALIZAÇÃO DAS TABELAS
 
     public void updateRegisterTable() {
         registerTable.getItems().clear();
         for (Register reg : controller.getSimulationModel().getMachine().getControlUnit().getCurrentRegisters()) {
             String value;
+            // Exibe 12 dígitos para o registrador F (48 bits) e 6 dígitos para os outros (24 bits)
             if ("F".equals(reg.getName())) {
-                value = String.format("%012X", reg.getLongValue());
+                value = String.format("%012X", reg.getLongValue()); // 12 dígitos hexadecimais
             } else {
-                value = String.format("%04X", reg.getIntValue());
+                value = String.format("%06X", reg.getIntValue()); // 6 dígitos hexadecimais
             }
+            // Adiciona uma nova entrada na tabela
             registerTable.getItems().add(new RegisterEntry(reg.getName(), value));
         }
     }
 
     public void updateMemoryTable() {
         memoryTable.getItems().clear();
-        for (int address = 0; address < controller.getSimulationModel().getMachine().getMemory().getSize(); address++) {
-            int byteValue = controller.getSimulationModel().getMachine().getMemory().readByte(address);
-            String value = ValueFormatter.formatByte(byteValue, viewFormat);
-            String formattedAddress = ValueFormatter.formatAddress(address, "HEX"); // Endereço sempre em HEX
+        var memory = controller.getSimulationModel().getMachine().getMemory();
+        int wordCount = memory.getAddressRange(); // Número de palavras na memória
+
+        for (int wordIndex = 0; wordIndex < wordCount; wordIndex++) {
+            byte[] word = memory.readWord(wordIndex); // Lê a palavra (3 bytes)
+            int wordValue = ((word[0] & 0xFF) << 16) | ((word[1] & 0xFF) << 8) | (word[2] & 0xFF); // Converte para inteiro
+            String value = String.format("%06X", wordValue); // Formata para 6 dígitos hexadecimais
+
+            // Converte o índice da palavra para endereço em bytes
+            int byteAddress = wordIndex * 3;
+            String formattedAddress = ValueFormatter.formatAddress(byteAddress, "HEX");
+
+            // Adiciona uma nova entrada na tabela
             memoryTable.getItems().add(new MemoryEntry(formattedAddress, value));
         }
     }
@@ -253,11 +262,16 @@ public class SimulationApp extends Application {
     public void updateSymbolTable() {
         symbolTable.getItems().clear();
         Map<String, Integer> symbols = controller.getSimulationModel().getAssembler().getSymbolTable();
-        symbols.forEach((name, address) -> {
-            String formattedAddress = ValueFormatter.formatAddress(address, viewFormat);
+
+        symbols.forEach((name, addressInBytes) -> {
+            // Formata o endereço conforme o formato especificado
+            String formattedAddress = ValueFormatter.formatAddress(addressInBytes, viewFormat);
+
+            // Adiciona uma nova entrada na tabela
             symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
         });
     }
+
 
     public void updateAllTables() {
         updateRegisterTable();
@@ -266,8 +280,7 @@ public class SimulationApp extends Application {
     }
 
     /**
-     * Usada para enviar texto para a caixa de saída.
-     * @param message - String a ser escrita na caixa de saída.
+     * Envia texto para a caixa de saída.
      */
     public void appendOutput(String message) {
         Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
@@ -300,58 +313,44 @@ public class SimulationApp extends Application {
     }
 
     public void showExecutionSpeedDialog() {
-        // Cria um ChoiceDialog com as opções de velocidade
         ChoiceDialog<String> dialog = new ChoiceDialog<>("Tempo real", "Rápido", "Médio", "Lento", "Muito lento");
         dialog.setTitle("Tempo real");
         dialog.setHeaderText("Selecione a velocidade de execução:");
         dialog.setContentText("Velocidade:");
-
-        // Exibe o diálogo e, se o usuário escolher uma ação, mapeia para o valor numérico correspondente
         dialog.showAndWait().ifPresent(selected -> {
-                    int speedValue = switch (selected) {
-                        case "Tempo real" -> //noinspection DuplicateBranchesInSwitch
-                                0;
-                        case "Rápido" -> 4;
-                        case "Médio" -> 3;
-                        case "Lento" -> 2;
-                        case "Muito lento" -> 1;
-                        default -> 0;
-                    };
-
-                    // Chama o métod-o no controlador para atualizar a velocidade de execução
-                    controller.handleChangeRunningSpeedAction(speedValue);
-                    String delayInMs;
-
-
-                    delayInMs = switch (speedValue) {
-                        case 0 -> "Tempo real";
-                        case 1 -> "1000ms";
-                        case 2 -> "500ms";
-                        case 3 -> "250ms";
-                        case 4 -> "100ms";
-                        default -> "Usando default, algo deu errado.";
-                    };
-
-                    executionSpeedLabel.setText("Atraso de ciclo: " + delayInMs);
-
-                });
+            int speedValue = switch (selected) {
+                case "Tempo real" -> //noinspection DuplicateBranchesInSwitch
+                        0;
+                case "Rápido" -> 4;
+                case "Médio" -> 3;
+                case "Lento" -> 2;
+                case "Muito lento" -> 1;
+                default -> 0;
+            };
+            controller.handleChangeRunningSpeedAction(speedValue);
+            String delayInMs = switch (speedValue) {
+                case 0 -> "Tempo real";
+                case 1 -> "1000ms";
+                case 2 -> "500ms";
+                case 3 -> "250ms";
+                case 4 -> "100ms";
+                default -> "Erro na velocidade.";
+            };
+            executionSpeedLabel.setText("Atraso de ciclo: " + delayInMs);
+        });
     }
 
     public void showMemorySizeDialog() {
-        TextInputDialog dialog = new TextInputDialog("1024"); // valor padrão "1024"
+        TextInputDialog dialog = new TextInputDialog("1024");
         dialog.setTitle("Alterar Tamanho da Memória");
         dialog.setHeaderText("Defina o tamanho da memória");
         dialog.setContentText("Digite um número inteiro positivo:");
-
         dialog.showAndWait().ifPresent(input -> {
             try {
                 int newSize = Integer.parseInt(input);
-                if (newSize <= 0) {
-                    throw new NumberFormatException("O valor deve ser maior que zero.");
-                }
+                if (newSize <= 0) throw new NumberFormatException("Valor deve ser maior que zero.");
                 controller.handleChangeMemorySizeAction(newSize);
                 memorySizeLabel.setText("Memória: " + newSize + " bytes");
-
                 appendOutput("Tamanho da memória alterado para: " + newSize + " bytes.");
             } catch (NumberFormatException ex) {
                 showError("Valor inválido! Por favor, insira um número inteiro positivo.");
@@ -363,7 +362,6 @@ public class SimulationApp extends Application {
         Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
         helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
         helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
-
         String helpText = """
             Funcionalidades Suportadas:
               - Montar: Compila o código assembly e gera o código objeto.
@@ -393,7 +391,6 @@ public class SimulationApp extends Application {
     public void toggleDarkMode() {
         Scene scene = primaryStage.getScene();
         String darkModeStylesheet = Objects.requireNonNull(getClass().getResource("/darkmode.css")).toExternalForm();
-
         if (!darkModeEnabled) {
             scene.getStylesheets().add(darkModeStylesheet);
             darkModeEnabled = true;
@@ -405,8 +402,7 @@ public class SimulationApp extends Application {
         }
     }
 
-
-    ///  GETTERS
+    /// GETTERS
 
     public Stage getStage() {
         return primaryStage;
@@ -422,7 +418,7 @@ public class SimulationApp extends Application {
 
     public TableView<SymbolEntry> getSymbolTable() { return symbolTable; }
 
-    ///  SETTERS
+    /// SETTERS
 
     public void setViewFormatToHex() {
         viewFormat = "HEX";
@@ -439,7 +435,6 @@ public class SimulationApp extends Application {
         viewFormatLabel.setText("Formato: Octal");
     }
 
-
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -449,7 +444,7 @@ public class SimulationApp extends Application {
         SimulationModel model = new SimulationModel(
                 machine,
                 new Assembler(),
-                new Loader(machine.getControlUnit())
+                new Loader(machine.getMemory())
         );
         controller = new SimulationController(model, this);
 
@@ -458,30 +453,22 @@ public class SimulationApp extends Application {
         primaryStage.setHeight(600);
         primaryStage.getIcons().add(new Image("https://img.icons8.com/?size=100&id=rd2k11wyt7We&format=png&color=000000"));
 
-
-
-
-
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
         root.setPadding(new Insets(0, 0, 10, 0));
 
         /// Coluna Esquerda: entrada, botões de ação e saída
-
         VBox leftColumn = new VBox(10);
         leftColumn.setPadding(new Insets(10));
 
-        /// PAINEL DE ENTRADA
         TitledPane inputPane = new TitledPane("Código Assembly", createInputArea());
         inputPane.setCollapsible(false);
         VBox.setVgrow(inputPane, Priority.NEVER);
 
-        ///  BOTÕES
         HBox actionButtons = new HBox(10);
         actionButtons.setPadding(new Insets(5));
         VBox.setVgrow(actionButtons, Priority.NEVER);
 
-        // Montar
         Button assembleButton = new Button("Montar");
         assembleButton.setOnAction(e -> {
             String inputText = inputField.getText();
@@ -491,31 +478,23 @@ public class SimulationApp extends Application {
             }
         });
 
-        // Mostrar objCode
         Button showObjectCodeButton = new Button("Mostrar Código Objeto");
         showObjectCodeButton.setOnAction(e -> controller.handleShowObjectCodeAction());
 
-        // Run
         Button runButton = new Button("Executar");
         runButton.setOnAction(e -> controller.handleRunAction());
 
-        // Pause
         Button pauseButton = new Button("Pausar");
         pauseButton.setOnAction(e -> controller.handlePauseAction());
 
-        // Próx
         Button nextButton = new Button("Próximo");
         nextButton.setOnAction(e -> controller.handleNextAction());
 
-        // Reset
         Button resetButton = new Button("Resetar");
         resetButton.setOnAction(e -> controller.handleResetAction());
 
         actionButtons.getChildren().addAll(assembleButton, showObjectCodeButton, runButton, pauseButton, nextButton, resetButton);
 
-        ///  Painel de saída
-
-        // Painel de saída
         ScrollPane outputScroll = createOutputAreaPane();
         outputScroll.setFitToHeight(true);
         outputScroll.setFitToWidth(true);
@@ -523,17 +502,13 @@ public class SimulationApp extends Application {
 
         TitledPane outputPane = new TitledPane("Saída", outputScroll);
         outputPane.setCollapsible(false);
-        // Permite que o TitledPane cresça verticalmente
         outputPane.setMaxHeight(Double.MAX_VALUE);
         VBox.setVgrow(outputPane, Priority.ALWAYS);
 
-        // Agora adicione tudo isso na esquerda.
         leftColumn.getChildren().addAll(inputPane, actionButtons, outputPane);
-
         root.setLeft(leftColumn);
 
-        ///  Coluna direita: Tabelas de memória, registradores e símbolos
-
+        /// Coluna direita: Tabelas de memória, registradores e símbolos
         VBox rightColumn = new VBox(10);
         rightColumn.setPadding(new Insets(10));
         TitledPane memoryPane = new TitledPane("Memória", createMemoryTablePane());
@@ -558,13 +533,10 @@ public class SimulationApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        ///  Finalização
-
         updateAllTables();
         showWelcomeMessage();
     }
 
-    ///  MAIN
     public static void main(String[] args) {
         launch(args);
     }

@@ -31,11 +31,8 @@ public class Machine {
         System.out.println("Máquina reiniciada.");
     }
 
-    public void changeMemorySize(int newMemorySizeInBytes) {
-        this.memory = new Memory(newMemorySizeInBytes);
-        // controlUnit.setMemory(this.memory);
-        // System.out.println("Tamanho da memória alterado para " + newMemorySizeInBytes + " bytes.");
-        System.out.println("Opção temporariamente desabilitada.");
+    public void changeMemorySize(int newSizeInBytes) {
+        this.memory = new Memory(newSizeInBytes);
     }
 
     public Memory getMemory() { return this.memory; }

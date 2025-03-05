@@ -20,16 +20,21 @@ public class SimulationController {
         this.view = view;
     }
 
-    public void handleAssembleAction(List<String> sourceLines) {
+    /**
+     * Lê o código do campo de entrada, monta e carrega o programa.
+     */
+    public void handleAssembleAction() {
+        // Obtém o texto de entrada e divide em linhas
+        String sourceText = view.getInputText();
+        List<String> sourceLines = Arrays.asList(sourceText.split("\\r?\\n"));
         try {
             model.assembleAndLoadProgram(sourceLines);
             view.updateAllTables();
 
             // Formata o código objeto
-            String formattedCode = model.getLastObjectFile().toString(); // TODO;
+            String formattedCode = model.getLastObjectFile().toString();
             view.appendOutput("Programa montado e carregado com sucesso!");
             view.appendOutput(formattedCode);
-
         } catch (IOException | IllegalArgumentException e) {
             view.showError("Erro na montagem: " + e.getMessage());
         }
@@ -37,7 +42,7 @@ public class SimulationController {
 
     public void handleShowObjectCodeAction() {
         if (model.getLastObjectFile() != null) {
-            String formattedCode = model.getLastObjectFile().toString(); // TODO;
+            String formattedCode = model.getLastObjectFile().toString();
             view.appendOutput(formattedCode);
         } else {
             view.appendOutput("Nenhum programa montado!");
@@ -50,7 +55,7 @@ public class SimulationController {
                 Task<Void> runTask = new Task<>() {
                     @Override
                     protected Void call() {
-                        // Enquanto o programa não terminar ou estiver pausado
+                        // Executa instruções enquanto o programa não terminar ou estiver pausado
                         while (!model.isFinished() && !model.isPaused()) {
                             model.runNextInstruction();
                             String log = model.getMachine().getControlUnit().getLastExecutionLog();
@@ -60,12 +65,13 @@ public class SimulationController {
                             });
                             model.applyCycleDelay();
                         }
-                        // Indica o fim da execução na UI
-                        if (model.isFinished()) Platform.runLater(() -> view.appendOutput("Execução concluída!"));
+                        // Indica o fim da execução na interface
+                        if (model.isFinished()) {
+                            Platform.runLater(() -> view.appendOutput("Execução concluída!"));
+                        }
                         return null;
                     }
                 };
-
                 new Thread(runTask).start();
             } else {
                 view.showError("Fim do programa!");
@@ -76,7 +82,7 @@ public class SimulationController {
     }
 
     public void handleNextAction() {
-        if(model.hasAssembledCode()) {
+        if (model.hasAssembledCode()) {
             if (!model.isFinished()) {
                 try {
                     model.runNextInstruction();
@@ -86,10 +92,12 @@ public class SimulationController {
                 } catch (Exception e) {
                     view.showError("Erro na execução: " + e.getMessage());
                 }
+            } else {
+                view.showError("Fim do programa!");
             }
-            else view.showError("Fim do programa!");
-        } else view.showError("Nenhum programa montado!");
-
+        } else {
+            view.showError("Nenhum programa montado!");
+        }
     }
 
     public void handlePauseAction() {
@@ -107,33 +115,24 @@ public class SimulationController {
     }
 
     public void handleResetAction() {
-        // Limpa o código assembly no campo de entrada
+        // Limpa o campo de entrada e as tabelas
         view.getInputField().clear();
-
-        // Limpa as tabelas
         view.getRegisterTable().getItems().clear();
         view.getMemoryTable().getItems().clear();
         view.getSymbolTable().getItems().clear();
 
-        // Reseta o estado do modelo de simulação
+        // Reseta o modelo e atualiza a interface
         model.reset();
-
-        // Atualiza as tabelas após o reset
         view.updateAllTables();
-
-        // Limpa a área de saída
         view.getOutputArea().clear();
-
-        // Se necessário, você pode definir o título da janela ou exibir uma mensagem
         view.getStage().setTitle("SIC/XE Simulator v2.1");
 
-        // Exibe uma mensagem informando que a simulação foi resetada
+        // Exibe um alerta informativo sobre o reset
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Reset");
         alert.setHeaderText("Simulação resetada");
         alert.setContentText("O estado da simulação foi completamente resetado.");
         alert.showAndWait();
-
     }
 
     public void handleLoadSampleCodeAction() {
@@ -142,10 +141,9 @@ public class SimulationController {
 
     public void handleChangeMemorySizeAction(int newSize) {
         try {
-            // Altera o tamanho da memória na máquina
+            // Altera o tamanho da memória na máquina e atualiza a interface
             model.getMachine().changeMemorySize(newSize);
             view.appendOutput("Memória alterada para " + newSize + " bytes.");
-            // Atualiza as tabelas se necessário
             view.updateMemoryTable();
         } catch (Exception e) {
             view.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
@@ -157,26 +155,25 @@ public class SimulationController {
     }
 
     public void handleHexViewAction() {
-        view.setViewFormatToHex();
-        view.updateAllTables();
+        view.setViewFormat("HEX");
+        view.updateViewFormatLabel("Hexadecimal");
     }
 
     public void handleOctalViewAction() {
-        view.setViewFormatToOctal();
-        view.updateAllTables();
+        view.setViewFormat("OCT");
+        view.updateViewFormatLabel("Octal");
     }
 
     public void handleDecimalViewAction() {
-        view.setViewFormatToDecimal();
-        view.updateAllTables();
+        view.setViewFormat("DEC");
+        view.updateViewFormatLabel("Decimal");
     }
 
     public void handleHelpAction() {
         view.showHelpWindow();
     }
 
-    ///  GETTERS
-
+    // GETTERS
     public SimulationModel getSimulationModel() {
         return model;
     }
@@ -184,5 +181,4 @@ public class SimulationController {
     public Assembler getAssembler() {
         return model.getAssembler();
     }
-
 }

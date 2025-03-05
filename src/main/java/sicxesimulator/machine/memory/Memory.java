@@ -1,5 +1,7 @@
 package sicxesimulator.machine.memory;
 
+import sicxesimulator.utils.Convert;
+
 public class Memory {
 	private final Word[] memory;
 	private static final int MIN_SIZE_IN_BYTES = 1024; // Tamanho mínimo em bytes
@@ -31,7 +33,7 @@ public class Memory {
 		}
 		validateAddress(wordAddress);
 		memory[wordAddress].setValue(wordData);
-		System.out.println("Escrevendo palavra no endereco " + wordAddress + ": " + byteArrayToHex(wordData));
+		System.out.println("Escrevendo palavra no endereco " + wordAddress + ": " + Convert.bytesToHex(wordData));
 	}
 
 	public byte[] readWord(int wordAddress) {
@@ -85,14 +87,6 @@ public class Memory {
 		for (int i = 0; i < addressRange; i++) { // Iteração correta: 0 ≤ i < 4096
 			memory[i] = new Word(i); // Cria uma nova Word para cada posição
 		}
-	}
-
-	private String byteArrayToHex(byte[] byteArray) {
-		StringBuilder sb = new StringBuilder();
-		for (byte b : byteArray) {
-			sb.append(String.format("%02X", b));
-		}
-		return sb.toString();
 	}
 
 	// Novo método para escrever uma palavra diretamente pelo seu endereço

@@ -7,6 +7,7 @@ import sicxesimulator.assembler.Assembler;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.macroprocessor.MacroProcessor;
 import sicxesimulator.simulator.view.SimulationApp;
+import sicxesimulator.utils.ViewConfig;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,9 @@ public class SimulationModel {
     private int simulationSpeed;
     private boolean isPaused;
 
+    private final ViewConfig viewConfig = new ViewConfig();
+
+
     public SimulationModel(Machine machine, Assembler assembler, Loader loader) {
         this.machine = machine;
         this.assembler = assembler;
@@ -39,7 +43,12 @@ public class SimulationModel {
 
     public Assembler getAssembler() { return assembler; }
 
-    /**
+    public ViewConfig getViewConfig() {
+        return viewConfig;
+    }
+
+
+/**
      * Processa o código-fonte que contém macros.
      * <p>
      * Essa implementação salva o código de entrada em um arquivo temporário,
@@ -121,6 +130,15 @@ public class SimulationModel {
                 System.err.println("Execução interrompida: " + e.getMessage());
                 Thread.currentThread().interrupt(); // Restaura o estado de interrupção
             }
+        }
+    }
+
+    public void validateMemorySize(int size) throws IllegalArgumentException {
+        if (size <= 0) {
+            throw new IllegalArgumentException("Tamanho da memória deve ser positivo");
+        }
+        if (size % 3 != 0) {
+            throw new IllegalArgumentException("Tamanho deve ser múltiplo de 3 (palavras de 3 bytes)");
         }
     }
 
@@ -239,3 +257,4 @@ public class SimulationModel {
             alert.showAndWait();
     }
 }
+

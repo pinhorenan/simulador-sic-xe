@@ -1,6 +1,10 @@
 package sicxesimulator.utils;
 
 import sicxesimulator.assembler.models.ObjectFile;
+import sicxesimulator.machine.cpu.Register;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class ValueFormatter {
 
@@ -36,18 +40,38 @@ public abstract class ValueFormatter {
      * @throws IllegalArgumentException Se o endereço for negativo.
      */
     public static String formatAddress(int address, String format) {
-        // Valida o endereço
         if (address < 0) {
             throw new IllegalArgumentException("O endereço não pode ser negativo.");
         }
 
-        // Formata o endereço conforme o formato especificado
         return switch (format.toUpperCase()) {
-            case "DEC" -> Integer.toString(address); // Decimal
-            case "OCT" -> Integer.toOctalString(address); // Octal
-            case "HEX" -> String.format("%04X", address); // Hexadecimal com 4 dígitos
+            case "DEC" -> Integer.toString(address);
+            case "OCT" -> String.format("%08o", address); // 8 dígitos octais
+            case "HEX" -> String.format("%06X", address);  // 6 dígitos hexadecimais
             default -> throw new IllegalArgumentException("Formato inválido: " + format);
         };
+    }
+
+    public static String processAddresses(String message) {
+        Matcher matcher = Pattern.compile("0x([0-9A-Fa-f]{1,8})").matcher(message);
+        StringBuilder sb = new StringBuilder();
+
+        while (matcher.find()) {
+            int wordAddress = Integer.parseInt(matcher.group(1), 16);
+            int byteAddress = wordAddress * 3;
+            matcher.appendReplacement(sb, "0x" + Integer.toHexString(byteAddress).toUpperCase());
+        }
+        return matcher.appendTail(sb).toString();
+    }
+
+    public static String formatRegisterValue(Register reg) {
+        String regName = reg.getName().toUpperCase();
+        if ("PC".equals(regName)) {
+            return String.format("%06X", reg.getIntValue());
+        } else if ("F".equals(regName)) {
+            return String.format("%012X", reg.getLongValue());
+        }
+        return String.format("%06X", reg.getIntValue());
     }
 
     /**

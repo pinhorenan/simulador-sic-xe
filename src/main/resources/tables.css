@@ -1,0 +1,58 @@
+/* Estilos gerais para todas as tabelas */
+.table-view {
+    -fx-font-family: 'Consolas';
+    -fx-font-size: 12px;
+    -fx-background-color: transparent;
+}
+
+/* Cabeçalho das tabelas */
+.table-view .column-header-background {
+    -fx-background-color: #f8f9fa;
+}
+
+.table-view .column-header {
+    -fx-background-color: #e9ecef;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 0 1 0 0;
+}
+
+/* Linhas alternadas */
+.table-row-cell:even {
+    -fx-background-color: #f8f9fa;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #ffffff;
+}
+
+/* Hover e seleção */
+.table-row-cell:hover {
+    -fx-background-color: #e9ecef;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #4a90e2;
+    -fx-text-fill: white;
+}
+
+/* Estilos específicos para cada tipo de tabela */
+.register-table .table-column {
+    -fx-alignment: CENTER-LEFT;
+    -fx-padding: 5 10 5 10;
+}
+
+.memory-table .table-column {
+    -fx-alignment: CENTER;
+    -fx-padding: 5 15 5 15;
+}
+
+.symbol-table .table-column {
+    -fx-alignment: CENTER-LEFT;
+    -fx-padding: 5 10 5 10;
+}
+
+/* Scrollbar vertical */
+.table-view .scroll-bar:vertical {
+    -fx-pref-width: 12;
+    -fx-padding: 3;
+}

@@ -85,7 +85,6 @@ public class FirstPassProcessor {
             }
 
             // Processa a diretiva END: encerra a passagem.
-            // Processa a diretiva END: encerra a passagem.
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
                 ir.setFinalAddress(locationCounter); // Define o endereço final como o contador de localização atual

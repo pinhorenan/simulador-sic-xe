@@ -24,14 +24,11 @@ public class SimulationController {
      * Lê o código do campo de entrada, monta e carrega o programa.
      */
     public void handleAssembleAction() {
-        // Obtém o texto de entrada e divide em linhas
         String sourceText = view.getInputText();
         List<String> sourceLines = Arrays.asList(sourceText.split("\\r?\\n"));
         try {
             model.assembleAndLoadProgram(sourceLines);
             view.updateAllTables();
-
-            // Formata o código objeto
             String formattedCode = model.getLastObjectFile().toString();
             view.appendOutput("Programa montado e carregado com sucesso!");
             view.appendOutput(formattedCode);
@@ -58,9 +55,7 @@ public class SimulationController {
                 Task<Void> runTask = new Task<>() {
                     @Override
                     protected Void call() {
-                        // Executa instruções enquanto o programa não terminar ou estiver pausado
                         while (!model.isFinished() && !model.isPaused()) {
-
                             model.runNextInstruction();
                             String log = model.getMachine().getControlUnit().getLastExecutionLog();
                             Platform.runLater(() -> {
@@ -69,7 +64,6 @@ public class SimulationController {
                             });
                             model.applyCycleDelay();
                         }
-                        // Indica o fim da execução na interface
                         if (model.isFinished()) {
                             Platform.runLater(() -> view.appendOutput("Execução concluída!"));
                         }
@@ -123,19 +117,14 @@ public class SimulationController {
 
     public void handleResetAction() {
         view.generateStateLog();
-        // Limpa o campo de entrada e as tabelas
         view.getInputField().clear();
         view.getRegisterTable().getItems().clear();
         view.getMemoryTable().getItems().clear();
         view.getSymbolTable().getItems().clear();
-
-        // Reseta o modelo e atualiza a interface
         model.reset();
         view.updateAllTables();
         view.getOutputArea().clear();
         view.getStage().setTitle("Simulador SIC/XE");
-
-        // Exibe um alerta informativo sobre o reset
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Reset");
         alert.setHeaderText("Simulação resetada");
@@ -143,13 +132,13 @@ public class SimulationController {
         alert.showAndWait();
     }
 
-    public void handleLoadSampleCodeAction() {
-        model.loadSambleCode(view);
+    // Método sobrecarregado para carregar um código de exemplo específico
+    public void handleLoadSampleCodeAction(String sampleCode, String title) {
+        model.loadSampleCode(sampleCode, view, title);
     }
 
     public void handleChangeMemorySizeAction(int newSize) {
         try {
-            // Altera o tamanho da memória na máquina e atualiza a interface
             model.getMachine().changeMemorySize(newSize);
             view.appendOutput("Memória alterada para " + newSize + " bytes.");
             view.updateMemoryTable();

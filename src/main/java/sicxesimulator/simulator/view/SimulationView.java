@@ -2,6 +2,7 @@ package sicxesimulator.simulator.view;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.stage.Stage;
 import sicxesimulator.simulator.view.SimulationApp.RegisterEntry;
 import sicxesimulator.simulator.view.SimulationApp.MemoryEntry;
@@ -46,4 +47,6 @@ public interface SimulationView {
 
     // Reset completo
     void fullReset();
+
+
 }

@@ -3,7 +3,7 @@ package sicxesimulator.machine.cpu;
 public class Instruction {
     private final int opcode;
     private final int[] operands;
-    private final int format; // 1, 2, 3, 4
+    private final int format; // 1, 2, 3 ou 4
     private final boolean indexed;
     private final int effectiveAddress;
 

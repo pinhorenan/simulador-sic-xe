@@ -23,6 +23,7 @@ import sicxesimulator.utils.ValueFormatter;
 import sicxesimulator.simulator.view.components.*;
 import sicxesimulator.utils.ViewConfig;
 import java.util.*;
+import sicxesimulator.simulator.model.SampleCodes;
 
 public class SimulationApp extends Application implements SimulationView {
     private SimulationController controller;
@@ -47,7 +48,6 @@ public class SimulationApp extends Application implements SimulationView {
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
 
-        // Inicialização com injeção de dependência
         Machine machine = new Machine();
         SimulationModel model = new SimulationModel(machine, new Assembler(), new Loader(machine));
         controller = new SimulationController(model, this);
@@ -58,14 +58,11 @@ public class SimulationApp extends Application implements SimulationView {
             updateSymbolTable();
         });
 
-
-        // Configurar UI
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
         root.setCenter(createMainContent());
         root.setBottom(createBottomBar());
 
-        // Configuração da cena
         Scene scene = new Scene(root, 900, 600);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Simulador SIC/XE");
@@ -78,7 +75,6 @@ public class SimulationApp extends Application implements SimulationView {
     private void configureStageProperties() {
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
-        // As propriedades mínimas são definidas separadamente para largura e altura
     }
 
     private void initializeUI() {
@@ -86,7 +82,14 @@ public class SimulationApp extends Application implements SimulationView {
         updateAllTables();
     }
 
-    // Implementação da Interface SimulationView
+    public TextArea getInputField() {
+        return inputOutputPane.getInputField();
+    }
+
+    public TextArea getOutputArea() {
+        return inputOutputPane.getOutputArea();
+    }
+
     @Override
     public void updateAllTables() {
         Platform.runLater(() -> {
@@ -104,10 +107,7 @@ public class SimulationApp extends Application implements SimulationView {
         for (int wordIndex = 0; wordIndex < memory.getAddressRange(); wordIndex++) {
             byte[] word = memory.readWord(wordIndex);
             int byteAddress = wordIndex * 3;
-            String formattedAddress = ValueFormatter.formatAddress(
-                    byteAddress,
-                    viewConfig.getAddressFormat()
-            );
+            String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
             memoryTable.getItems().add(new MemoryEntry(formattedAddress, Convert.bytesToHex(word)));
         }
     }
@@ -138,10 +138,7 @@ public class SimulationApp extends Application implements SimulationView {
 
             symbols.forEach((name, wordAddress) -> {
                 int byteAddress = wordAddress * 3;
-                String formattedAddress = ValueFormatter.formatAddress(
-                        byteAddress,
-                        viewConfig.getAddressFormat()
-                );
+                String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
                 symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
             });
         }
@@ -150,9 +147,7 @@ public class SimulationApp extends Application implements SimulationView {
     @Override
     public void appendOutput(String message) {
         String processedMessage = ValueFormatter.processAddresses(message);
-        Platform.runLater(() ->
-                inputOutputPane.getOutputArea().appendText("> " + processedMessage + "\n")
-        );
+        Platform.runLater(() -> inputOutputPane.getOutputArea().appendText("> " + processedMessage + "\n"));
     }
 
     @Override
@@ -162,7 +157,6 @@ public class SimulationApp extends Application implements SimulationView {
 
     @Override
     public String getInputText() {
-        // Retorna o texto do campo de entrada do InputOutputPane
         return inputOutputPane.getInputField().getText();
     }
 
@@ -236,9 +230,7 @@ public class SimulationApp extends Application implements SimulationView {
 
     @Override
     public void updateViewFormatLabel(String formatName) {
-        Platform.runLater(() ->
-                viewFormatLabel.setText("Formato: " + formatName)
-        );
+        Platform.runLater(() -> viewFormatLabel.setText("Formato: " + formatName));
     }
 
     @Override
@@ -266,8 +258,6 @@ public class SimulationApp extends Application implements SimulationView {
         setWindowTitle("Simulador SIC/XE");
     }
 
-    // Métodos auxiliares
-
     private void showWelcomeMessage() {
         String welcomeMessage = """
         ╔══════════════════════════════════════╗
@@ -282,8 +272,6 @@ public class SimulationApp extends Application implements SimulationView {
         
         Dica: Comece carregando um exemplo!
         """;
-
-        // Append imediato, sem PauseTransition
         Arrays.stream(welcomeMessage.split("\n"))
                 .filter(line -> !line.trim().isEmpty())
                 .forEach(this::appendOutput);
@@ -333,15 +321,6 @@ public class SimulationApp extends Application implements SimulationView {
         });
     }
 
-    public TextArea getOutputArea() {
-        return inputOutputPane.getOutputArea();
-    }
-
-    public TextArea getInputField() {
-        return inputOutputPane.getInputField();
-    }
-
-    // Criação de componentes
     private HBox createMainContent() {
         VBox leftPanel = createLeftPanel();
         VBox rightPanel = createRightPanel();
@@ -356,7 +335,6 @@ public class SimulationApp extends Application implements SimulationView {
         inputOutputPane = new InputOutputPane();
         VBox.setVgrow(inputOutputPane, Priority.ALWAYS);
         toolbar = new SimulationToolbar(controller);
-
         VBox leftPanel = new VBox(10, inputOutputPane, toolbar);
         leftPanel.setPadding(new Insets(10));
         leftPanel.setAlignment(Pos.CENTER);
@@ -402,10 +380,20 @@ public class SimulationApp extends Application implements SimulationView {
     private MenuBar createMenuBar() {
         MenuBar menuBar = new MenuBar();
 
+        // Menu Arquivo (mantém outros itens, se necessário)
         Menu fileMenu = new Menu("Arquivo");
-        MenuItem loadExampleASM = new MenuItem("Carregar código exemplo");
-        loadExampleASM.setOnAction(e -> controller.handleLoadSampleCodeAction());
-        fileMenu.getItems().add(loadExampleASM);
+
+        // Menu de Exemplos com três itens
+        Menu sampleMenu = new Menu("Exemplos");
+        MenuItem sample1 = new MenuItem("Carregar código exemplo 1");
+        sample1.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_1, "Simulador SIC/XE - Exemplo 1"));
+        MenuItem sample2 = new MenuItem("Carregar código exemplo 2");
+        sample2.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_2, "Simulador SIC/XE - Exemplo 2"));
+        MenuItem sample3 = new MenuItem("Carregar código exemplo 3");
+        sample3.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_3, "Simulador SIC/XE - Exemplo 3"));
+        sampleMenu.getItems().addAll(sample1, sample2, sample3);
+
+        fileMenu.getItems().add(sampleMenu);
 
         Menu optionsMenu = new Menu("Opções");
         MenuItem memorySizeItem = new MenuItem("Tamanho da memória");
@@ -479,35 +467,23 @@ public class SimulationApp extends Application implements SimulationView {
         launch(args);
     }
 
-    // Records para as tabelas
     public record RegisterEntry(String name, String value) {}
     public record MemoryEntry(String address, String value) {}
     public record SymbolEntry(String symbol, String address) {}
 
-    // LOGGING
-
     public void generateStateLog() {
-        String filename = "simulator_log.txt";
+        String filename = "logging/state.log";
         SimulationModel model = controller.getSimulationModel();
 
         try (FileWriter writer = new FileWriter(filename, true)) {
-            // Cabeçalho com timestamp
             writer.write("\n=== Log em: " +
                     LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + " ===\n");
 
-            // Seção de Memória
-            // --- Memória (dados reais) ---
             writer.write("\n--- Memória (valores não zero) ---\n");
             model.getMachine().getMemory().getMemoryMap().forEach((address, value) -> {
-                if (value != 0) { // Filtra zeros
-                    String formattedAddr = ValueFormatter.formatAddress(
-                            address,
-                            viewConfig.getAddressFormat()
-                    );
-                    String formattedValue = ValueFormatter.formatByte(
-                            value,
-                            viewConfig.getAddressFormat()
-                    );
+                if (value != 0) {
+                    String formattedAddr = ValueFormatter.formatAddress(address, viewConfig.getAddressFormat());
+                    String formattedValue = ValueFormatter.formatByte(value, viewConfig.getAddressFormat());
                     try {
                         writer.write(String.format("%-8s | %s\n", formattedAddr, formattedValue));
                     } catch (IOException e) {
@@ -516,7 +492,6 @@ public class SimulationApp extends Application implements SimulationView {
                 }
             });
 
-            // Seção de Registradores
             writer.write("\n--- Registradores ---\n");
             model.getMachine().getControlUnit().getRegisterSet().getAllRegisters().forEach(reg -> {
                 String formattedValue = ValueFormatter.formatRegisterValue(reg);
@@ -527,15 +502,10 @@ public class SimulationApp extends Application implements SimulationView {
                 }
             });
 
-
-            // Seção de Símbolos
             if (model.hasAssembledCode()) {
                 writer.write("\n--- Tabela de Símbolos ---\n");
                 model.getLastObjectFile().getSymbolTable().getSymbols().forEach((name, address) -> {
-                    String formattedAddr = ValueFormatter.formatAddress(
-                            address * 3, // Converte endereço de palavra para byte
-                            viewConfig.getAddressFormat()
-                    );
+                    String formattedAddr = ValueFormatter.formatAddress(address * 3, viewConfig.getAddressFormat());
                     try {
                         writer.write(String.format("%-15s | %s\n", name, formattedAddr));
                     } catch (IOException e) {
@@ -544,7 +514,7 @@ public class SimulationApp extends Application implements SimulationView {
                 });
             }
 
-            writer.write("\n".repeat(2));  // Espaçamento final
+            writer.write("\n".repeat(2));
         } catch (IOException e) {
             showError("Erro ao gerar log: " + e.getMessage());
         }

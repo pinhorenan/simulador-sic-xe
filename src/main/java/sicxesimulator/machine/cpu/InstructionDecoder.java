@@ -25,95 +25,83 @@ public class InstructionDecoder {
             throw new IllegalStateException("Nenhuma instrução foi buscada para decodificação.");
         }
 
+        // 1) Lê o opcode
         int currentOpcode = fetchedBytes[0] & 0xFF;
 
+        // 2) Atualiza PC e X
         pcValue = registers.getRegister("PC").getIntValue();
         indexRegisterIntValue = registers.getRegister("X").getIntValue();
+
+        // 3) Determina formato
+        int format = determineInstructionFormat(currentOpcode);
+
         int[] operands;
-        int format = determineInstructionFormat();
         boolean indexed = false;
-        boolean extended = false;
         int effectiveAddress = 0;
 
-        // Decodificar os operandos e determinar os flags baseados no formato
         switch (format) {
             case 1:
-                operands = new int[0];  // Formato 1 não tem operandos
+                // Formato 1 não tem operandos
+                operands = new int[0];
                 break;
             case 2:
+                // Formato 2 = 2 bytes = 1 word, mas segundo byte contém registradores
                 operands = decodeFormat2();
                 break;
             case 3:
-            case 4:
-                operands = decodeFormat3or4();
-                indexed = (currentOpcode & 0x10) != 0;  // Checa flag indexed
-                extended = (currentOpcode & 0x01) != 0; // Checa flag extended
-                effectiveAddress = calculateEffectiveAddress(operands, indexed, extended);
-                break;
             default:
-                throw new IllegalArgumentException("Formato de instrução inválido: " + format);
+                operands = decodeFormat3();
+                indexed = (operands[1] == 1); // O segundo valor retornado indica se é indexado
+                int addr12 = operands[0];
+
+                effectiveAddress = calculateEffectiveAddress(addr12, indexed);
+                break;
         }
 
         // Criar e retornar a instância de Instruction
-        return new Instruction(currentOpcode, operands, format, indexed, extended, effectiveAddress);
+        return new Instruction(currentOpcode, operands, format, indexed,false, effectiveAddress);
     }
 
     public void setFetchedBytes(byte[] bytes) {
         this.fetchedBytes = bytes;
     }
 
-    private int fetchOpcode() {
-        return fetchedBytes[0] & 0xFF;
-    }
-
-    private int determineInstructionFormat() {
-        if (fetchOpcode() == 0x4C) return 3;  // RSUB
-        if (fetchOpcode() == 0x90 || fetchOpcode() == 0x04) return 2; // ADDR, CLEAR
-        int flags = memory.readByte(pcValue, 1) & 0xFF;
-        return (flags & 0x01) != 0 ? 4 : 3;
+    // Decide formato 1, 2 ou 3 (formato 4 não implementado)
+    private int determineInstructionFormat(int opcode) {
+        // RSUB
+        if (opcode == 0x4C) return 3;
+        // ADDR, CLEAR, etc.
+        if (opcode == 0x90 || opcode == 0x04) return 2;
+        // Caso contrário, default = 3
+        return 3;
     }
 
     private int[] decodeFormat2() {
+        // Lê o segundo byte (offset=1) para extrair r1 e r2
         int byte2 = memory.readByte(pcValue, 1) & 0xFF;
-        return new int[]{ (byte2 >> 4) & 0xF, byte2 & 0xF };
+        int r1 = (byte2 >> 4) & 0xF;
+        int r2 = byte2 & 0xF;
+        return new int[]{ r1, r2 };
     }
 
-    private int[] decodeFormat3or4() {
-        // Para formatos 3 e 4, operandos são compostos geralmente por endereços e/ou registradores.
-        int[] operands = new int[2];  // Exemplo simplificado: dois operandos.
+    private int[] decodeFormat3() {
+        // Lê byte1 e byte2 para formar 12 bits de endereço
+        int byte1 = memory.readByte(pcValue, 1) & 0xFF;
+        int byte2 = memory.readByte(pcValue, 2) & 0xFF;
 
-        int byte1 = memory.readByte(pcValue, 1) & 0xFF; // O primeiro byte do endereço efetivo
-        int byte2 = memory.readByte(pcValue, 2) & 0xFF; // O segundo byte do endereço efetivo
+        // Extração do bit de index (bit 7)
+        boolean indexed = (byte1 & 0x80) != 0;
+        int addr12 = ((byte1 & 0x7F) << 8) | byte2;
 
-        // Exemplo de cálculos para operandos
-        operands[0] = ((byte1 << 8) | byte2); // Combina os dois bytes para formar o endereço.
-
-        if (fetchOpcode() == 0x4C) {
-            operands[1] = 0;  // Para o exemplo RSUB, não há operandos adicionais.
-        }
-
-        return operands;
+        // Retorna array contendo [addr2, (indexed ? 1 : 0)]
+        return new int[]{ addr12, indexed ? 1 : 0 };
     }
 
-    private int calculateEffectiveAddress(int[] operands, boolean indexed, boolean extended) {
-        // O cálculo do endereço efetivo depende de várias condições:
-        // - Se é uma instrução indexada, a operação é diferente.
-        // - Se é uma instrução estendida (formato 4), o endereço é mais longo.
-
-        int effectiveAddress = operands[0];
-
+    private int calculateEffectiveAddress(int addr12, boolean indexed) {
+        int ea = addr12;
         if (indexed) {
-            // Se indexado, o endereço efetivo é acrescido do valor do registrador "X".
-            // Exemplo: address = effectiveAddress + X
-            effectiveAddress += indexRegisterIntValue;  // Supondo que existe um método para obter o valor de X.
+            ea += indexRegisterIntValue;
         }
-
-        if (extended) {
-            // Se extended, o endereço pode ser mais longo.
-            // O cálculo pode variar dependendo da especificação do modelo.
-            effectiveAddress |= (operands[1] << 8);  // Exemplo de combinação para expandir o endereço.
-        }
-
-        return effectiveAddress;
+        return ea;
     }
 }

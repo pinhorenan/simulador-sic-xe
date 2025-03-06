@@ -5,7 +5,6 @@ public class Instruction {
     private final int[] operands;
     private final int format; // 1, 2, 3, 4
     private final boolean indexed;
-    private final boolean extended;
     private final int effectiveAddress;
 
     public Instruction(int opcode, int[] operands, int format, boolean indexed, boolean extended, int effectiveAddress) {
@@ -13,7 +12,6 @@ public class Instruction {
         this.operands = operands;
         this.format = format;
         this.indexed = indexed;
-        this.extended = extended;
         this.effectiveAddress = effectiveAddress;
     }
 
@@ -55,16 +53,7 @@ public class Instruction {
         return indexed;
     }
 
-    public boolean isExtended() {
-        return extended;
-    }
-
     public int getEffectiveAddress() {
         return effectiveAddress;
-    }
-
-    // Método para verificar se a instrução é de formato 4 (exemplo: RSUB)
-    public boolean isFormat4() {
-        return format == 4;
     }
 }

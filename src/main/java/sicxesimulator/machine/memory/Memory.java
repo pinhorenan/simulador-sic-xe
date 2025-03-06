@@ -88,12 +88,14 @@ public class Memory {
 		if (offset < 0 || offset >= 3) {
 			throw new IllegalArgumentException("Offset inválido: " + offset);
 		}
+
+		if (wordAddress >= memory.length) {
+			throw new IllegalArgumentException("Tentativa de escrever fora dos limites da memória.");
+		}
+
 		validateAddress(wordAddress);
-		// Obtém a cópia atual do array
 		byte[] wordValue = memory[wordAddress].getValue();
-		// Modifica o byte específico
 		wordValue[offset] = (byte) (value & 0xFF);
-		// Atualiza a palavra com o novo array
 		memory[wordAddress].setValue(wordValue);
 		System.out.println("Escrevendo byte no endereço " + wordAddress + " com offset " + offset + ": " + value);
 	}

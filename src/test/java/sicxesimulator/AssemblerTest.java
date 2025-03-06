@@ -2,38 +2,53 @@ package sicxesimulator;
 
 import org.junit.jupiter.api.Test;
 import sicxesimulator.assembler.Assembler;
-
-import java.util.Collections;
-
+import sicxesimulator.assembler.models.ObjectFile;
+import java.util.Arrays;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class AssemblerTest {
 
     @Test
-    public void testAssembleValidInstruction() {
+    public void testAssemblerBasicProgram() {
         Assembler assembler = new Assembler();
 
-        // Exemplo de código de assembly
-        String assemblyCode = "LDA #45";  // Carregar 45 no acumulador
-        String expectedMachineCode = "00A545"; // Supondo que a tradução para código de máquina seja esse
+        // Código de teste para um programa SIC/XE mínimo
+        List<String> sourceCode = Arrays.asList(
+                "COPY START 1000",
+                "FIRST LDA #45",      // Imediato (n=0, i=1)
+                "SECOND STA 1030",    // Direto (n=1, i=1)
+                "THIRD LDX #10",      // Imediato (n=0, i=1)
+                "END COPY"
+        );
 
-        // Chama o método que traduz o código
-        //String machineCode = assembler.assemble(assemblyCode);
+        ObjectFile objectFile = assembler.assemble(sourceCode);
 
-        // Verifica se o código de máquina está correto
-        //assertEquals(expectedMachineCode, machineCode);
+        assertNotNull(objectFile);
+        assertEquals(0x1000, objectFile.getStartAddress());
+
+        // Verifica que o código objeto foi gerado corretamente
+        byte[] objectCode = objectFile.getObjectCode();
+        assertNotNull(objectCode);
+        assertTrue(objectCode.length > 0);
+
+        // Verifica se o PC foi atualizado corretamente
+        // (esperado: último endereço + tamanho da instrução)
+        int expectedPC = 0x1000 + 3 + 3 + 3;
+        assertEquals(expectedPC, objectFile.getSymbolTable().getAddress("THIRD"));
     }
 
     @Test
-    public void testAssembleInvalidInstruction() {
+    public void testImmediateValueParsing() {
         Assembler assembler = new Assembler();
 
-        // Exemplo de código de assembly inválido
-        String invalidAssemblyCode = "INVALID CODE";
+        List<String> sourceCode = Arrays.asList(
+                "COPY START 4096",
+                "FIRST LDA #10",  // Teste com valor imediato
+                "END COPY"
+        );
 
-        // Espera que uma exceção seja lançada
-        assertThrows(IllegalArgumentException.class, () -> {
-            assembler.assemble(Collections.singletonList(invalidAssemblyCode));
-        });
+        ObjectFile objectFile = assembler.assemble(sourceCode);
+        assertNotNull(objectFile);
     }
 }

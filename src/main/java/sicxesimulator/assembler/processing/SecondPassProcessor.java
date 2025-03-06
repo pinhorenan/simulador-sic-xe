@@ -7,7 +7,6 @@ import sicxesimulator.assembler.models.SymbolTable;
 import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.OpcodeMapper;
 
-import java.util.Arrays;
 import java.util.logging.Logger;
 
 public class SecondPassProcessor {
@@ -17,114 +16,112 @@ public class SecondPassProcessor {
         // Construtor vazio
     }
 
-    /**
-     * Gera o código objeto a partir da IntermediateRepresentation.
-     * Assume que os endereços são mantidos em palavras (cada palavra = 3 bytes).
-     *
-     * @param midObject Representação intermediária gerada pela primeira passagem.
-     * @return ObjectFile contendo o endereço inicial e o código objeto.
-     */
     public ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
         int startAddress = midObject.getStartAddress();
-        int finalAddress = midObject.getFinalAddress();
 
-        int programBytes = (finalAddress - startAddress) * 3;
+        int programBytes = midObject.getAssemblyLines().stream()
+                .mapToInt(this::getInstructionSize)
+                .sum();
         byte[] objectCode = new byte[programBytes];
 
-        // Para cada linha de assembly, gera o código objeto e posiciona no array final
         for (AssemblyLine line : midObject.getAssemblyLines()) {
             int offset = (line.getAddress() - startAddress) * 3;
+
+            if (offset < 0 || offset >= objectCode.length) {
+                logger.severe("Offset inválido: " + offset + " para " + objectCode.length);
+                continue;
+            }
+
             byte[] code = generateObjectCode(line, midObject.getSymbolTable());
+
+            if (offset + code.length > objectCode.length) {
+                logger.severe("Código excede tamanho do objectCode. Offset: " + offset);
+                continue;
+            }
+
             System.arraycopy(code, 0, objectCode, offset, code.length);
         }
+
         return new ObjectFile(startAddress, objectCode, midObject.getSymbolTable());
+    }
+
+    private int getInstructionSize(AssemblyLine line) {
+        return 3; // Supondo formato 3, ajustar conforme necessário
     }
 
     public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable) {
         String mnemonic = line.getMnemonic();
         String operand = line.getOperand();
 
-        if (mnemonic.equalsIgnoreCase("WORD")) { // TODO: Pedir explicação
-            int value;
-            if (operand.startsWith("0X")) {
-                value = Integer.parseInt(operand.substring(2), 16);
-            } else if (operand.matches("\\d+")) {
-                value = Integer.parseInt(operand);
-            } else {
-                throw new IllegalArgumentException("Formato inválido para WORD: " + operand);
-            }
-            return Convert.intTo3Bytes(value);
-        } else if (mnemonic.equalsIgnoreCase("BYTE")) { // TODO: Pedir explicação
-            byte[] data;
-            if (operand.startsWith("X'") && operand.endsWith("'")) {
-                String hex = operand.substring(2, operand.length() - 1);
-                data = Convert.hexStringToByteArray(hex);
-            } else if (operand.startsWith("C'") && operand.endsWith("'")) {
-                String chars = operand.substring(2, operand.length() - 1);
-                data = chars.getBytes();
-            } else {
-                throw new IllegalArgumentException("Formato inválido para BYTE: " + operand);
-            }
-
-            // Preenche com zeros para completar múltiplos de 3 bytes, se necessário
-            int remainder = data.length % 3;
-            if (remainder != 0) {
-                int newLength = data.length + (3 - remainder);
-                data = Arrays.copyOf(data, newLength);
-            }
-            return data;
+        if (mnemonic.equalsIgnoreCase("WORD")) {
+            return Convert.intTo3Bytes(parseNumber(operand));
+        } else if (mnemonic.equalsIgnoreCase("BYTE")) {
+            return parseByteOperand(operand);
         } else if (mnemonic.equalsIgnoreCase("RESW") || mnemonic.equalsIgnoreCase("RESB")) {
-            int sizeBytes;
-            if (mnemonic.equalsIgnoreCase("RESW")) {
-                sizeBytes = Integer.parseInt(operand) * 3;
-            } else {
-                sizeBytes = Integer.parseInt(operand);
-            }
-            return new byte[sizeBytes];
+            return new byte[parseNumber(operand) * 3];
         } else {
-            // Instruções de formato 3 (ou ajustadas)
-            boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
-            String operandString = (indexed && operand != null)
-                    ? operand.replace(",X", "")
-                    : operand;
-
-            int opcode = OpcodeMapper.getOpcode(mnemonic);
-            int operandAddress = 0;
-            int flags = 0x03; // n=1, i=1
-            int disp = 0;
-
-            if (operandString != null) {
-                if (symbolTable.contains(operandString)) {
-                    operandAddress = symbolTable.getAddress(operandString) * 3; // Converter para bytes
-                } else {
-                    // Tentar parsear como numérico
-                    if (operandString.startsWith("0X")) {
-                        operandAddress = Integer.parseInt(operandString.substring(2), 16);
-                    } else {
-                        operandAddress = Integer.parseInt(operandString);
-                    }
-                }
-
-                // Para PC-relativo, usamos o endereço da próxima instrução (linha.address + 1)
-                int programCounter = (line.getAddress() + 1) * 3; // Converter para bytes
-                disp = operandAddress * 3 - programCounter; // Ambos em bytes
-
-
-                // Verificar alcance válido para 12 bits
-                //if (disp < -2048 || disp > 2047) { // TODO: Pedir explicação
-                //    throw new IllegalArgumentException("Deslocamento PC-relativo inválido: " + disp);
-                //}
-                disp &= 0xFFF; // Mantém apenas 12 bits
-            }
-
-            byte[] code = new byte[3];
-            code[0] = (byte) (opcode | (flags >> 6));
-            code[1] = (byte) (((flags & 0x3F) << 2) | ((disp >> 8) & 0x0F));
-            code[2] = (byte) (disp & 0xFF);
-            return code;
+            return generateInstructionCode(line, symbolTable);
         }
     }
 
+    private byte[] generateInstructionCode(AssemblyLine line, SymbolTable symbolTable) {
+        String mnemonic = line.getMnemonic();
+        String operand = line.getOperand();
+        boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
+        String operandString = indexed ? operand.replace(",X", "") : operand;
+
+        int opcode = OpcodeMapper.getOpcode(mnemonic);
+        int operandAddress = resolveOperandAddress(operandString, symbolTable);
+        int disp = calculateDisplacement(line, operandAddress, indexed);
+
+        byte[] code = new byte[3];
+        code[0] = (byte) (opcode | 0x03); // n=1, i=1
+        code[1] = (byte) (((indexed ? 0x80 : 0x00) | ((disp >> 8) & 0x0F)));
+        code[2] = (byte) (disp & 0xFF);
+        return code;
+    }
+
+    private int resolveOperandAddress(String operand, SymbolTable symbolTable) {
+        if (operand == null) return 0;
+        if (operand.startsWith("#")) return parseNumber(operand.substring(1));
+        if (symbolTable.contains(operand)) return symbolTable.getAddress(operand) * 3;
+        return parseNumber(operand);
+    }
+
+    private int calculateDisplacement(AssemblyLine line, int operandAddress, boolean indexed) {
+        int disp = operandAddress - (line.getAddress() + 3);
+        if (indexed) {
+            disp += 0x8000; // Seta o bit de indexação
+        }
+        if (disp < -2048 || disp > 2047) {
+            throw new IllegalArgumentException("Deslocamento PC-relativo inválido: " + disp);
+        }
+        return disp & 0xFFF;
+    }
+
+    private byte[] parseByteOperand(String operand) {
+        if (operand.startsWith("X'") && operand.endsWith("'")) {
+            return Convert.hexStringToByteArray(operand.substring(2, operand.length() - 1));
+        } else if (operand.startsWith("C'") && operand.endsWith("'")) {
+            return operand.substring(2, operand.length() - 1).getBytes();
+        } else {
+            throw new IllegalArgumentException("Formato inválido para BYTE: " + operand);
+        }
+    }
+
+    private int parseNumber(String operand) {
+        if (operand == null) {
+            throw new IllegalArgumentException("Operando ausente.");
+        }
+        if (operand.matches("\\d+")) {
+            return Integer.parseInt(operand);
+        } else if (operand.matches("[0-9A-Fa-f]+")) {
+            return Integer.parseInt(operand, 16);
+        }
+        throw new IllegalArgumentException("Formato inválido de número: " + operand);
+    }
+
     public void reset() {
+        logger.info("Resetando SecondPassProcessor.");
     }
 }

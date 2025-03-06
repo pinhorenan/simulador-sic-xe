@@ -248,13 +248,6 @@ public class SimulationModel {
 
         // Atualiza o título da janela (opcional)
             view.getStage().setTitle("Simulador SIC/XE - Exemplo Carregado");
-
-        // Exibe uma mensagem (opcional)
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Código de Exemplo");
-            alert.setHeaderText("Código Assembly de Exemplo Carregado");
-            alert.setContentText("O código de exemplo foi carregado no campo de entrada.");
-            alert.showAndWait();
     }
 }
 

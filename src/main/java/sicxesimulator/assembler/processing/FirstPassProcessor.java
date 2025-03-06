@@ -72,7 +72,13 @@ public class FirstPassProcessor {
             // Processa a diretiva START: define o endereço inicial.
             if (mnemonic.equalsIgnoreCase("START")) {
                 try {
-                    startAddress = Integer.parseInt(operand, 16);
+                    if (operand.matches("\\d+")) { // Decimal
+                        startAddress = Integer.parseInt(operand);
+                    } else if (operand.matches("[0-9A-Fa-f]+")) { // Hexadecimal
+                        startAddress = Integer.parseInt(operand, 16);
+                    } else {
+                        throw new IllegalArgumentException("Formato inválido para START: " + operand);
+                    }
                 } catch (NumberFormatException e) {
                     throw new IllegalArgumentException("Formato inválido para START na linha " + lineNumber + ": " + operand);
                 }
@@ -183,13 +189,14 @@ public class FirstPassProcessor {
         if (mnemonic.equalsIgnoreCase("BYTE")) {
             int bytes;
             if (operand.startsWith("C'") && operand.endsWith("'")) {
-                bytes = operand.length() - 3; // Ex.: C'ABC' tem 3 bytes.
+                bytes = operand.substring(2, operand.length() - 1).length();
             } else if (operand.startsWith("X'") && operand.endsWith("'")) {
-                bytes = (operand.length() - 3 + 1) / 2; // Converte dígitos hexadecimais em bytes.
+                String hex = operand.substring(2, operand.length() - 1);
+                bytes = (hex.length() + 1) / 2; // 2 caracteres hex por byte
             } else {
-                throw new IllegalArgumentException("Formato inválido para BYTE na linha: " + operand);
+                throw new IllegalArgumentException("Formato inválido para BYTE: " + operand);
             }
-            return (bytes + 2) / 3;
+            return (int) Math.ceil(bytes / 3.0); // Arredonda para cima para palavras
         }
         // Para demais instruções (formato 3, por exemplo), assume 1 palavra.
         return 1;

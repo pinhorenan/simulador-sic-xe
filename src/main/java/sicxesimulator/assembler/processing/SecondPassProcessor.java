@@ -45,7 +45,14 @@ public class SecondPassProcessor {
         String operand = line.getOperand();
 
         if (mnemonic.equalsIgnoreCase("WORD")) { // TODO: Pedir explicação
-            int value = Integer.parseInt(operand, 16);
+            int value;
+            if (operand.startsWith("0X")) {
+                value = Integer.parseInt(operand.substring(2), 16);
+            } else if (operand.matches("\\d+")) {
+                value = Integer.parseInt(operand);
+            } else {
+                throw new IllegalArgumentException("Formato inválido para WORD: " + operand);
+            }
             return Convert.intTo3Bytes(value);
         } else if (mnemonic.equalsIgnoreCase("BYTE")) { // TODO: Pedir explicação
             byte[] data;
@@ -87,32 +94,28 @@ public class SecondPassProcessor {
             int disp = 0;
 
             if (operandString != null) {
-                if (operandString.startsWith("=")) {
-                    if (!symbolTable.contains(operandString)) {
-                        throw new IllegalStateException("Literal não resolvido: " + operandString);
-                    }
-                    operandAddress = symbolTable.getAddress(operandString);
-                } else if (symbolTable.contains(operandString)) {
-                    operandAddress = symbolTable.getAddress(operandString);
+                if (symbolTable.contains(operandString)) {
+                    operandAddress = symbolTable.getAddress(operandString) * 3; // Converter para bytes
                 } else {
-                    operandAddress = Integer.parseInt(operandString, 16);
+                    // Tentar parsear como numérico
+                    if (operandString.startsWith("0X")) {
+                        operandAddress = Integer.parseInt(operandString.substring(2), 16);
+                    } else {
+                        operandAddress = Integer.parseInt(operandString);
+                    }
                 }
 
                 // Para PC-relativo, usamos o endereço da próxima instrução (linha.address + 1)
-                int programCounter = line.getAddress() + 1;
-                disp = operandAddress - programCounter;
+                int programCounter = (line.getAddress() + 1) * 3; // Converter para bytes
+                disp = operandAddress * 3 - programCounter; // Ambos em bytes
 
-                if (disp >= -2048 && disp <= 2047) {
-                    flags = 0x13; // Indica PC-relativo
-                } else {
-                    // Se for necessário tratar base-relativo, adicione a lógica aqui
-                    throw new IllegalArgumentException("Deslocamento fora do alcance para PC-relativo: " + disp);
-                }
-                if (indexed) {
-                    flags |= 0x80;
-                }
+
+                // Verificar alcance válido para 12 bits
+                //if (disp < -2048 || disp > 2047) { // TODO: Pedir explicação
+                //    throw new IllegalArgumentException("Deslocamento PC-relativo inválido: " + disp);
+                //}
+                disp &= 0xFFF; // Mantém apenas 12 bits
             }
-            disp = disp & 0xFFF; // Usa apenas 12 bits para o deslocamento
 
             byte[] code = new byte[3];
             code[0] = (byte) (opcode | (flags >> 6));
@@ -122,10 +125,6 @@ public class SecondPassProcessor {
         }
     }
 
-    /**
-     * Reinicia o estado interno do processador.
-     */
     public void reset() {
-        // Se houver algum estado interno que precise ser reiniciado, implemente aqui.
     }
 }

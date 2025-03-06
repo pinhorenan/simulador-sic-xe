@@ -2,6 +2,10 @@ package sicxesimulator.machine.memory;
 
 import sicxesimulator.utils.Convert;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 public class Memory {
 	private final Word[] memory;
 	private static final int MIN_SIZE_IN_BYTES = 1024; // Tamanho mínimo em bytes
@@ -27,13 +31,30 @@ public class Memory {
 		return addressRange;
 	}
 
+	public Map<Integer, Integer> getMemoryMap() {
+		Map<Integer, Integer> memoryMap = new HashMap<>();
+
+		for (int wordAddress = 0; wordAddress < addressRange; wordAddress++) {
+			byte[] word = memory[wordAddress].getValue();
+			for (int offset = 0; offset < 3; offset++) {
+				int byteValue = word[offset] & 0xFF; // Converter para valor unsigned
+				if (byteValue != 0) {
+					int byteAddress = wordAddress * 3 + offset;
+					memoryMap.put(byteAddress, byteValue);
+				}
+			}
+		}
+
+		return Collections.unmodifiableMap(memoryMap);
+	}
+
 	public void writeWord(int wordAddress, byte[] wordData) {
+		// Adicionar validação de dados
 		if (wordData == null || wordData.length != 3) {
-			throw new IllegalArgumentException("Uma palavra deve ter exatamente 3 bytes e nao ser NULL.");
+			throw new IllegalArgumentException("Palavra inválida.");
 		}
 		validateAddress(wordAddress);
-		memory[wordAddress].setValue(wordData);
-		System.out.println("Escrevendo palavra no endereco " + wordAddress + ": " + Convert.bytesToHex(wordData));
+		memory[wordAddress].setValue(wordData.clone()); // Garante imutabilidade
 	}
 
 	public byte[] readWord(int wordAddress) {
@@ -58,8 +79,8 @@ public class Memory {
 	}
 
 	public int readByte(int byteAddress) {
-		int wordAddress = byteAddress / 3; // Índice da palavra
-		int offset = byteAddress % 3;      // Offset dentro da palavra
+		int wordAddress = byteAddress / 3;
+		int offset = byteAddress % 3;
 		return readByte(wordAddress, offset);
 	}
 

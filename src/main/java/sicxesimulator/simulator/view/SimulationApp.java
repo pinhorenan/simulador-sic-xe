@@ -1,6 +1,9 @@
 package sicxesimulator.simulator.view;
 
-import javafx.animation.PauseTransition;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -9,7 +12,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import sicxesimulator.simulator.controller.SimulationController;
 import sicxesimulator.simulator.model.SimulationModel;
 import sicxesimulator.machine.Machine;
@@ -20,7 +22,6 @@ import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.ValueFormatter;
 import sicxesimulator.simulator.view.components.*;
 import sicxesimulator.utils.ViewConfig;
-
 import java.util.*;
 
 public class SimulationApp extends Application implements SimulationView {
@@ -51,6 +52,12 @@ public class SimulationApp extends Application implements SimulationView {
         SimulationModel model = new SimulationModel(machine, new Assembler(), new Loader(machine));
         controller = new SimulationController(model, this);
         this.viewConfig = model.getViewConfig();
+        viewConfig.addFormatChangeListener(newFormat -> {
+            updateMemoryTable();
+            updateRegisterTable();
+            updateSymbolTable();
+        });
+
 
         // Configurar UI
         BorderPane root = new BorderPane();
@@ -428,9 +435,9 @@ public class SimulationApp extends Application implements SimulationView {
         info.setOnAction(e -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Sobre");
-            alert.setHeaderText("SIC/XE Simulator v2.1");
+            alert.setHeaderText("Simulador SIC/XE");
             alert.setContentText("""
-                    © 2025 SIC/XEd
+                    © 2025 SIC/XE
                     Time ROCK LEE VS GAARA
                     Ícone: https://icons8.com/icon/NAL2lztANaO6/rust""");
             alert.showAndWait();
@@ -476,4 +483,70 @@ public class SimulationApp extends Application implements SimulationView {
     public record RegisterEntry(String name, String value) {}
     public record MemoryEntry(String address, String value) {}
     public record SymbolEntry(String symbol, String address) {}
+
+    // LOGGING
+
+    public void generateStateLog() {
+        String filename = "simulator_log.txt";
+        SimulationModel model = controller.getSimulationModel();
+
+        try (FileWriter writer = new FileWriter(filename, true)) {
+            // Cabeçalho com timestamp
+            writer.write("\n=== Log em: " +
+                    LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + " ===\n");
+
+            // Seção de Memória
+            // --- Memória (dados reais) ---
+            writer.write("\n--- Memória (valores não zero) ---\n");
+            model.getMachine().getMemory().getMemoryMap().forEach((address, value) -> {
+                if (value != 0) { // Filtra zeros
+                    String formattedAddr = ValueFormatter.formatAddress(
+                            address,
+                            viewConfig.getAddressFormat()
+                    );
+                    String formattedValue = ValueFormatter.formatByte(
+                            value,
+                            viewConfig.getAddressFormat()
+                    );
+                    try {
+                        writer.write(String.format("%-8s | %s\n", formattedAddr, formattedValue));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+
+            // Seção de Registradores
+            writer.write("\n--- Registradores ---\n");
+            model.getMachine().getControlUnit().getRegisterSet().getAllRegisters().forEach(reg -> {
+                String formattedValue = ValueFormatter.formatRegisterValue(reg);
+                try {
+                    writer.write(String.format("%-10s | %s\n", reg.getName(), formattedValue));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+
+            // Seção de Símbolos
+            if (model.hasAssembledCode()) {
+                writer.write("\n--- Tabela de Símbolos ---\n");
+                model.getLastObjectFile().getSymbolTable().getSymbols().forEach((name, address) -> {
+                    String formattedAddr = ValueFormatter.formatAddress(
+                            address * 3, // Converte endereço de palavra para byte
+                            viewConfig.getAddressFormat()
+                    );
+                    try {
+                        writer.write(String.format("%-15s | %s\n", name, formattedAddr));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            writer.write("\n".repeat(2));  // Espaçamento final
+        } catch (IOException e) {
+            showError("Erro ao gerar log: " + e.getMessage());
+        }
+    }
 }

@@ -34,22 +34,39 @@ public abstract class ValueFormatter {
     /**
      * Formata um endereço conforme o formato especificado.
      *
-     * @param address O endereço a ser formatado.
+     * @param byteAddress O endereço a ser formatado.
      * @param format  O formato desejado ("DEC", "OCT", "HEX").
      * @return O endereço formatado como String.
      * @throws IllegalArgumentException Se o endereço for negativo.
      */
-    public static String formatAddress(int address, String format) {
-        if (address < 0) {
-            throw new IllegalArgumentException("O endereço não pode ser negativo.");
+    public static String formatAddress(int byteAddress, String format) {
+        // Formatação do endereço com base no formato
+        if ("HEX".equals(format)) {
+            return String.format("%04X", byteAddress);
+        } else if ("DEC".equals(format)) {
+            return String.format("%d", byteAddress);
+        } else {
+            return String.format("%04X", byteAddress);  // Padrão HEX
         }
+    }
 
-        return switch (format.toUpperCase()) {
-            case "DEC" -> Integer.toString(address);
-            case "OCT" -> String.format("%08o", address); // 8 dígitos octais
-            case "HEX" -> String.format("%06X", address);  // 6 dígitos hexadecimais
-            default -> throw new IllegalArgumentException("Formato inválido: " + format);
-        };
+    public static String formatValue(byte[] word, String format) {
+        // Formatação do valor com base no formato
+        if ("HEX".equals(format)) {
+            StringBuilder sb = new StringBuilder();
+            for (byte b : word) {
+                sb.append(String.format("%02X", b));
+            }
+            return sb.toString();
+        } else if ("DEC".equals(format)) {
+            int value = 0;
+            for (int i = 0; i < word.length; i++) {
+                value |= (word[i] & 0xFF) << (8 * i);  // Assumindo little-endian
+            }
+            return String.valueOf(value);
+        } else {
+            return Convert.bytesToHex(word);  // Padrão HEX
+        }
     }
 
     public static String processAddresses(String message) {

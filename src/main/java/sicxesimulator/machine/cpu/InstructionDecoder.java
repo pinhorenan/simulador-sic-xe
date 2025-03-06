@@ -7,6 +7,7 @@ public class InstructionDecoder {
     private final RegisterSet registers;
     private int pcValue;
     private int indexRegisterIntValue;
+    private byte[] fetchedBytes;
 
     public InstructionDecoder(RegisterSet registers, Memory memory) {
         this.memory = memory;
@@ -20,9 +21,14 @@ public class InstructionDecoder {
      * Retorna uma instância da classe Instruction com todos os detalhes decodificados.
      */
     public Instruction decodeInstruction() {
+        if (fetchedBytes == null) {
+            throw new IllegalStateException("Nenhuma instrução foi buscada para decodificação.");
+        }
+
+        int currentOpcode = fetchedBytes[0] & 0xFF;
+
         pcValue = registers.getRegister("PC").getIntValue();
         indexRegisterIntValue = registers.getRegister("X").getIntValue();
-        int currentOpcode = fetchOpcode();
         int[] operands;
         int format = determineInstructionFormat();
         boolean indexed = false;
@@ -52,8 +58,12 @@ public class InstructionDecoder {
         return new Instruction(currentOpcode, operands, format, indexed, extended, effectiveAddress);
     }
 
+    public void setFetchedBytes(byte[] bytes) {
+        this.fetchedBytes = bytes;
+    }
+
     private int fetchOpcode() {
-        return memory.readByte(pcValue, 0) & 0xFF;  // Lê o opcode do primeiro byte
+        return fetchedBytes[0] & 0xFF;
     }
 
     private int determineInstructionFormat() {

@@ -18,21 +18,30 @@ public class Loader {
 
     public void load(ObjectFile objectFile) {
         Memory memory = machine.getMemory();
-        int startWordAddress = objectFile.getStartAddress();
-        byte[] objectCode = objectFile.getObjectCode();
+        int startByteAddress = objectFile.getStartAddress();
 
+        validateStartAddress(startByteAddress); // Novo método de validação
+        int startWordAddress = startByteAddress / 3; // Conversão para palavras
+
+        byte[] objectCode = objectFile.getObjectCode();
         validateObjectCode(objectCode);
         validateMemoryBounds(memory, startWordAddress, objectCode.length);
 
         loadProgramIntoMemory(memory, startWordAddress, objectCode);
-        initializeProgramCounter(startWordAddress);
+        initializeProgramCounter(startByteAddress); // Usa o endereço em bytes
 
-        logSuccess(startWordAddress, objectCode);
+        logSuccess(startByteAddress, objectCode);
     }
 
     private void validateObjectCode(byte[] objectCode) {
         if (objectCode.length % 3 != 0) {
             throw new IllegalArgumentException("Código objeto deve ter tamanho múltiplo de 3 bytes.");
+        }
+    }
+
+    private void validateStartAddress(int startByteAddress) {
+        if (startByteAddress % 3 != 0) {
+            throw new IllegalArgumentException("Endereço inicial deve ser múltiplo de 3.");
         }
     }
 
@@ -51,16 +60,14 @@ public class Loader {
         }
     }
 
-    private void initializeProgramCounter(int startWordAddress) {
-        int byteAddress = startWordAddress * 3; // Converte para endereço de byte
-        machine.getControlUnit().setIntValuePC(byteAddress);
+    private void initializeProgramCounter(int startAddress) {
+        machine.getControlUnit().setIntValuePC(startAddress * 3); // Define PC em bytes
     }
 
-    private void logSuccess(int startWordAddress, byte[] objectCode) {
+    private void logSuccess(int startByteAddress, byte[] objectCode) {
         logger.info(() -> String.format(
-                "Programa carregado:\nEndereço inicial (palavra): 0x%06X\nEndereço inicial (byte): 0x%06X\nTamanho: %d bytes",
-                startWordAddress,
-                startWordAddress * 3,
+                "Programa carregado:\nEndereço inicial (byte): 0x%06X\nTamanho: %d bytes",
+                startByteAddress,
                 objectCode.length
         ));
     }

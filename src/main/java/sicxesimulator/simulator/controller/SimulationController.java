@@ -50,6 +50,9 @@ public class SimulationController {
     }
 
     public void handleRunAction() {
+        System.out.println("PC: " + model.getMachine().getControlUnit().getIntValuePC());
+        System.out.println("Próxima instrução: " + Arrays.toString(model.getMachine().getMemory().readWord(model.getMachine().getControlUnit().getIntValuePC() / 3)));
+
         if (model.hasAssembledCode()) {
             if (!model.isFinished()) {
                 Task<Void> runTask = new Task<>() {
@@ -57,6 +60,7 @@ public class SimulationController {
                     protected Void call() {
                         // Executa instruções enquanto o programa não terminar ou estiver pausado
                         while (!model.isFinished() && !model.isPaused()) {
+
                             model.runNextInstruction();
                             String log = model.getMachine().getControlUnit().getLastExecutionLog();
                             Platform.runLater(() -> {
@@ -82,6 +86,9 @@ public class SimulationController {
     }
 
     public void handleNextAction() {
+        System.out.println("PC: " + model.getMachine().getControlUnit().getIntValuePC());
+        System.out.println("Proxima instrucao: " + Arrays.toString(model.getMachine().getMemory().readWord(model.getMachine().getControlUnit().getIntValuePC() / 3)));
+
         if (model.hasAssembledCode()) {
             if (!model.isFinished()) {
                 try {
@@ -115,6 +122,7 @@ public class SimulationController {
     }
 
     public void handleResetAction() {
+        view.generateStateLog();
         // Limpa o campo de entrada e as tabelas
         view.getInputField().clear();
         view.getRegisterTable().getItems().clear();
@@ -125,7 +133,7 @@ public class SimulationController {
         model.reset();
         view.updateAllTables();
         view.getOutputArea().clear();
-        view.getStage().setTitle("SIC/XE Simulator v2.1");
+        view.getStage().setTitle("Simulador SIC/XE");
 
         // Exibe um alerta informativo sobre o reset
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

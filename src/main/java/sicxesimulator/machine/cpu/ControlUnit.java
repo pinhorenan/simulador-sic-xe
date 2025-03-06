@@ -35,11 +35,18 @@ public class ControlUnit {
             throw new IllegalArgumentException("Endereço de memória inválido: " + byteAddress);
         }
 
-        // Lógica de leitura da memória
+        // Lê os 3 bytes da memória
         byte[] instructionBytes = memory.readWord(wordIndex);
-        // ... processamento da instrução
 
-        // TODO:
+        if (instructionBytes == null || instructionBytes.length != 3) {
+            throw new IllegalStateException("Falha ao buscar instrução na memória.");
+        }
+
+        // Apenas armazena os bytes para que decode() os utilize
+        decoder.setFetchedBytes(instructionBytes);
+
+        // Atualiza o PC para apontar para a próxima instrução (3 bytes à frente)
+        registerSet.getRegister("PC").setValue(byteAddress + 3);
     }
 
     /**

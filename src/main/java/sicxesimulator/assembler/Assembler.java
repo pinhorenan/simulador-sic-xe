@@ -6,14 +6,11 @@ import sicxesimulator.assembler.processing.FirstPassProcessor;
 import sicxesimulator.assembler.processing.SecondPassProcessor;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 public class Assembler {
-    private static final Logger logger = Logger.getLogger(Assembler.class.getName());
-
     // Processadores para cada passagem
-    private FirstPassProcessor firstPassProcessor;
-    private SecondPassProcessor secondPassProcessor;
+    private final FirstPassProcessor firstPassProcessor;
+    private final SecondPassProcessor secondPassProcessor;
 
     public Assembler() {
         this.firstPassProcessor = new FirstPassProcessor();

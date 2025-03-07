@@ -20,9 +20,7 @@ public class Machine {
         if (controlUnit.isHalted()) return;
 
         try {
-            controlUnit.fetch();
-            controlUnit.decode();
-            controlUnit.execute();
+            controlUnit.step();
         } catch (Exception e) {
             System.err.println("Erro na execução: " + e.getMessage());
             controlUnit.reset();

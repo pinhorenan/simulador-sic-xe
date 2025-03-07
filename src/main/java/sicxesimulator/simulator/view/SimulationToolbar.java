@@ -4,12 +4,14 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import sicxesimulator.simulator.controller.SimulationController;
 import sicxesimulator.assembler.models.ObjectFile;
+
 import java.util.List;
 
 public class SimulationToolbar extends HBox {
     private final Button assembleButton;
     private final Button loadButton;
     private final Button runButton;
+    private final Button pauseButton;
     private final Button nextButton;
 
     public SimulationToolbar(SimulationController controller) {
@@ -19,7 +21,7 @@ public class SimulationToolbar extends HBox {
         this.loadButton = createLoadButton(controller);
         Button showObjectCodeButton = createShowObjectCodeButton(controller);
         this.runButton = createRunButton(controller);
-        Button pauseButton = createPauseButton(controller);
+        this.pauseButton = createPauseButton(controller);
         this.nextButton = createNextButton(controller);
         Button resetButton = createResetButton(controller);
 
@@ -34,12 +36,29 @@ public class SimulationToolbar extends HBox {
         );
     }
 
-    public void disableControls(boolean disable) {
-        assembleButton.setDisable(disable);
-        loadButton.setDisable(disable);
-        runButton.setDisable(disable);
-        nextButton.setDisable(disable);
+    /**
+     * Habilita ou desabilita os botões de execução (Rodar e Pausar) e ajusta o estilo para simular o efeito "acinzentado".
+     */
+    public void enableExecutionButtons() {
+        runButton.setDisable(false);
+        pauseButton.setDisable(false);
+        nextButton.setDisable(false);
+        String style = "-fx-opacity: 1";
+        runButton.setStyle(style);
+        pauseButton.setStyle(style);
+        nextButton.setStyle(style);
     }
+
+    public void disableExecutionButtons() {
+        runButton.setDisable(true);
+        pauseButton.setDisable(true);
+        nextButton.setDisable(true);
+        String style = "-fx-opacity: 0.5;";
+        runButton.setStyle(style);
+        pauseButton.setStyle(style);
+        nextButton.setStyle(style);
+    }
+
 
     private Button createAssembleButton(SimulationController controller) {
         Button button = new Button("Montar");
@@ -83,6 +102,10 @@ public class SimulationToolbar extends HBox {
         return button;
     }
 
+    /**
+     * Exibe um diálogo para carregar um arquivo objeto.
+     * Agora, a lista de opções inclui, separadamente, os códigos de exemplo e os arquivos montados.
+     */
     private void showLoadDialog(SimulationController controller) {
         List<ObjectFile> objectFiles = controller.getSimulationModel().getAssembler().getGeneratedObjectFiles();
 
@@ -91,13 +114,34 @@ public class SimulationToolbar extends HBox {
             return;
         }
 
-        ChoiceDialog<ObjectFile> dialog = new ChoiceDialog<>(objectFiles.get(objectFiles.size() - 1), objectFiles);
+        // Cria a lista de wrappers usando o record ObjectFileOption
+        List<ObjectFileOption> options = objectFiles.stream()
+                .map(ObjectFileOption::new)
+                .toList();
+
+        // Define o item padrão (por exemplo, o último da lista)
+        ObjectFileOption defaultOption = options.get(options.size() - 1);
+
+        ChoiceDialog<ObjectFileOption> dialog = new ChoiceDialog<>(defaultOption, options);
         dialog.setTitle("Carregar Arquivo Montado");
         dialog.setHeaderText("Escolha um arquivo para carregar");
         dialog.setContentText("Arquivos disponíveis:");
 
-        dialog.showAndWait().ifPresent(controller::handleLoadObjectFileAction);
+        dialog.showAndWait().ifPresent(selected ->
+                controller.handleLoadObjectFileAction(selected.objectFile())
+        );
     }
+
+    /**
+     * Record para oppões de arquivo objeto.
+     */
+    private record ObjectFileOption(ObjectFile objectFile) {
+        @Override
+        public String toString() {
+            return objectFile.getFilename();
+        }
+    }
+
 
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -106,4 +150,5 @@ public class SimulationToolbar extends HBox {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
 }

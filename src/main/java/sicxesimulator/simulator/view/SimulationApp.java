@@ -82,6 +82,7 @@ public class SimulationApp extends Application implements SimulationView {
     }
 
     private void initializeUI() {
+        disableControls();
         showWelcomeMessage();
         updateAllTables();
     }
@@ -98,7 +99,6 @@ public class SimulationApp extends Application implements SimulationView {
     public Stage getStage() {
         return primaryStage;
     }
-
 
     @Override
     public void updateAllTables() {
@@ -260,8 +260,13 @@ public class SimulationApp extends Application implements SimulationView {
     }
 
     @Override
-    public void disableControls(boolean disable) {
-        Platform.runLater(() -> toolbar.disableControls(disable));
+    public void disableControls() {
+        Platform.runLater(() -> toolbar.disableExecutionButtons());
+    }
+
+    @Override
+    public void enableControls() {
+        Platform.runLater(() -> toolbar.enableExecutionButtons());
     }
 
     @Override

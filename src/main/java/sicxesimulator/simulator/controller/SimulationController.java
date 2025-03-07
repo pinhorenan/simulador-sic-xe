@@ -158,6 +158,7 @@ public class SimulationController {
         }
 
         model.loadObjectFile(selectedFile);
+        view.enableControls();
         view.appendOutput("Arquivo montado carregado: " + selectedFile.getFilename());
         view.updateAllTables();
     }

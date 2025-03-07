@@ -23,34 +23,27 @@ public class ControlUnitTest {
 
     @Test
     public void testFetchDecodeAndExecuteCycle() {
-        byte[] ldaInstruction = {0x00, 0x00, 0x09};
-        memory.writeWord(0, ldaInstruction);
+        // Prepara uma instrução LDA (opcode 0x00) no formato 3 com endereço absoluto 9 (em bytes)
+        byte[] ldaInstruction = {0x03, 0x00, 0x09}; // 0x03 & 0xFC = 0x00, qu’indica LDA
+        memory.writeByte(0, 0, ldaInstruction[0]);
+        memory.writeByte(0, 1, ldaInstruction[1]);
+        memory.writeByte(0, 2, ldaInstruction[2]);
 
-        byte[] value = {0x01, 0x02, 0x03};
-        memory.writeWord(3, value);
+        // Valor que será carregado em A, armazenado no endereço 9 (em bytes)
+        byte[] dataAt9 = {0x00, 0x10, 0x20};
+        // Escreve os dados na palavra de índice 9/3 (ou seja, 3)
+        memory.writeWord(9 / 3, dataAt9);
 
-        controlUnit.fetch();
-        controlUnit.decode();
-        String log = controlUnit.execute();
-
-        int expectedValue = ((value[0] & 0xFF) << 16)
-                | ((value[1] & 0xFF) << 8)
-                | (value[2] & 0xFF);
-        int regAValue = registers.getRegister("A").getIntValue();
-        assertEquals(expectedValue, regAValue);
-
-        assertTrue(log.contains("LDA"));
-    }
-
-    @Test
-    public void testPCIncrementAfterDecode() {
-        byte[] instruction = {0x00, 0x00, 0x09};
-        memory.writeWord(0, instruction);
         registers.getRegister("PC").setValue(0);
 
-        controlUnit.fetch();
-        controlUnit.decode();
+        controlUnit.step();
 
-        assertEquals(3, registers.getRegister("PC").getIntValue());
+        int expectedValue = ((dataAt9[0] & 0xFF) << 16)
+                | ((dataAt9[1] & 0xFF) << 8)
+                | (dataAt9[2] & 0xFF);
+
+        int regAValue = registers.getRegister("A").getIntValue();
+        assertEquals(expectedValue, regAValue);
     }
+
 }

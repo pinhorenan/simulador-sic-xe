@@ -6,14 +6,12 @@ public class ControlUnit {
     private final InstructionDecoder decoder;
     private final ExecutionUnit executionUnit;
     private final RegisterSet registerSet;
-    private final Memory memory;
 
     private Instruction currentInstruction;
     private boolean halted;
     private String lastExecutionLog;
 
     public ControlUnit(Memory memory) {
-        this.memory = memory;
         this.registerSet = new RegisterSet();
         this.decoder = new InstructionDecoder(registerSet, memory);
         this.executionUnit = new ExecutionUnit(registerSet, memory);
@@ -36,28 +34,20 @@ public class ControlUnit {
         registerSet.getRegister("PC").setValue(value);
     }
 
-    public void fetch() {
-        int byteAddress = registerSet.getRegister("PC").getIntValue(); // PC em bytes
-        int wordIndex = byteAddress / 3;
-
-        if (wordIndex < 0 || wordIndex >= memory.getAddressRange()) {
-            throw new IllegalArgumentException("Endereço de memória inválido: " + byteAddress);
-        }
-
-        byte[] instructionBytes = memory.readWord(wordIndex);
-        if (instructionBytes == null || instructionBytes.length != 3) {
-            throw new IllegalStateException("Falha ao buscar instrução na memória.");
-        }
-
-        decoder.setFetchedBytes(instructionBytes);
-    }
-
-    public void decode() {
+    // Método que executa um ciclo completo de fetch, decode e execute
+    public void step() {
+        // Fetch e decode: o decoder já busca a instrução da memória usando o PC
         currentInstruction = decoder.decodeInstruction();
+
+        // Incrementa o PC conforme o tamanho da instrução
         incrementPC(currentInstruction.getSizeInBytes());
+
+        // Executa a instrução decodificada e registra o log de execução
+        lastExecutionLog = executeInstruction();
     }
 
-    public String execute() {
+    // Método que executa a instrução atualmente armazenada em currentInstruction
+    private String executeInstruction() {
         int format = currentInstruction.getFormat();
         int opcode = currentInstruction.getOpcode();
         int[] operands = currentInstruction.getOperands();
@@ -70,7 +60,6 @@ public class ControlUnit {
                 // Instruções de formato 2 operam apenas com registradores.
                 switch (opcode) {
                     case 0x04:
-                        // Nesse caso, o método executeCLEAR_LDX recebe a instrução e os operandos.
                         log = executionUnit.executeCLEAR_LDX(currentInstruction, operands);
                         break;
                     case 0x90:
@@ -191,10 +180,9 @@ public class ControlUnit {
                     default:
                         throw new IllegalStateException("Instrução de formato 3 não implementada: " + Integer.toHexString(opcode));
                 }
-                lastExecutionLog = log;
                 break;
             default:
-                throw new IllegalStateException("Formato de instrução não implementado: " + format);
+                throw new IllegalStateException("Formato de instrução não implementado: " + currentInstruction.getFormat());
         }
         return log;
     }

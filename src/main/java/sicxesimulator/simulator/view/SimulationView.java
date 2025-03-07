@@ -45,7 +45,8 @@ public interface SimulationView {
     void setWindowTitle(String title);
 
     // Controle de execução
-    void disableControls(boolean disable);
+    void disableControls();
+    void enableControls();
 
     // Reset completo
     void fullReset();

@@ -1,7 +1,5 @@
 package sicxesimulator.machine.memory;
 
-import sicxesimulator.utils.Convert;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,12 +76,6 @@ public class Memory {
 		return byteValue;
 	}
 
-	public int readByte(int byteAddress) {
-		int wordAddress = byteAddress / 3;
-		int offset = byteAddress % 3;
-		return readByte(wordAddress, offset);
-	}
-
 	public void writeByte(int wordAddress, int offset, int value) {
 		if (offset < 0 || offset >= 3) {
 			throw new IllegalArgumentException("Offset inválido: " + offset);
@@ -110,15 +102,5 @@ public class Memory {
 		for (int i = 0; i < addressRange; i++) { // Iteração correta: 0 ≤ i < 4096
 			memory[i] = new Word(i); // Cria uma nova Word para cada posição
 		}
-	}
-
-	// Novo método para escrever uma palavra diretamente pelo seu endereço
-	public void writeWordByAddress(int wordAddress, byte[] data) {
-		writeWord(wordAddress, data); // Já implementado
-	}
-
-	// Método para ler uma palavra pelo endereço
-	public byte[] readWordByAddress(int wordAddress) {
-		return readWord(wordAddress);
 	}
 }

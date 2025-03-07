@@ -1,7 +1,13 @@
 plugins {
-    id 'java'
-    id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'java' // Adiciona o plugin Java
+    id 'application' // Se for uma aplicação com um ponto de entrada
+    id 'org.openjfx.javafxplugin' version '0.0.14' // Para lidar com o bloco javafx {...}
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
@@ -13,20 +19,17 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
 
+    // JUnit Platform Suite API
+    testImplementation "org.junit.platform:junit-platform-suite-api:1.9.3"
+
     // Dependências do JavaFX
     implementation 'org.openjfx:javafx-controls:17.0.2'
     implementation 'org.openjfx:javafx-fxml:17.0.2'
     implementation 'org.openjfx:javafx-media:17.0.2'
 }
-// Configuração da versão do Java
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform() // Necessário para rodar testes JUnit 5
 }
 
 // Definição correta dos diretórios de código-fonte
@@ -39,14 +42,12 @@ sourceSets {
     }
 }
 
-
-// Define corretamente a classe principal do aplicativo
 application {
     mainClass = 'sicxesimulator.Main'
     mainModule = 'sicxesimulator'
 }
 
-// Configuração do JavaFX (o plugin `org.openjfx.javafxplugin` já faz a configuração de módulos)
+// Configuração do JavaFX (é preciso o plugin `org.openjfx.javafxplugin` para reconhecer este bloco)
 javafx {
     version = "17.0.2"
     modules = ['javafx.controls', 'javafx.fxml', 'javafx.media']

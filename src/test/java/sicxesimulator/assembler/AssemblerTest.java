@@ -1,7 +1,6 @@
-package sicxesimulator;
+package sicxesimulator.assembler;
 
 import org.junit.jupiter.api.Test;
-import sicxesimulator.assembler.Assembler;
 import sicxesimulator.assembler.models.ObjectFile;
 import java.util.Arrays;
 import java.util.List;

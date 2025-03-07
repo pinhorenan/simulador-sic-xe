@@ -24,6 +24,7 @@ Para compilar e executar o simulador, utilize o Gradle Wrapper. Isso garantirá 
 - **No Linux/Mac:**
 
   ```bash
+  chmod +x gradlew
   ./gradlew run
   ```
 

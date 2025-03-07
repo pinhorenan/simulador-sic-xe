@@ -41,21 +41,15 @@ public class InstructionDecoder {
             opcode = fullByte;
             operands = decodeFormat2();
         } else {
-            // Para formato 3 (ou 4, se implementado), extraímos os 6 bits de opcode e os bits n e i.
-            // Extração do opcode: bits 7..2
+            // Para formato 3 (ou 4, se implementado), extrai os 6 bits de opcode
             opcode = (fullByte & 0xFC) >> 2;
-            // Aqui poderíamos também extrair os bits n e i, se necessário para a lógica do simulador.
-            // Neste exemplo, não os utilizamos diretamente na criação da Instruction.
+            // Decodifica os demais bytes no formato 3, extraindo os flags x, b, p e e, e o deslocamento de 12 bits.
+            operands = decodeFormat3(); // Retorna array com [disp12, x, b, p, e]
+            indexed = (operands[1] == 1); // flag x
 
-            // Decodifica os demais bytes no formato 3
-            // Atualize o método para ler corretamente os flags do segundo byte (x, b, p, e) e o deslocamento de 12 bits.
-            operands = decodeFormat3();
-            indexed = (operands[1] == 1); // O segundo valor indica se o flag X (indexado) está ativo
-            int addr12 = operands[0];
-            effectiveAddress = calculateEffectiveAddress(addr12, indexed);
+            effectiveAddress = calculateEffectiveAddress(operands[0], operands[1], operands[2], operands[3], operands[4]);
         }
 
-        // Cria e retorna a instância de Instruction com os valores decodificados
         return new Instruction(opcode, operands, format, indexed, false, effectiveAddress);
     }
 
@@ -66,20 +60,19 @@ public class InstructionDecoder {
     /**
      * Determina o formato da instrução.
      * Para instruções em formato 2, utiliza o byte completo; para formato 3, extrai os 6 bits de opcode.
-     * Aqui é feita uma verificação simples; você pode expandir esse método para outros opcodes.
      */
     private int determineInstructionFormat(int fullByte) {
-        // Verifica se é formato 2: os opcodes conhecidos para formato 2 (ex: CLEAR = 0x04, ADDR = 0x90, etc.)
+        // Verifica se é formato 2: opcodes conhecidos para formato 2 (ex: CLEAR = 0x04, ADDR = 0x90)
         if (fullByte == 0x04 || fullByte == 0x90) {
             return 2;
         }
         // Para RSUB, o objeto no formato 3 vem como 0x4C, mas após extração teremos:
-        // (0x4C & 0xFC) >> 2 = (0x4C) >> 2 = 0x13
+        // (0x4C & 0xFC) >> 2 = 0x13
         int opcodeExtracted = (fullByte & 0xFC) >> 2;
-        if (opcodeExtracted == 0x13) { // RSUB
+        //noinspection IfStatementWithIdenticalBranches
+        if (opcodeExtracted == 0x13) { // RSUB. If decorativo apenas para especificar aqui no código.
             return 3;
         }
-        // Caso padrão: formato 3
         return 3;
     }
 
@@ -88,7 +81,6 @@ public class InstructionDecoder {
      * O segundo byte contém dois registradores (4 bits cada).
      */
     private int[] decodeFormat2() {
-        // Lê o segundo byte (offset=1) para extrair os registradores
         int byte2 = memory.readByte(pcValue, 1) & 0xFF;
         int r1 = (byte2 >> 4) & 0xF;
         int r2 = byte2 & 0xF;
@@ -98,36 +90,58 @@ public class InstructionDecoder {
     /**
      * Decodifica instruções em formato 3 (3 bytes).
      * A estrutura do formato 3 é:
-     *   - Byte 1: bits 7..2 = opcode; bits 1..0 = n e i (não usados aqui diretamente)
-     *   - Byte 2: bit 7 = flag X (indexado); bits 6-4 = b, p, e; bits 3..0 = 4 bits altos do deslocamento
+     *   - Byte 1: bits 7..2 = opcode; bits 1..0 = n e i (não usados diretamente)
+     *   - Byte 2: bits: x (bit 7), b (bit 6), p (bit 5), e (bit 4), e bits 3..0 = 4 bits altos do deslocamento
      *   - Byte 3: 8 bits do deslocamento (parte baixa)
-     *
-     * Retorna um array onde:
-     *   [0] = deslocamento (12 bits) e
-     *   [1] = 1 se o flag indexado (X) estiver ativo, 0 caso contrário.
+     * Retorna um array com:
+     *   [0] = deslocamento (12 bits)
+     *   [1] = flag indexado (x): 1 se ativo, 0 caso contrário
+     *   [2] = bit b (1 se ativo, 0 caso contrário)
+     *   [3] = bit p (1 se ativo, 0 caso contrário)
+     *   [4] = bit e (1 se ativo, 0 caso contrário)
      */
     private int[] decodeFormat3() {
-        // Note que usamos o método readByte com offsets 1, 2 e 3 (cada palavra tem 3 bytes)
-        // Primeiro byte já foi lido (usado para extrair o opcode)
-        int secondByte = memory.readByte(pcValue, 2) & 0xFF;
-        int thirdByte = memory.readByte(pcValue, 3) & 0xFF;
+        int pc = registers.getRegister("PC").getIntValue();
+        int wordIndex = pc / 3;
+        int offset = pc % 3;
 
-        // O flag indexado (X) está no bit 7 do segundo byte
-        boolean indexed = (secondByte & 0x80) != 0;
-        // Os 12 bits de endereço: os 4 bits menos significativos do segundo byte e os 8 bits do terceiro byte
-        int disp12 = ((secondByte & 0x0F) << 8) | thirdByte;
+        int secondByte = memory.readByte(wordIndex, offset + 1) & 0xFF;
+        int thirdByte = memory.readByte(wordIndex, offset + 2) & 0xFF;
 
-        return new int[]{ disp12, indexed ? 1 : 0 };
+        int x = (secondByte & 0x80) >> 7;  // flag indexado
+        int b = (secondByte & 0x40) >> 6;  // base-relativo
+        int p = (secondByte & 0x20) >> 5;  // PC-relativo
+        int e = (secondByte & 0x10) >> 4;  // formato extendido (por enquanto, ignorado)
+        int dispHigh = secondByte & 0x0F;
+        int disp12 = (dispHigh << 8) | thirdByte;
+
+        return new int[]{ disp12, x, b, p, e };
     }
 
     /**
-     * Calcula o endereço efetivo somando o valor do registrador de índice se a flag indexado estiver ativa.
+     * Calcula o endereço efetivo a partir do deslocamento e dos bits de modo.
+     * - Se p == 1 (PC-relativo): EA = (PC_original + 3) + disp12 (convertido para valor com sinal)
+     * - Se b == 1 (base-relativo): EA = (valor do registrador B) + disp12
+     * - Caso contrário: EA = disp12 (endereço absoluto)
+     * Se o flag indexado (x) estiver ativo, soma o valor do registrador X.
+     * O parâmetro e é atualmente ignorado, pois estamos tratando apenas instruções não extendidas.
      */
-    private int calculateEffectiveAddress(int addr12, boolean indexed) {
-        int ea = addr12;
-        if (indexed) {
-            ea += indexRegisterIntValue;
+    private int calculateEffectiveAddress(int disp12, int x, int b, int p, int ignoredE) {
+        int EA = disp12;
+        // Converte o deslocamento de 12 bits para um valor com sinal
+        if ((disp12 & 0x800) != 0) { // se o bit 11 está setado
+            EA = disp12 - 0x1000;
         }
-        return ea;
+        if (p == 1) {
+            EA = (pcValue + 3) + EA; // PC-relativo: utiliza o PC original (pcValue)
+        } else if (b == 1) {
+            EA = registers.getRegister("B").getIntValue() + EA;
+        }
+        // EA permanece como endereço absoluto se p e b estiverem zerados
+
+        if (x == 1) {
+            EA += indexRegisterIntValue;
+        }
+        return EA;
     }
 }

@@ -5,15 +5,12 @@ import sicxesimulator.machine.memory.Memory;
 public class InstructionDecoder {
     private final Memory memory;
     private final RegisterSet registers;
-    private int pcValue;
-    private int indexRegisterIntValue;
     private byte[] fetchedBytes;
+    private int programCounter;
 
     public InstructionDecoder(RegisterSet registers, Memory memory) {
         this.memory = memory;
         this.registers = registers;
-        pcValue = registers.getRegister("PC").getIntValue();
-        indexRegisterIntValue = registers.getRegister("X").getIntValue();
     }
 
     /**
@@ -24,6 +21,9 @@ public class InstructionDecoder {
         if (fetchedBytes == null) {
             throw new IllegalStateException("Nenhuma instrução foi buscada para decodificação.");
         }
+
+        // Atualiza o valor do PC antes de decodificar (para evitar usar um pcValue desatualizado)
+        programCounter = registers.getRegister("PC").getIntValue();
 
         // Lê o primeiro byte completo
         int fullByte = fetchedBytes[0] & 0xFF;
@@ -70,7 +70,7 @@ public class InstructionDecoder {
         // (0x4C & 0xFC) >> 2 = 0x13
         int opcodeExtracted = (fullByte & 0xFC) >> 2;
         //noinspection IfStatementWithIdenticalBranches
-        if (opcodeExtracted == 0x13) { // RSUB. If decorativo apenas para especificar aqui no código.
+        if (opcodeExtracted == 0x13) { // RSUB. (Decorativo, para fins de clareza)
             return 3;
         }
         return 3;
@@ -81,7 +81,7 @@ public class InstructionDecoder {
      * O segundo byte contém dois registradores (4 bits cada).
      */
     private int[] decodeFormat2() {
-        int byte2 = memory.readByte(pcValue, 1) & 0xFF;
+        int byte2 = memory.readByte(programCounter, 1) & 0xFF;
         int r1 = (byte2 >> 4) & 0xF;
         int r2 = byte2 & 0xF;
         return new int[]{ r1, r2 };
@@ -101,9 +101,9 @@ public class InstructionDecoder {
      *   [4] = bit e (1 se ativo, 0 caso contrário)
      */
     private int[] decodeFormat3() {
-        int pc = registers.getRegister("PC").getIntValue();
-        int wordIndex = pc / 3;
-        int offset = pc % 3;
+        int programCounter = registers.getRegister("PC").getIntValue();
+        int wordIndex = programCounter / 3;
+        int offset = programCounter % 3;
 
         int secondByte = memory.readByte(wordIndex, offset + 1) & 0xFF;
         int thirdByte = memory.readByte(wordIndex, offset + 2) & 0xFF;
@@ -133,13 +133,14 @@ public class InstructionDecoder {
             EA = disp12 - 0x1000;
         }
         if (p == 1) {
-            EA = (pcValue + 3) + EA; // PC-relativo: utiliza o PC original (pcValue)
+            EA = (programCounter + 3) + EA; // PC-relativo: utiliza o pcValue atualizado
         } else if (b == 1) {
             EA = registers.getRegister("B").getIntValue() + EA;
         }
-        // EA permanece como endereço absoluto se p e b estiverem zerados
+        // EA permanece absoluto se p e b estiverem zerados
 
         if (x == 1) {
+            int indexRegisterIntValue = registers.getRegister("X").getIntValue();
             EA += indexRegisterIntValue;
         }
         return EA;

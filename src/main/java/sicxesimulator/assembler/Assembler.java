@@ -5,16 +5,19 @@ import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.assembler.processing.FirstPassProcessor;
 import sicxesimulator.assembler.processing.SecondPassProcessor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Assembler {
     // Processadores para cada passagem
     private final FirstPassProcessor firstPassProcessor;
     private final SecondPassProcessor secondPassProcessor;
+    private final List<ObjectFile> generatedObjectFiles;
 
     public Assembler() {
-        this.firstPassProcessor = new FirstPassProcessor();
-        this.secondPassProcessor = new SecondPassProcessor();
+        firstPassProcessor = new FirstPassProcessor();
+        secondPassProcessor = new SecondPassProcessor();
+        generatedObjectFiles = new ArrayList<>();
     }
 
     /**
@@ -23,8 +26,10 @@ public class Assembler {
      * e depois a segunda passagem (para gerar o código objeto).
      */
     public ObjectFile assemble(List<String> sourceLines) {
-        IntermediateRepresentation ir = firstPass(sourceLines);
-        return secondPass(ir);
+        IntermediateRepresentation midCode = firstPass(sourceLines);
+        ObjectFile generatedObject = secondPass(midCode);
+        generatedObjectFiles.add(generatedObject);
+        return generatedObject;
     }
 
     /**
@@ -37,8 +42,18 @@ public class Assembler {
     /**
      * Realiza a segunda passagem delegando para a classe SecondPassProcessor.
      */
-    public ObjectFile secondPass(IntermediateRepresentation ir) {
-        return secondPassProcessor.generateObjectFile(ir);
+    public ObjectFile secondPass(IntermediateRepresentation midCode) {
+        return secondPassProcessor.generateObjectFile(midCode);
+    }
+
+    // Getters
+
+    public List<ObjectFile> getGeneratedObjectFiles() {
+        return generatedObjectFiles;
+    }
+
+    public ObjectFile getLastGeneratedObjectFile() {
+        return generatedObjectFiles.get(generatedObjectFiles.size() - 1);
     }
 
     /**

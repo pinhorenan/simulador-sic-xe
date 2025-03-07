@@ -4,11 +4,13 @@ public class ObjectFile {
     private final int startAddress; // Endereço de início (a palavra inicial, não o byte)
     private final byte[] objectCode; // Código objeto
     private final SymbolTable symbolTable;
+    private final String fileName;
 
-    public ObjectFile(int startAddress, byte[] objectCode, SymbolTable symbolTable) {
+    public ObjectFile(int startAddress, byte[] objectCode, SymbolTable symbolTable, String fileName) {
         this.startAddress = startAddress;
         this.objectCode = objectCode;
         this.symbolTable = symbolTable;
+        this.fileName = fileName;
     }
 
     public int getStartAddress() {
@@ -23,9 +25,10 @@ public class ObjectFile {
         return symbolTable;
     }
 
-    /**
-     * Retorna o comprimento do programa em bytes.
-     */
+    public String getFilename() {
+        return fileName;
+    }
+
     public int getProgramLength() {
         return objectCode.length;
     }

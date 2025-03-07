@@ -24,21 +24,20 @@ public class Instruction {
     public int getSizeInWords() {
         switch (format) {
             case 1:
-                return 1; // Formato 1: 1 palavra
+                return 1; // Formato 1: 1 byte, 1 palavra
             case 2:
-                return 2; // Formato 2: 2 palavras
+                return 1; // Formato 2: 2 bytes, 1 palavra
             case 3:
-                return 3; // Formato 3: 3 palavras
+                return 1; // Formato 3: 3 bytes, 1 palavras
             case 4:
-                return 4; // Formato 4: 4 palavras
+                return 2; // Formato 4: 4 bytes, 2 palavras
             default:
                 throw new IllegalArgumentException("Formato de instrução inválido: " + format);
         }
     }
 
-    // Tamanho da instrução em bytes
     public int getSizeInBytes() {
-        return getSizeInWords() * 3; // Cada palavra tem 3 bytes
+        return getSizeInWords() * 3;
     }
 
     public int[] getOperands() {

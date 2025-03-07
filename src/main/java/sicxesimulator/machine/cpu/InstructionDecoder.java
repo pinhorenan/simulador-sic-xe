@@ -42,17 +42,20 @@ public class InstructionDecoder {
             operands = decodeFormat2();
         } else {
             // Para formato 3 (ou 4, se implementado), extrai os 6 bits de opcode
-            opcode = (fullByte & 0xFC) >> 2;
+            opcode = fullByte & 0xFC;  // NÃO fazer >>2
             // Decodifica os demais bytes no formato 3, extraindo os flags x, b, p e e, e o deslocamento de 12 bits.
             operands = decodeFormat3(); // Retorna array com [disp12, x, b, p, e]
             indexed = (operands[1] == 1); // flag x
-
             effectiveAddress = calculateEffectiveAddress(operands[0], operands[1], operands[2], operands[3], operands[4]);
         }
 
         return new Instruction(opcode, operands, format, indexed, false, effectiveAddress);
     }
 
+    /**
+     * TODO
+     * @param bytes Array de onde a instrução será extraída.
+     */
     public void setFetchedBytes(byte[] bytes) {
         this.fetchedBytes = bytes;
     }

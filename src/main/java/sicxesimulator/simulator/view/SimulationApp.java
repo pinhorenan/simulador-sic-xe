@@ -58,6 +58,7 @@ public class SimulationApp extends Application implements SimulationView {
             updateSymbolTable();
         });
 
+
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
         root.setCenter(createMainContent());
@@ -69,6 +70,9 @@ public class SimulationApp extends Application implements SimulationView {
         primaryStage.show();
 
         configureStageProperties();
+        updateViewFormatLabel(viewConfig.getAddressFormat());
+        updateCycleDelayLabel();
+        updateMemorySizeLabel();
         initializeUI();
     }
 
@@ -89,6 +93,12 @@ public class SimulationApp extends Application implements SimulationView {
     public TextArea getOutputArea() {
         return inputOutputPane.getOutputArea();
     }
+
+    @Override
+    public Stage getStage() {
+        return primaryStage;
+    }
+
 
     @Override
     public void updateAllTables() {
@@ -234,8 +244,14 @@ public class SimulationApp extends Application implements SimulationView {
     }
 
     @Override
-    public Stage getStage() {
-        return primaryStage;
+    public void updateCycleDelayLabel() {
+        Platform.runLater(() -> executionSpeedLabel.setText("Atraso de ciclo: " + controller.getSimulationModel().getCycleDelay()));
+    }
+
+    @Override
+    public void updateMemorySizeLabel() {
+        Platform.runLater(() -> memorySizeLabel.setText("Memória: " + controller.getSimulationModel().getMachine().getMemorySize() + " bytes"));
+
     }
 
     @Override

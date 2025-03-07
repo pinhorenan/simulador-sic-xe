@@ -26,7 +26,7 @@ public class FirstPassProcessor {
 
     public IntermediateRepresentation process(List<String> sourceLines) {
         boolean endFound = false;
-        IntermediateRepresentation ir = new IntermediateRepresentation();
+        IntermediateRepresentation midCode = new IntermediateRepresentation();
         int lineNumber = 0;
 
         for (String line : sourceLines) {
@@ -65,32 +65,33 @@ public class FirstPassProcessor {
                 try {
                     startAddress = parseAddress(operand);
                     locationCounter = startAddress;
-                    ir.setStartAddress(startAddress);
+                    midCode.setStartAddress(startAddress);
                     logger.info("Start Address definido como: " + Integer.toHexString(startAddress));
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Erro ao processar START na linha " + lineNumber + ": " + operand);
                 }
                 if (label != null) {
-                    ir.addSymbol(label, locationCounter);
+                    midCode.addSymbol(label, locationCounter);
+                    midCode.setProgramName(label);
                 }
                 continue;
             }
 
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
-                ir.setFinalAddress(locationCounter);
+                midCode.setFinalAddress(locationCounter);
                 logger.info("Diretiva END encontrada na linha " + lineNumber);
                 continue;
             }
 
             if (label != null) {
-                ir.addSymbol(label, locationCounter);
+                midCode.addSymbol(label, locationCounter);
                 logger.info("Registrando símbolo '" + label + "' no endereço: " + Integer.toHexString(locationCounter));
             }
 
             int size = getInstructionSize(mnemonic, operand);
             AssemblyLine asmLine = new AssemblyLine(label, mnemonic, operand, locationCounter, lineNumber);
-            ir.addAssemblyLine(asmLine);
+            midCode.addAssemblyLine(asmLine);
             locationCounter += size;
         }
 
@@ -98,7 +99,7 @@ public class FirstPassProcessor {
             throw new IllegalArgumentException("Diretiva END não encontrada.");
         }
 
-        return ir;
+        return midCode;
     }
 
     private int parseAddress(String operand) {

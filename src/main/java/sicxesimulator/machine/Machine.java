@@ -12,6 +12,10 @@ public class Machine {
         this.controlUnit = new ControlUnit(this.memory);
     }
 
+    public int getMemorySize() {
+        return memory.getSizeInBytes();
+    }
+
     public void runCycle() {
         if (controlUnit.isHalted()) return;
 

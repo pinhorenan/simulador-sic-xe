@@ -6,6 +6,7 @@ import java.util.List;
 public class IntermediateRepresentation {
     private final SymbolTable symbolTable;
     private final List<AssemblyLine> assemblyLines;
+    private String programName;
     private int startAddress;
     private int finalAddress;
 
@@ -44,6 +45,14 @@ public class IntermediateRepresentation {
 
     public void setFinalAddress(int finalAddress) {
         this.finalAddress = finalAddress;
+    }
+
+    public String getProgramName() {
+        return programName;
+    }
+
+    public void setProgramName(String programName) {
+        this.programName = programName;
     }
 
     /**

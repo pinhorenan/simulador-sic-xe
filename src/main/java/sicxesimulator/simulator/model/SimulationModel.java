@@ -53,14 +53,11 @@ public class SimulationModel {
         return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
     }
 
-    public void assembleAndLoadProgram(List<String> sourceLines) throws IOException {
-        ObjectFile machineCode = assembleCode(sourceLines);
-        updateLastObjectFile(machineCode);
-        loadProgram();
-    }
-
-    public void loadProgram() {
-        loader.load(lastObjectFile);
+    public void loadObjectFile(ObjectFile selectedFile) {
+        if (selectedFile != null) {
+            loader.load(selectedFile);
+            lastObjectFile = selectedFile; // Atualiza o último carregado
+        }
     }
 
     public void updateLastObjectFile(ObjectFile objectFile) {
@@ -71,10 +68,9 @@ public class SimulationModel {
         return lastObjectFile;
     }
 
-    public ObjectFile assembleCode(List<String> sourceLines) {
+    public void assembleCode(List<String> sourceLines) {
         ObjectFile machineCode = assembler.assemble(sourceLines);
         updateLastObjectFile(machineCode);
-        return machineCode;
     }
 
     public void runNextInstruction() {
@@ -93,16 +89,8 @@ public class SimulationModel {
         }
     }
 
-    public void validateMemorySize(int size) throws IllegalArgumentException {
-        if (size <= 0) {
-            throw new IllegalArgumentException("Tamanho da memória deve ser positivo");
-        }
-        if (size % 3 != 0) {
-            throw new IllegalArgumentException("Tamanho deve ser múltiplo de 3 (palavras de 3 bytes)");
-        }
-    }
 
-    private long getDelayForSpeed(int speed) {
+    private int getDelayForSpeed(int speed) {
         return switch (speed) {
             case 1 -> 1000;
             case 2 -> 500;
@@ -112,16 +100,16 @@ public class SimulationModel {
         };
     }
 
+    public int getCycleDelay() {
+        return getDelayForSpeed(simulationSpeed);
+    }
+
     public void setCycleSpeed(int newSimulationSpeed) {
         if (newSimulationSpeed >= 0 && newSimulationSpeed <= 4) {
             this.simulationSpeed = newSimulationSpeed;
         } else {
             throw new IllegalArgumentException("Velocidade inválida. Use 0 (tempo real), 1 (muito lento), 2 (lento), 3 (médio), ou 4 (rápido).");
         }
-    }
-
-    public boolean hasValidProgram() {
-        return lastObjectFile != null && startAddress >= 0;
     }
 
     public boolean isFinished() {

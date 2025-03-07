@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import sicxesimulator.assembler.Assembler;
+import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.simulator.model.SimulationModel;
 import sicxesimulator.simulator.view.SimulationApp;
 
@@ -20,19 +21,18 @@ public class SimulationController {
         this.view = view;
     }
 
-    /**
-     * Lê o código do campo de entrada, monta e carrega o programa.
-     */
+    // Handlers
+
     public void handleAssembleAction() {
         String sourceText = view.getInputText();
         List<String> sourceLines = Arrays.asList(sourceText.split("\\r?\\n"));
         try {
-            model.assembleAndLoadProgram(sourceLines);
+            model.assembleCode(sourceLines);
             view.updateAllTables();
             String formattedCode = model.getLastObjectFile().toString();
             view.appendOutput("Programa montado e carregado com sucesso!");
             view.appendOutput(formattedCode);
-        } catch (IOException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             view.showError("Erro na montagem: " + e.getMessage());
         }
     }
@@ -47,8 +47,10 @@ public class SimulationController {
     }
 
     public void handleRunAction() {
-        System.out.println("PC: " + model.getMachine().getControlUnit().getIntValuePC());
-        System.out.println("Próxima instrução: " + Arrays.toString(model.getMachine().getMemory().readWord(model.getMachine().getControlUnit().getIntValuePC() / 3)));
+        int pc = model.getMachine().getControlUnit().getIntValuePC();
+        System.out.println("PC: " + pc);
+        byte[] nextWord = model.getMachine().getMemory().readWord(pc / 3);
+        System.out.println("Proxima instrucao: " + Arrays.toString(nextWord));
 
         if (model.hasAssembledCode()) {
             if (!model.isFinished()) {
@@ -56,10 +58,21 @@ public class SimulationController {
                     @Override
                     protected Void call() {
                         while (!model.isFinished() && !model.isPaused()) {
-                            model.runNextInstruction();
+                            try {
+                                model.runNextInstruction();
+                            } catch (Exception ex) {
+                                // Caso ocorra uma exceção, exiba detalhes (mesmo que a mensagem seja nula)
+                                String errorMsg = ex.getMessage() != null ? ex.getMessage() : ex.toString();
+                                Platform.runLater(() -> view.showError("Erro na execução: " + errorMsg));
+                                break;
+                            }
                             String log = model.getMachine().getControlUnit().getLastExecutionLog();
+                            if (log == null) {
+                                log = "Log de execução não disponível.";
+                            }
+                            String finalLog = log;
                             Platform.runLater(() -> {
-                                view.appendOutput(log);
+                                view.appendOutput(finalLog);
                                 view.updateAllTables();
                             });
                             model.applyCycleDelay();
@@ -80,18 +93,24 @@ public class SimulationController {
     }
 
     public void handleNextAction() {
-        System.out.println("PC: " + model.getMachine().getControlUnit().getIntValuePC());
-        System.out.println("Proxima instrucao: " + Arrays.toString(model.getMachine().getMemory().readWord(model.getMachine().getControlUnit().getIntValuePC() / 3)));
+        int pc = model.getMachine().getControlUnit().getIntValuePC();
+        System.out.println("PC: " + pc);
+        byte[] nextWord = model.getMachine().getMemory().readWord(pc / 3);
+        System.out.println("Próxima instrução: " + Arrays.toString(nextWord));
 
         if (model.hasAssembledCode()) {
             if (!model.isFinished()) {
                 try {
                     model.runNextInstruction();
                     String log = model.getMachine().getControlUnit().getLastExecutionLog();
+                    if (log == null) {
+                        log = "Log de execução não disponível.";
+                    }
                     view.appendOutput(log);
                     view.updateAllTables();
                 } catch (Exception e) {
-                    view.showError("Erro na execução: " + e.getMessage());
+                    String errorMsg = e.getMessage() != null ? e.getMessage() : e.toString();
+                    view.showError("Erro na execução: " + errorMsg);
                 }
             } else {
                 view.showError("Fim do programa!");
@@ -132,7 +151,17 @@ public class SimulationController {
         alert.showAndWait();
     }
 
-    // Método sobrecarregado para carregar um código de exemplo específico
+    public void handleLoadObjectFileAction(ObjectFile selectedFile) {
+        if (selectedFile == null) {
+            view.showError("Nenhum arquivo selecionado!");
+            return;
+        }
+
+        model.loadObjectFile(selectedFile);
+        view.appendOutput("Arquivo montado carregado: " + selectedFile.getFilename());
+        view.updateAllTables();
+    }
+
     public void handleLoadSampleCodeAction(String sampleCode, String title) {
         model.loadSampleCode(sampleCode, view, title);
     }
@@ -170,7 +199,8 @@ public class SimulationController {
         view.showHelpWindow();
     }
 
-    // GETTERS
+    // Getters
+
     public SimulationModel getSimulationModel() {
         return model;
     }

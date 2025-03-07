@@ -37,6 +37,8 @@ public interface SimulationView {
     // Configuração de visualização
     void setViewFormat(String format);
     void updateViewFormatLabel(String formatName);
+    void updateCycleDelayLabel();
+    void updateMemorySizeLabel();
 
     // Controle da janela
     Stage getStage();

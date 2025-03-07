@@ -2,7 +2,7 @@ package sicxesimulator.simulator.model;
 
 public class SampleCodes {
     public static final String SAMPLE_CODE_1 = """
-            COPY START 999
+            SAMP01 START 0
             FIRST  LDA   FIVE
                    ADD   FOUR
                    STA   RESULT
@@ -14,7 +14,7 @@ public class SampleCodes {
             """;
 
     public static final String SAMPLE_CODE_2 = """
-            COPY START 1000
+            SAMP02 START 0
             BEGIN  LDA   ALPHA
                    SUB   BETA
                    STA   GAMMA
@@ -26,7 +26,7 @@ public class SampleCodes {
             """;
 
     public static final String SAMPLE_CODE_3 = """
-            COPY START 500
+            SAMP3 START 30
             START  LDA   NUM1
                    MUL   NUM2
                    STA   RESULT

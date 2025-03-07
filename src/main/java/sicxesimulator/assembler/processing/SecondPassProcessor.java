@@ -59,8 +59,12 @@ public class SecondPassProcessor {
             System.arraycopy(code, 0, objectCode, offset, code.length);
         }
 
+        SymbolTable symbolTable = midObject.getSymbolTable();
+
+        String programName = midObject.getProgramName();
+
         // Retorna o objeto com o startAddress (em palavras) e o array de bytes
-        return new ObjectFile(startAddress, objectCode, midObject.getSymbolTable());
+        return new ObjectFile(startAddress, objectCode, symbolTable, programName);
     }
 
     /**

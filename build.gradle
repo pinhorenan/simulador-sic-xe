@@ -17,10 +17,8 @@ repositories {
 dependencies {
     // JUnit 5 (JUnit Jupiter API e Engine)
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+    testImplementation 'org.junit.platform:junit-platform-suite-api:1.9.3'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
-
-    // JUnit Platform Suite API
-    testImplementation "org.junit.platform:junit-platform-suite-api:1.9.3"
 
     // Dependências do JavaFX
     implementation 'org.openjfx:javafx-controls:17.0.2'

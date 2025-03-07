@@ -71,7 +71,8 @@ public class SecondPassProcessor {
      * Retorna 3 bytes por instrução (formato 3), pode ser ajustado se suportar formato 2 ou 4.
      */
     private int getInstructionSize(AssemblyLine line) {
-        // Você poderia refinar caso houvesse suporte a formato 1/2/4
+        // DA PRA IMPLEMENTA O DE 4 DPS
+
         return 3;
     }
 
@@ -106,39 +107,43 @@ public class SecondPassProcessor {
         String mnemonic = line.getMnemonic();
         String operand = line.getOperand();
 
-        // Detecta se é indexado (usaremos bit 7 do segundo byte)
+        // Detecta se é indexado (verifica se termina com ",X")
         boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
-
-        // Remove ",X" para resolver o símbolo / número corretamente
         String operandString = indexed ? operand.replace(",X", "") : operand;
 
-        // Busca o opcode da instrução
+        // Obtém o opcode a partir do mnemônico
         int opcode = OpcodeMapper.getOpcode(mnemonic);
 
-        // Resolve o endereço do operando em bytes
+        // Resolve o endereço do operando (retorna em bytes)
         int operandAddress = resolveOperandAddress(operandString, symbolTable);
 
-        // Calcula o deslocamento PC-relativo
+        // Calcula o deslocamento para PC-relativo
         int disp = calculateDisplacement(line, operandAddress);
 
-        // Monta os 3 bytes
-        // Byte 0: opcode (6 bits) + n=1,i=1 (2 bits) => normal: opcode | 0x03
         byte[] code = new byte[3];
-        code[0] = (byte) (opcode | 0x03); // n=1, i=1 fixo
+        // Byte 0: opcode com n=1 e i=1 (ou seja, adiciona 0x03)
+        code[0] = (byte) (opcode | 0x03);
 
-        // Byte 1: bit de index (7) + high nibble do disp (bits 8-11)
-        int highNibble = (disp >> 8) & 0x0F;
+        // Byte 1: construir os flags e os 4 bits altos do deslocamento:
+        // - Bit 7: x (indexado), se aplicável.
+        // - Bit 6: b (base-relativo); aqui, para PC-relativo simples, deixamos 0.
+        // - Bit 5: p (PC-relativo) -> deve ser 1.
+        // - Bit 4: e (formato extendido) -> 0, pois estamos tratando somente de formato 3.
+        // - Bits 3-0: os 4 bits altos do deslocamento.
+        int secondByte = 0;
         if (indexed) {
-            // Seta bit 7 do byte 1
-            highNibble |= 0x80;
+            secondByte |= 0x80; // seta x
         }
-        code[1] = (byte) highNibble;
+        secondByte |= 0x20; // seta o bit p para PC-relativo
+        secondByte |= ((disp >> 8) & 0x0F); // insere os 4 bits altos do deslocamento
+        code[1] = (byte) secondByte;
 
-        // Byte 2: bits 0-7 do disp
+        // Byte 2: os 8 bits inferiores do deslocamento
         code[2] = (byte) (disp & 0xFF);
 
         return code;
     }
+
 
     /**
      * Resolve o endereço do operando, retornando valor em bytes.
@@ -169,17 +174,14 @@ public class SecondPassProcessor {
      */
     private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
         int currentInstructionByteAddr = line.getAddress() * 3;
-        int nextInstructionByteAddr = currentInstructionByteAddr + 3; // 3 bytes da instrução
-
+        int nextInstructionByteAddr = currentInstructionByteAddr + 3;
         int disp = operandByteAddr - nextInstructionByteAddr;
-
-        // Verifica alcance de 12 bits (signed)
         if (disp < -2048 || disp > 2047) {
             throw new IllegalArgumentException("Deslocamento PC-relativo inválido: " + disp);
         }
-        // Mantém 12 bits
         return disp & 0xFFF;
     }
+
 
     /**
      * Converte diretiva BYTE no caso X'...' ou C'...'

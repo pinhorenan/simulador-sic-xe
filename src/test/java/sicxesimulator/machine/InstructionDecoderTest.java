@@ -25,9 +25,9 @@ public class InstructionDecoderTest {
     public void testFetchDecodeAndExecuteCycle() {
         // Prepara uma instrução LDA (opcode 0x00) no formato 3 com endereço absoluto 9 (byte address)
         byte[] ldaInstruction = {0x03, 0x00, 0x09}; // 0x03 & 0xFC = 0x00 -> LDA
-        memory.writeByte(0, 0, ldaInstruction[0]);
-        memory.writeByte(0, 1, ldaInstruction[1]);
-        memory.writeByte(0, 2, ldaInstruction[2]);
+        memory.writeByte(0, ldaInstruction[0]);
+        memory.writeByte(1, ldaInstruction[1]);
+        memory.writeByte(2, ldaInstruction[2]);
 
         // Valor que será carregado em A, armazenado no endereço 9 (em bytes)
         byte[] dataAt9 = {0x00, 0x10, 0x20};
@@ -49,9 +49,9 @@ public class InstructionDecoderTest {
     @Test
     public void testPCIncrementAfterDecode() {
         byte[] instruction = {0x4F, 0x00, 0x00}; // Exemplo RSUB formato 3
-        memory.writeByte(0, 0, instruction[0]);
-        memory.writeByte(0, 1, instruction[1]);
-        memory.writeByte(0, 2, instruction[2]);
+        memory.writeByte(0,  instruction[0]);
+        memory.writeByte(0,  instruction[1]);
+        memory.writeByte(0,  instruction[2]);
 
         registers.getRegister("PC").setValue(0);
         // Configure L para o valor esperado, de forma que RSUB faça PC ← L

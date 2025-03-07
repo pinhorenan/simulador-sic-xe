@@ -34,19 +34,24 @@ public abstract class ValueFormatter {
     /**
      * Formata um endereço conforme o formato especificado.
      *
-     * @param byteAddress O endereço a ser formatado.
+     * @param address O endereço a ser formatado.
      * @param format  O formato desejado ("DEC", "OCT", "HEX").
      * @return O endereço formatado como String.
      * @throws IllegalArgumentException Se o endereço for negativo.
      */
-    public static String formatAddress(int byteAddress, String format) {
-        // Formatação do endereço com base no formato
-        if ("HEX".equals(format)) {
-            return String.format("%04X", byteAddress);
-        } else if ("DEC".equals(format)) {
-            return String.format("%d", byteAddress);
-        } else {
-            return String.format("%04X", byteAddress);  // Padrão HEX
+    public static String formatAddress(int address, String format) {
+        // Supondo que o endereço seja tratado similarmente
+        switch (format.toUpperCase()) {
+            case "HEX":
+                return String.format("%06X", address);
+            case "DEC":
+                return Integer.toString(address);
+            case "OCT":
+                return Integer.toOctalString(address);
+            case "BIN":
+                return Convert.intToBinaryString24(address);
+            default:
+                return Integer.toString(address);
         }
     }
 
@@ -81,16 +86,27 @@ public abstract class ValueFormatter {
         return matcher.appendTail(sb).toString();
     }
 
-    public static String formatRegisterValue(Register reg) {
-        String regName = reg.getName().toUpperCase();
-        if ("PC".equals(regName)) {
-            return String.format("%06X", reg.getIntValue());
-        } else if ("F".equals(regName)) {
-            return String.format("%012X", reg.getLongValue());
+    public static String formatRegisterValue(Register reg, String format) {
+        if ("F".equalsIgnoreCase(reg.getName())) {
+            long value = reg.getLongValue();
+            return switch (format.toUpperCase()) {
+                case "HEX" -> String.format("%012X", value);  // 12 dígitos para 48 bits
+                case "DEC" -> Long.toString(value);
+                case "OCT" -> Long.toOctalString(value);
+                case "BIN" -> Convert.longToBinaryString48(value);
+                default -> Long.toString(value);
+            };
+        } else {
+            int value = reg.getIntValue();
+            return switch (format.toUpperCase()) {
+                case "HEX" -> String.format("%06X", value);
+                case "DEC" -> Integer.toString(value);
+                case "OCT" -> Integer.toOctalString(value);
+                case "BIN" -> Convert.intToBinaryString24(value);
+                default -> Integer.toString(value);
+            };
         }
-        return String.format("%06X", reg.getIntValue());
     }
-
     /**
      * Formata o código objeto para uma string legível.
      */

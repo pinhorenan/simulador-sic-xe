@@ -19,7 +19,6 @@ public class SimulationToolbar extends HBox {
 
         this.assembleButton = createAssembleButton(controller);
         this.loadButton = createLoadButton(controller);
-        Button showObjectCodeButton = createShowObjectCodeButton(controller);
         this.runButton = createRunButton(controller);
         this.pauseButton = createPauseButton(controller);
         this.nextButton = createNextButton(controller);
@@ -28,7 +27,6 @@ public class SimulationToolbar extends HBox {
         this.getChildren().addAll(
                 assembleButton,
                 loadButton,
-                showObjectCodeButton,
                 runButton,
                 pauseButton,
                 nextButton,
@@ -69,12 +67,6 @@ public class SimulationToolbar extends HBox {
     private Button createLoadButton(SimulationController controller) {
         Button button = new Button("Carregar");
         button.setOnAction(e -> showLoadDialog(controller));
-        return button;
-    }
-
-    private Button createShowObjectCodeButton(SimulationController controller) {
-        Button button = new Button("Mostrar Código Objeto");
-        button.setOnAction(e -> controller.handleShowObjectCodeAction());
         return button;
     }
 

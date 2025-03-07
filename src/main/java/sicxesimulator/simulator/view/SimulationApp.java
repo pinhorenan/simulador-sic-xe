@@ -88,6 +88,7 @@ public class SimulationApp extends Application implements SimulationView {
     }
 
     public TextArea getInputField() {
+
         return inputOutputPane.getInputField();
     }
 
@@ -132,10 +133,12 @@ public class SimulationApp extends Application implements SimulationView {
                 .getAllRegisters();
 
         for (Register reg : registers) {
-            String value = ValueFormatter.formatRegisterValue(reg);
+            // Aqui, o ValueFormatter já verifica se o registrador é "F" e, em caso afirmativo, usa getLongValue()
+            String value = ValueFormatter.formatRegisterValue(reg, viewConfig.getAddressFormat());
             registerTable.getItems().add(new RegisterEntry(reg.getName(), value));
         }
     }
+
 
     @Override
     public void updateSymbolTable() {
@@ -425,12 +428,27 @@ public class SimulationApp extends Application implements SimulationView {
 
         Menu viewMenu = new Menu("Exibição");
         MenuItem hexadecimalView = new MenuItem("Hexadecimal");
-        hexadecimalView.setOnAction(e -> controller.handleHexViewAction());
+        hexadecimalView.setOnAction(e -> {
+            setViewFormat("HEX");
+            updateViewFormatLabel("Hexadecimal");
+        });
         MenuItem octalView = new MenuItem("Octal");
-        octalView.setOnAction(e -> controller.handleOctalViewAction());
+        octalView.setOnAction(e -> {
+            setViewFormat("OCT");
+            updateViewFormatLabel("Octal");
+        });
         MenuItem decimalView = new MenuItem("Decimal");
-        decimalView.setOnAction(e -> controller.handleDecimalViewAction());
-        viewMenu.getItems().addAll(hexadecimalView, octalView, decimalView);
+        decimalView.setOnAction(e -> {
+            setViewFormat("DEC");
+            updateViewFormatLabel("Decimal");
+        });
+        MenuItem binaryView = new MenuItem("Binário");
+        binaryView.setOnAction(e -> {
+            setViewFormat("BIN");
+            updateViewFormatLabel("Binário");
+        });
+        viewMenu.getItems().addAll(hexadecimalView, octalView, decimalView, binaryView);
+
 
         Menu helpMenu = new Menu("Ajuda");
         MenuItem helpItem = new MenuItem("Ajuda e Tutorial");
@@ -501,7 +519,9 @@ public class SimulationApp extends Application implements SimulationView {
                     LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + " ===\n");
 
             writer.write("\n--- Memória (valores não zero) ---\n");
-            model.getMachine().getMemory().getMemoryMap().forEach((address, value) -> {
+            byte[] memArray = model.getMachine().getMemory().getMemoryMap();
+            for (int address = 0; address < memArray.length; address++) {
+                int value = memArray[address] & 0xFF; // Converte para valor positivo
                 if (value != 0) {
                     String formattedAddr = ValueFormatter.formatAddress(address, viewConfig.getAddressFormat());
                     String formattedValue = ValueFormatter.formatByte(value, viewConfig.getAddressFormat());
@@ -511,11 +531,12 @@ public class SimulationApp extends Application implements SimulationView {
                         throw new RuntimeException(e);
                     }
                 }
-            });
+            }
+
 
             writer.write("\n--- Registradores ---\n");
             model.getMachine().getControlUnit().getRegisterSet().getAllRegisters().forEach(reg -> {
-                String formattedValue = ValueFormatter.formatRegisterValue(reg);
+                String formattedValue = ValueFormatter.formatRegisterValue(reg, viewConfig.getAddressFormat());
                 try {
                     writer.write(String.format("%-10s | %s\n", reg.getName(), formattedValue));
                 } catch (IOException e) {

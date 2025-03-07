@@ -20,15 +20,16 @@ public class Loader {
         Memory memory = machine.getMemory();
         int startByteAddress = objectFile.getStartAddress();
 
-        validateStartAddress(startByteAddress); // Novo método de validação
-        int startWordAddress = startByteAddress / 3; // Conversão para palavras
+        // Valida o endereço de início
+        validateStartAddress(startByteAddress);
+        int startWordAddress = startByteAddress / 3; // Conversão para índice de palavra
 
         byte[] objectCode = objectFile.getObjectCode();
         validateObjectCode(objectCode);
         validateMemoryBounds(memory, startWordAddress, objectCode.length);
 
         loadProgramIntoMemory(memory, startWordAddress, objectCode);
-        initializeProgramCounter(startByteAddress); // Usa o endereço em bytes
+        initializeProgramCounter(startByteAddress); // Usa o endereço em bytes sem multiplicar
 
         logSuccess(startByteAddress, objectCode);
     }
@@ -61,7 +62,8 @@ public class Loader {
     }
 
     private void initializeProgramCounter(int startAddress) {
-        machine.getControlUnit().setIntValuePC(startAddress * 3); // Define PC em bytes
+        // Corrigido: usa o startAddress diretamente, pois já está em bytes.
+        machine.getControlUnit().setIntValuePC(startAddress);
     }
 
     private void logSuccess(int startByteAddress, byte[] objectCode) {

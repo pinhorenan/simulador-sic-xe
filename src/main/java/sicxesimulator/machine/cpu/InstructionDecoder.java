@@ -19,7 +19,7 @@ public class InstructionDecoder {
         // Atualiza o PC a partir dos registradores.
         programCounter = registers.getRegister("PC").getIntValue();
         // Lê o primeiro byte da instrução da memória (offset 0)
-        int fullByte = memory.readByte(programCounter, 0) & 0xFF;
+        int fullByte = memory.readByte(programCounter) & 0xFF;
 
         // Determina o formato da instrução
         int format = determineInstructionFormat(fullByte);
@@ -63,7 +63,7 @@ public class InstructionDecoder {
      */
     private int[] decodeFormat2() {
         // Lê o segundo byte da instrução (offset 1 a partir do PC)
-        int secondByte = memory.readByte(programCounter, 1) & 0xFF;
+        int secondByte = memory.readByte(programCounter + 1) & 0xFF;
         int r1 = (secondByte >> 4) & 0xF;
         int r2 = secondByte & 0xF;
         return new int[]{ r1, r2 };
@@ -79,8 +79,8 @@ public class InstructionDecoder {
      */
     private int[] decodeFormat3() {
         // Lê os bytes 2 e 3 da instrução a partir do PC
-        int secondByte = memory.readByte(programCounter, 1) & 0xFF;
-        int thirdByte = memory.readByte(programCounter, 2) & 0xFF;
+        int secondByte = memory.readByte(programCounter + 1) & 0xFF;
+        int thirdByte = memory.readByte(programCounter + 2) & 0xFF;
 
         int x = (secondByte & 0x80) >> 7;
         int b = (secondByte & 0x40) >> 6;

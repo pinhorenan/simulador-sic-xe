@@ -113,9 +113,7 @@ public class SimulationModel {
     }
 
     public boolean isFinished() {
-        int pc = machine.getControlUnit().getIntValuePC();
-        int programLength = lastObjectFile != null ? lastObjectFile.getProgramLength() : 0;
-        return pc >= (startAddress + programLength);
+        return machine.getControlUnit().isHalted();
     }
 
     public boolean hasAssembledCode() {

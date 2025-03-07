@@ -24,10 +24,10 @@ public class ControlUnitTest {
     @Test
     public void testFetchDecodeAndExecuteCycle() {
         // Prepara uma instrução LDA (opcode 0x00) no formato 3 com endereço absoluto 9 (em bytes)
-        byte[] ldaInstruction = {0x03, 0x00, 0x09}; // 0x03 & 0xFC = 0x00, qu’indica LDA
-        memory.writeByte(0, 0, ldaInstruction[0]);
-        memory.writeByte(0, 1, ldaInstruction[1]);
-        memory.writeByte(0, 2, ldaInstruction[2]);
+        byte[] ldaInstruction = {0x03, 0x00, 0x09}; // 0x03 & 0xFC = 0x00, que indica LDA
+        memory.writeByte(0, ldaInstruction[0]);
+        memory.writeByte(1, ldaInstruction[1]);
+        memory.writeByte(2, ldaInstruction[2]);
 
         // Valor que será carregado em A, armazenado no endereço 9 (em bytes)
         byte[] dataAt9 = {0x00, 0x10, 0x20};
@@ -45,5 +45,6 @@ public class ControlUnitTest {
         int regAValue = registers.getRegister("A").getIntValue();
         assertEquals(expectedValue, regAValue);
     }
+
 
 }

@@ -13,7 +13,7 @@ public class Machine {
     }
 
     public int getMemorySize() {
-        return memory.getSizeInBytes();
+        return memory.getMemorySize();
     }
 
     public void runCycle() {

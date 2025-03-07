@@ -1,106 +1,121 @@
 package sicxesimulator.machine.memory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.logging.Logger;
 
 public class Memory {
-	private final Word[] memory;
-	private static final int MIN_SIZE_IN_BYTES = 1024; // Tamanho mínimo em bytes
-	private final int addressRange; // Número de palavras (cada uma com 3 bytes)
+	private static final Logger logger = Logger.getLogger(Memory.class.getName());
+	private final byte[] memory;  // Memória em bytes
+	private final int memorySize; // Tamanho da memória
 
-	public Memory(int sizeInBytes) {
-		// Validação do tamanho mínimo
-		if (sizeInBytes < MIN_SIZE_IN_BYTES) {
-			throw new IllegalArgumentException("Tamanho mínimo da memória: " + MIN_SIZE_IN_BYTES + " bytes");
+	// Construtor que inicializa a memória com o tamanho especificado
+	public Memory(int size) {
+		this.memorySize = size;
+		this.memory = new byte[size];
+		logger.info("Memória inicializada com tamanho de " + size + " bytes.");
+	}
+
+	/**
+	 * Lê uma palavra de memória, composta por 3 bytes (palavra de 24 bits).
+	 * @param wordIndex Índice da palavra a ser lida
+	 * @return Um array de 3 bytes representando a palavra de memória
+	 */
+	public byte[] readWord(int wordIndex) {
+		if (wordIndex * 3 + 3 > memorySize) {
+			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memória.");
 		}
-
-		this.addressRange = sizeInBytes / 3; // Ex: 12288 bytes / 3 = 4096 words
-		memory = new Word[addressRange];     // Array de tamanho 4096 (índices 0-4095)
-		clearMemory();                       // Inicializa todas as posições
+		byte[] word = new byte[3];
+		System.arraycopy(memory, wordIndex * 3, word, 0, 3);
+		logger.fine(String.format("readWord: Lida palavra no índice %d -> %02X %02X %02X",
+				wordIndex, word[0], word[1], word[2]));
+		return word;
 	}
 
-
-	public int getSizeInBytes() {
-		return addressRange * 3;
+	/**
+	 * Lê um byte específico da memória, dado um endereço em bytes.
+	 * @param byteAddr O endereço do byte a ser lido
+	 * @return O valor do byte no endereço especificado
+	 */
+	public int readByte(int byteAddr) {
+		if (byteAddr >= memorySize) {
+			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memória.");
+		}
+		int value = memory[byteAddr] & 0xFF;  // Retorna o byte como valor positivo (0-255)
+		logger.fine(String.format("readByte: Lido byte no endereço %d -> %02X", byteAddr, value));
+		return value;
 	}
 
+	/**
+	 * Escreve uma palavra de 3 bytes na memória, dado um índice de palavra.
+	 * @param wordIndex Índice da palavra a ser escrita
+	 * @param word A palavra de 3 bytes a ser escrita
+	 */
+	public void writeWord(int wordIndex, byte[] word) {
+		if (word.length != 3) {
+			throw new IllegalArgumentException("Uma palavra deve ter exatamente 3 bytes.");
+		}
+		if (wordIndex * 3 + 3 > memorySize) {
+			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memória.");
+		}
+		System.arraycopy(word, 0, memory, wordIndex * 3, 3);
+		logger.fine(String.format("writeWord: Escrita palavra no índice %d -> %02X %02X %02X",
+				wordIndex, word[0], word[1], word[2]));
+	}
+
+	/**
+	 * Escreve um byte na memória em um endereço específico.
+	 * @param byteAddr O endereço do byte a ser escrito
+	 * @param value O valor do byte a ser escrito
+	 */
+	public void writeByte(int byteAddr, int value) {
+		if (byteAddr >= memorySize) {
+			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memória.");
+		}
+		memory[byteAddr] = (byte) (value & 0xFF);  // Armazena apenas o byte
+		logger.fine(String.format("writeByte: Escrito byte no endereço %d -> %02X", byteAddr, value & 0xFF));
+	}
+
+	/**
+	 * Retorna o tamanho total da memória em bytes.
+	 * @return O tamanho da memória em bytes
+	 */
+	public int getMemorySize() {
+		return memorySize;
+	}
+
+	/**
+	 * Retorna o mapa de memória para depuração, ou seja, uma cópia completa do array de bytes.
+	 * @return Cópia do array de bytes que representa a memória
+	 */
+	public byte[] getMemoryMap() {
+		return Arrays.copyOf(memory, memory.length);
+	}
+
+	/**
+	 * Retorna o número total de palavras da memória (cada palavra possui 3 bytes).
+	 * @return Número de palavras
+	 */
 	public int getAddressRange() {
-		return addressRange;
+		return memorySize / 3;
 	}
 
-	public Map<Integer, Integer> getMemoryMap() {
-		Map<Integer, Integer> memoryMap = new HashMap<>();
+	/**
+	 * Reinicializa a memória, zerando todos os bytes.
+	 */
+	public void clearMemory() {
+		Arrays.fill(memory, (byte) 0);
+		logger.info("Memória limpa.");
+	}
 
-		for (int wordAddress = 0; wordAddress < addressRange; wordAddress++) {
-			byte[] word = memory[wordAddress].getValue();
-			for (int offset = 0; offset < 3; offset++) {
-				int byteValue = word[offset] & 0xFF; // Converter para valor unsigned
-				if (byteValue != 0) {
-					int byteAddress = wordAddress * 3 + offset;
-					memoryMap.put(byteAddress, byteValue);
-				}
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < memorySize; i++) {
+			sb.append(String.format("%02X ", memory[i]));
+			if ((i + 1) % 16 == 0) {
+				sb.append("\n");
 			}
 		}
-
-		return Collections.unmodifiableMap(memoryMap);
-	}
-
-	public void writeWord(int wordAddress, byte[] wordData) {
-		// Adicionar validação de dados
-		if (wordData == null || wordData.length != 3) {
-			throw new IllegalArgumentException("Palavra inválida.");
-		}
-		validateAddress(wordAddress);
-		memory[wordAddress].setValue(wordData.clone()); // Garante imutabilidade
-	}
-
-	public byte[] readWord(int wordAddress) {
-		validateAddress(wordAddress);
-		//System.out.println("readWord(" + wordAddress + ")");
-		return memory[wordAddress].getValue();
-	}
-
-	public int readByte(int wordAddress, int offset) {
-		// Valida se o offset está dentro do intervalo 0-2
-		if (offset < 0 || offset >= 3) {
-			throw new IllegalArgumentException("Offset invalido: " + offset);
-		}
-
-		// Valida o endereço da palavra
-		validateAddress(wordAddress);
-
-		byte[] wordValue = memory[wordAddress].getValue();
-		int byteValue = wordValue[offset] & 0xFF;
-		System.out.println("Lendo byte no endereço " + wordAddress + " com offset " + offset + ": " + byteValue);
-		return byteValue;
-	}
-
-	public void writeByte(int wordAddress, int offset, int value) {
-		if (offset < 0 || offset >= 3) {
-			throw new IllegalArgumentException("Offset inválido: " + offset);
-		}
-
-		if (wordAddress >= memory.length) {
-			throw new IllegalArgumentException("Tentativa de escrever fora dos limites da memória.");
-		}
-
-		validateAddress(wordAddress);
-		byte[] wordValue = memory[wordAddress].getValue();
-		wordValue[offset] = (byte) (value & 0xFF);
-		memory[wordAddress].setValue(wordValue);
-		System.out.println("Escrevendo byte no endereço " + wordAddress + " com offset " + offset + ": " + value);
-	}
-
-	private void validateAddress(int wordAddress) {
-		if (wordAddress < 0 || wordAddress >= addressRange) {
-			throw new IllegalArgumentException("Endereco invalido: " + wordAddress + ". Tamanho da memoria: " + addressRange + " palavras.");
-		}
-	}
-
-	public void clearMemory() {
-		for (int i = 0; i < addressRange; i++) { // Iteração correta: 0 ≤ i < 4096
-			memory[i] = new Word(i); // Cria uma nova Word para cada posição
-		}
+		return sb.toString();
 	}
 }

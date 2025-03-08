@@ -10,7 +10,7 @@ module sicxesimulator {
     // outros módulos ou pelo JavaFX.
     // "view" exportado para o módulo javafx.graphics, por exemplo, se houver FXML que precise de acesso.
     exports sicxesimulator.simulator.view to javafx.graphics;
-
+    exports sicxesimulator.simulator.view.components to javafx.graphics;
     // Exemplo de pacote exportado sem restrição:
     // (Se o teste ou outra parte do código no mesmo módulo precisa enxergar "machine",
     //  e/ou se você quer que seja público para quem usar seu módulo.)

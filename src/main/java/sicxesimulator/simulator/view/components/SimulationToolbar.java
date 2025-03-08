@@ -1,13 +1,14 @@
-package sicxesimulator.simulator.view;
+package sicxesimulator.simulator.view.components;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
-import sicxesimulator.simulator.controller.SimulationController;
+import sicxesimulator.simulator.controller.MainController;
+import sicxesimulator.simulator.view.MainApp;
 
 public class SimulationToolbar extends HBox {
-    private final SimulationApp view;
-    private final SimulationController controller;
+    private final MainApp view;
+    private final MainController controller;
     protected Button runButton;
     protected Button pauseButton;
     protected Button nextButton;
@@ -18,7 +19,7 @@ public class SimulationToolbar extends HBox {
     protected HBox fileControls;
     protected HBox executionControls;
 
-    public SimulationToolbar(SimulationController controller, SimulationApp view) {
+    public SimulationToolbar(MainController controller, MainApp view) {
         this.view = view;
         this.controller = controller;
         this.setSpacing(10);
@@ -73,6 +74,7 @@ public class SimulationToolbar extends HBox {
         proximo.setOnAction(e -> controller.handleNextAction());
 
         Button reset = new Button("Reset");
+        resetButton = reset;
         reset.setOnAction(e -> controller.handleResetAction());
 
         HBox executionControls = new HBox(10, executar, pausar, proximo, reset);
@@ -114,7 +116,7 @@ public class SimulationToolbar extends HBox {
         return executionControls;
     }
 
-    public SimulationApp getView() {
+    public MainApp getView() {
         return view;
     }
 }

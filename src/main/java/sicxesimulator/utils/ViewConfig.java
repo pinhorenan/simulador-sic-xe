@@ -9,7 +9,6 @@ public class ViewConfig {
 
     public interface FormatChangeListener {
         void onFormatChanged(String newFormat);
-
     }
 
     public void addFormatChangeListener(FormatChangeListener listener) {

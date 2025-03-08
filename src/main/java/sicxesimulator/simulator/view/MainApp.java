@@ -8,35 +8,33 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import sicxesimulator.assembler.Assembler;
 import sicxesimulator.assembler.models.ObjectFile;
-import sicxesimulator.loader.Loader;
-import sicxesimulator.machine.Machine;
-import sicxesimulator.machine.cpu.Register;
-import sicxesimulator.simulator.controller.SimulationController;
+import sicxesimulator.simulator.controller.MainController;
 import sicxesimulator.simulator.model.SampleCodes;
-import sicxesimulator.simulator.model.SimulationModel;
-import sicxesimulator.simulator.view.components.MemoryTableView;
-import sicxesimulator.simulator.view.components.RegisterTableView;
-import sicxesimulator.simulator.view.components.SymbolTableView;
-import sicxesimulator.utils.Convert;
-import sicxesimulator.utils.ValueFormatter;
+import sicxesimulator.simulator.model.MainModel;
+import sicxesimulator.simulator.view.components.*;
 import sicxesimulator.utils.ViewConfig;
 
 import java.io.IOException;
 import java.util.*;
 
-public class SimulationApp extends Application implements SimulationView {
-    private SimulationController controller;
+public class MainApp extends Application {
+    private MainController controller;
+
+    // Configurações de exibição
+    private ViewConfig viewConfig;
+
+    // Componentes da interface
     private Stage primaryStage;
-    private BorderPane root;
-    protected SimulationToolbar simulationToolbar;
+    private SimulationToolbar simulationToolbar;
+
+    // ListView para manter os arquivos de objeto montados
     private ListView<String> objectFileListView;
 
-    // Quadrante esquerdo
+    // TextAreas, todas ficam no lado esquerdo
     private TextArea inputArea;
+    private TextArea macroOutArea;
     private TextArea outputArea;
-    private TextArea expandedArea;
 
     // Tabelas
     private MemoryTableView memoryTable;
@@ -44,7 +42,6 @@ public class SimulationApp extends Application implements SimulationView {
     private SymbolTableView symbolTable;
 
     // Configurações e labels de status
-    private ViewConfig viewConfig;
     private Label executionSpeedLabel;
     private Label memorySizeLabel;
     private Label viewFormatLabel;
@@ -53,16 +50,17 @@ public class SimulationApp extends Application implements SimulationView {
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
 
-        Machine machine = new Machine();
-        SimulationModel model = new SimulationModel(machine, new Assembler(), new Loader(machine));
-        controller = new SimulationController(model, this);
+        // Inicializa o
+        MainModel model = new MainModel();
+        controller = new MainController(model, this);
         objectFileListView = new ListView<>();
+
+        // Configurações de exibição
         viewConfig = model.getViewConfig();
         viewConfig.addFormatChangeListener(newFormat -> updateAllTables());
         simulationToolbar = new SimulationToolbar(controller, this);
 
         BorderPane root = new BorderPane();
-        this.root = root;
         root.setTop(createMenuBar());
         root.setCenter(createMainContent());   // Layout principal: divisão left/right
         root.setBottom(createBottomBar());
@@ -86,7 +84,7 @@ public class SimulationApp extends Application implements SimulationView {
     }
 
     public void initializeView() {
-        List<ObjectFile> objFiles = controller.getSimulationModel().getAssembledObjectFiles();
+        List<ObjectFile> objFiles = controller.getObjectFilesList();
 
         if (objFiles.isEmpty()) {
             showNoFilesMessage();  // Se não houver arquivos, exibe a mensagem
@@ -108,7 +106,7 @@ public class SimulationApp extends Application implements SimulationView {
         disableControls();
         showWelcomeMessage();
         updateAllTables();
-        updateViewFormatLabel(viewConfig.getAddressFormat());
+        updateViewFormatLabel();
         updateCycleDelayLabel();
         updateMemorySizeLabel();
     }
@@ -154,12 +152,12 @@ public class SimulationApp extends Application implements SimulationView {
         TitledPane inputTitled = new TitledPane("Código de Entrada", inputScroll);
         inputTitled.setCollapsible(false);
 
-        // Área de código expandido
-        expandedArea = new TextArea();
-        expandedArea.setPromptText("Código expandido...");
-        expandedArea.setEditable(false);
-        expandedArea.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-text-fill: #006400;");
-        ScrollPane expandedScroll = new ScrollPane(expandedArea);
+        // Área onde o código processado pelo MacroProcessor é exibido.
+        macroOutArea = new TextArea();
+        macroOutArea.setPromptText("Macros expandidos");
+        macroOutArea.setEditable(false);
+        macroOutArea.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-text-fill: #006400;");
+        ScrollPane expandedScroll = new ScrollPane(macroOutArea);
         expandedScroll.setFitToWidth(true);
         expandedScroll.setFitToHeight(true);
         TitledPane expandedTitled = new TitledPane("Código Expandido", expandedScroll);
@@ -269,24 +267,27 @@ public class SimulationApp extends Application implements SimulationView {
     private MenuBar createMenuBar() {
         MenuBar menuBar = new MenuBar();
 
+        /*
+          Menu "Arquivo" com opções de importar/exportar arquivos .ASM e .OBJ.
+         */
         Menu fileMenu = new Menu("Arquivo");
         MenuItem openAsmFile = new MenuItem("Abrir Arquivo .ASM");
-        openAsmFile.setOnAction(e -> controller.handleOpenAsmFile());
-
+        openAsmFile.setOnAction(e -> controller.handleImportASM());
         MenuItem exportExpandedCode = new MenuItem("Exportar.ASM Expandido");
         exportExpandedCode.setOnAction(e -> {
             try {
-                controller.handleExportExpandedCode();
+                controller.handleExportASM();
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
         });
-
         MenuItem exportObjFile = new MenuItem("Exportar Arquivo .OBJ");
-        exportObjFile.setOnAction(e -> controller.handleExportObjFile());
-
+        exportObjFile.setOnAction(e -> controller.handleExportOBJ());
         fileMenu.getItems().addAll(openAsmFile, exportExpandedCode, exportObjFile);
 
+        /*
+            Menu "Códigos Exemplo" com opções de carregar códigos de exemplo.
+         */
         Menu sampleMenu = new Menu("Códigos Exemplo");
         MenuItem sample1 = new MenuItem("Carregar código exemplo 1");
         sample1.setOnAction(e -> {
@@ -338,6 +339,9 @@ public class SimulationApp extends Application implements SimulationView {
         });
         sampleMenu.getItems().addAll(sample1, sample2, sample3, sample4, sample5, sample6);
 
+        /*
+            Menu "Memória" com opções de limpar a memória e alterar o tamanho da memória.
+         */
         Menu memoryMenu = new Menu("Memória");
         MenuItem clearMemoryItem = new MenuItem("Limpar Memória");
         clearMemoryItem.setOnAction(e -> controller.handleClearMemoryAction());
@@ -345,27 +349,39 @@ public class SimulationApp extends Application implements SimulationView {
         changeMemorySizeItem.setOnAction(e -> showMemorySizeDialog());
         memoryMenu.getItems().addAll(changeMemorySizeItem, clearMemoryItem);
 
+        /*
+            Menu "Execução" com opções de alterar a velocidade de execução.
+         */
         Menu executionMenu = new Menu("Execução");
         MenuItem executionSpeedItem = new MenuItem("Velocidade de execução");
         executionSpeedItem.setOnAction(e -> showExecutionSpeedDialog());
         executionMenu.getItems().add(executionSpeedItem);
 
+        /*
+            Menu "Exibição" com opções de alterar o formato de exibição dos endereços.
+         */
         Menu viewMenu = new Menu("Exibição");
         MenuItem hexView = new MenuItem("Hexadecimal");
-        hexView.setOnAction(e -> controller.handleHexViewAction());
+        hexView.setOnAction(e -> controller.handleSetHexViewAction());
         MenuItem octView = new MenuItem("Octal");
-        octView.setOnAction(e -> controller.handleOctalViewAction());
+        octView.setOnAction(e -> controller.handleSetOctalViewAction());
         MenuItem decView = new MenuItem("Decimal");
-        decView.setOnAction(e -> controller.handleDecimalViewAction());
+        decView.setOnAction(e -> controller.handleSetDecimalViewAction());
         MenuItem binView = new MenuItem("Binário");
-        binView.setOnAction(e -> controller.handleBinaryViewAction());
+        binView.setOnAction(e -> controller.handleSetBinaryViewAction());
         viewMenu.getItems().addAll(hexView, octView, decView, binView);
 
+        /*
+            Menu "Ajuda" com opções de ajuda e tutorial.
+         */
         Menu helpMenu = new Menu("Ajuda");
         MenuItem helpItem = new MenuItem("Ajuda e Tutorial");
         helpItem.setOnAction(e -> controller.handleHelpAction());
         helpMenu.getItems().add(helpItem);
 
+        /*
+            Menu "Sobre" com opções de informações sobre o projeto e repositório.
+         */
         Menu aboutMenu = new Menu("Sobre");
         MenuItem repository = new MenuItem("Repositório");
         repository.setOnAction(e -> getHostServices().showDocument("https://github.com/pinhorenan/SIC-XE-Simulator"));
@@ -382,6 +398,9 @@ public class SimulationApp extends Application implements SimulationView {
         });
         aboutMenu.getItems().addAll(info, repository);
 
+        /*
+            Menu "Créditos" com informações sobre os desenvolvedores.
+         */
         Menu creditsMenu = new Menu("Créditos");
         MenuItem renanPinho = new MenuItem("Renan Pinho");
         renanPinho.setOnAction(e -> getHostServices().showDocument("https://github.com/pinhorenan"));
@@ -397,205 +416,17 @@ public class SimulationApp extends Application implements SimulationView {
         leonardoBraga.setOnAction(e -> getHostServices().showDocument("https://github.com/braga0425"));
         creditsMenu.getItems().addAll(renanPinho, luisRasch, gabrielMoura, arthurAlves, fabricioBartz, leonardoBraga);
 
+        /*
+            Adiciona todos os menus à barra de menus.
+         */
         menuBar.getMenus().addAll(fileMenu, sampleMenu, memoryMenu, executionMenu, viewMenu, helpMenu, aboutMenu, creditsMenu);
+
         return menuBar;
     }
 
-    // -------------------------------------------------------------
-    // Métodos da interface SimulationView
-    // -------------------------------------------------------------
-
-    @Override
-    public String getInputText() {
-        return inputArea.getText();
-    }
-
-    @Override
-    public TextArea getInputField() {
-        return inputArea;
-    }
-
-    @Override
-    public TextArea getOutputArea() {
-        return outputArea;
-    }
-
-    public TextArea getExpandedArea() {
-        return expandedArea;
-    }
-
-    @Override
-    public void appendOutput(String message) {
-        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
-    }
-
-    @Override
-    public void clearOutput() {
-        outputArea.clear();
-    }
-
-    public void clearExpandedCode() {
-        expandedArea.clear();
-    }
-
-    @Override
-    public void clearInput() {
-        inputArea.clear();
-    }
-
-    @Override
-    public void disableControls() {
-        simulationToolbar.disableExecutionButtons();
-    }
-
-    @Override
-    public void enableControls() {
-        simulationToolbar.enableExecutionButtons();
-    }
-
-    @Override
-    public void fullReset() {
-        controller.getSimulationModel().reset();
-        clearInput();
-        clearOutput();
-        clearTables();
-        updateAllTables();
-        setWindowTitle("Simulador SIC/XE");
-    }
-
-    @Override
-    public void updateAllTables() {
-        Platform.runLater(() -> {
-            updateMemoryTable();
-            updateRegisterTable();
-            updateSymbolTable();
-        });
-    }
-
-    @Override
-    public void updateMemoryTable() {
-        memoryTable.getItems().clear();
-        var memory = controller.getSimulationModel().getMachine().getMemory();
-        for (int wordIndex = 0; wordIndex < memory.getAddressRange(); wordIndex++) {
-            byte[] word = memory.readWord(wordIndex);
-            int byteAddress = wordIndex * 3;
-            String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
-            memoryTable.getItems().add(new MemoryEntry(formattedAddress, Convert.bytesToHex(word)));
-        }
-    }
-
-    @Override
-    public void updateRegisterTable() {
-        registerTable.getItems().clear();
-        var regs = controller.getSimulationModel().getMachine().getControlUnit().getRegisterSet().getAllRegisters();
-        for (Register r : regs) {
-            String value = ValueFormatter.formatRegisterValue(r, viewConfig.getAddressFormat());
-            registerTable.getItems().add(new RegisterEntry(r.getName(), value));
-        }
-    }
-
-    @Override
-    public void updateSymbolTable() {
-        symbolTable.getItems().clear();
-        if (controller.getSimulationModel().hasAssembledCode()) {
-            var symbols = controller.getSimulationModel().getLastObjectFile().getSymbolTable().getSymbols();
-            symbols.forEach((name, wordAddress) -> {
-                int byteAddr = wordAddress * 3;
-                String formattedAddress = ValueFormatter.formatAddress(byteAddr, viewConfig.getAddressFormat());
-                symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
-            });
-        }
-    }
-
-    @Override
-    public void showError(String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Erro de Simulação");
-            alert.setHeaderText("Ocorreu um erro durante a execução");
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
-    }
-
-    @Override
-    public void showAlert(Alert.AlertType type, String title, String header, String content) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(type);
-            alert.setTitle(title);
-            alert.setHeaderText(header);
-            alert.setContentText(content);
-            alert.showAndWait();
-        });
-    }
-
-    @Override
-    public void showHelpWindow() {
-        Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
-        helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
-        helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
-        helpAlert.setContentText("WIP");
-        helpAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-        helpAlert.showAndWait();
-    }
-
-    @Override
-    public void setViewFormat(String format) {
-        viewConfig.setAddressFormat(format);
-        updateViewFormatLabel(format);
-    }
-
-    @Override
-    public void updateViewFormatLabel(String formatName) {
-        Platform.runLater(() -> viewFormatLabel.setText("Formato: " + formatName));
-    }
-
-    @Override
-    public void updateCycleDelayLabel() {
-        Platform.runLater(() -> executionSpeedLabel.setText("Atraso de ciclo: " + controller.getSimulationModel().getCycleDelay()));
-    }
-
-    @Override
-    public void updateMemorySizeLabel() {
-        Platform.runLater(() -> memorySizeLabel.setText("Memória: " + controller.getSimulationModel().getMachine().getMemorySize() + " bytes"));
-    }
-
-    @Override
-    public Stage getStage() {
-        return primaryStage;
-    }
-
-    @Override
-    public void setWindowTitle(String title) {
-        Platform.runLater(() -> primaryStage.setTitle(title));
-    }
-
-    @Override
-    public void clearTables() {
-        memoryTable.getItems().clear();
-        registerTable.getItems().clear();
-        symbolTable.getItems().clear();
-    }
-
-    @Override
-    public TableView<RegisterEntry> getRegisterTable() {
-        return registerTable;
-    }
-
-    @Override
-    public TableView<MemoryEntry> getMemoryTable() {
-        return memoryTable;
-    }
-
-    @Override
-    public TableView<SymbolEntry> getSymbolTable() {
-        return symbolTable;
-    }
-
-    public ListView<String> getObjectFileListView() {
-        return objectFileListView;
-    }
-
+    /**
+     * Cria uma mensagem de boas-vindas para o usuário.
+     */
     private void showWelcomeMessage() {
         String welcomeMessage = """
         ╔══════════════════════════════════════╗
@@ -616,8 +447,11 @@ public class SimulationApp extends Application implements SimulationView {
                 .forEach(this::appendOutput);
     }
 
+    /**
+     * Exibe um diálogo para alterar o tamanho da memória.
+     */
     public void showMemorySizeDialog() {
-        TextInputDialog dialog = new TextInputDialog("1024");
+        TextInputDialog dialog = new TextInputDialog(controller.getMemorySize()+ "bytes");
         dialog.setTitle("Alterar Tamanho da Memória");
         dialog.setHeaderText("Defina o tamanho da memória");
         dialog.setContentText("Digite um número inteiro positivo:");
@@ -634,6 +468,165 @@ public class SimulationApp extends Application implements SimulationView {
                 showError("Valor inválido! Por favor, insira um número inteiro positivo.");
             }
         });
+    }
+
+    /**
+     * @return A ListView de arquivos de objeto
+     */
+    public ListView<String> getObjectFileListView() {
+        return objectFileListView;
+    }
+
+
+    ///  Getters de TextAreas
+
+    public TextArea getInputField() {
+        return inputArea;
+    }
+
+    public TextArea getOutputArea() {
+        return outputArea;
+    }
+
+    public TextArea getExpandedArea() {
+        return macroOutArea;
+    }
+
+    public void appendOutput(String message) {
+        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
+    }
+
+    public void clearOutputArea() {
+        outputArea.clear();
+    }
+
+    public void clearMacroOutArea() {
+        macroOutArea.clear();
+    }
+
+    public void disableControls() {
+        simulationToolbar.disableExecutionButtons();
+    }
+
+    public void enableControls() {
+        simulationToolbar.enableExecutionButtons();
+    }
+
+    /**
+     * Atualiza todas as tabelas de memória, registradores e símbolos.
+     */
+    public void updateAllTables() {
+        Platform.runLater(() -> {
+            updateMemoryTable();
+            updateRegisterTable();
+            updateSymbolTable();
+        });
+    }
+
+    /**
+     * Atualiza a tabela de memória com os valores atuais.
+     */
+    public void updateMemoryTable() {
+        memoryTable.getItems().clear();
+        List<MemoryEntry> entries = controller.getMemoryEntries();
+        memoryTable.getItems().addAll(entries);
+    }
+
+
+    /**
+     * Atualiza a tabela de registradores com os valores atuais.
+     */
+    public void updateRegisterTable() {
+        registerTable.getItems().clear();
+        List<RegisterEntry> entries = controller.getRegisterEntries();
+        registerTable.getItems().addAll(entries);
+    }
+
+    /**
+     * Atualiza a tabela de símbolos com os valores atuais.
+     */
+    public void updateSymbolTable() {
+        symbolTable.getItems().clear();
+        List<SymbolEntry> entries = controller.getSymbolEntries();
+        symbolTable.getItems().addAll(entries);
+    }
+
+
+    public void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Erro de Simulação");
+            alert.setHeaderText("Ocorreu um erro durante a execução");
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
+    public void showAlert(Alert.AlertType type, String title, String header, String content) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(type);
+            alert.setTitle(title);
+            alert.setHeaderText(header);
+            alert.setContentText(content);
+            alert.showAndWait();
+        });
+    }
+
+    public void showHelpWindow() {
+        Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
+        helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
+        helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
+        helpAlert.setContentText("WIP");
+        helpAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+        helpAlert.showAndWait();
+    }
+
+    public void setViewFormat(String format) {
+        viewConfig.setAddressFormat(format);
+    }
+
+    public void updateViewFormatLabel() {
+        Platform.runLater(() -> viewFormatLabel.setText("Formato: " + viewConfig.getAddressFormat()));
+    }
+
+    public void updateCycleDelayLabel() {
+        Platform.runLater(() -> executionSpeedLabel.setText("Atraso de ciclo: " + controller.getCycleDelay()));
+    }
+
+    public void updateMemorySizeLabel() {
+        Platform.runLater(() -> memorySizeLabel.setText("Memória: " + controller.getMemorySize() + " bytes"));
+    }
+
+    public void updateAllLabels() {
+        updateViewFormatLabel();
+        updateCycleDelayLabel();
+        updateMemorySizeLabel();
+    }
+
+    public Stage getStage() {
+        return primaryStage;
+    }
+
+    public void setWindowTitle(String title) {
+        Platform.runLater(() -> primaryStage.setTitle(title));
+    }
+
+    public void clearTables() {
+        memoryTable.getItems().clear();
+        registerTable.getItems().clear();
+        symbolTable.getItems().clear();
+    }
+
+    public RegisterTableView getRegisterTable() {
+        return registerTable;
+    }
+
+    public MemoryTableView getMemoryTable() {
+        return memoryTable;
+    }
+
+    public SymbolTableView getSymbolTable() {
+        return symbolTable;
     }
 
     public void showExecutionSpeedDialog() {
@@ -661,13 +654,6 @@ public class SimulationApp extends Application implements SimulationView {
             executionSpeedLabel.setText("Atraso de ciclo: " + delayInMs);
         });
     }
-
-    // -------------------------------------------------------------
-    // Estruturas auxiliares para as tabelas
-    // -------------------------------------------------------------
-    public record RegisterEntry(String name, String value) {}
-    public record MemoryEntry(String address, String value) {}
-    public record SymbolEntry(String symbol, String address) {}
 
     public static void main(String[] args) {
         launch(args);

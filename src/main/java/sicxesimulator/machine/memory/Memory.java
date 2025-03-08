@@ -3,12 +3,14 @@ package sicxesimulator.machine.memory;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
+/**
+ * Representa a memória do computador, que é um array de bytes.
+ */
 public class Memory {
 	private static final Logger logger = Logger.getLogger(Memory.class.getName());
 	private final byte[] memory;  // Memória em bytes
 	private final int memorySize; // Tamanho da memória
 
-	// Construtor que inicializa a memória com o tamanho especificado
 	public Memory(int size) {
 		this.memorySize = size;
 		this.memory = new byte[size];
@@ -79,7 +81,7 @@ public class Memory {
 	 * Retorna o tamanho total da memória em bytes.
 	 * @return O tamanho da memória em bytes
 	 */
-	public int getMemorySize() {
+	public int getSize() {
 		return memorySize;
 	}
 

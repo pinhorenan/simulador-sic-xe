@@ -12,13 +12,13 @@ public class MemoryTest {
         // Como a nova implementação não lança exceção para tamanhos abaixo de um mínimo,
         // apenas criamos a memória e verificamos o tamanho.
         Memory mem = new Memory(512);
-        assertEquals(512, mem.getMemorySize());
+        assertEquals(512, mem.getSize());
     }
 
     @Test
     public void testGetSizeInBytes() {
         Memory mem = new Memory(1024);
-        assertEquals(1024, mem.getMemorySize());
+        assertEquals(1024, mem.getSize());
     }
 
     @Test

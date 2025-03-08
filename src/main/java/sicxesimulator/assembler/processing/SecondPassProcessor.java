@@ -5,16 +5,12 @@ import sicxesimulator.assembler.models.IntermediateRepresentation;
 import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.assembler.models.SymbolTable;
 import sicxesimulator.utils.Convert;
-import sicxesimulator.utils.OpcodeMapper;
+import sicxesimulator.utils.Mapper;
 
 import java.util.logging.Logger;
 
 public class SecondPassProcessor {
     private static final Logger logger = Logger.getLogger(SecondPassProcessor.class.getName());
-
-    public SecondPassProcessor() {
-        // Construtor vazio
-    }
 
     /**
      * Gera o código objeto a partir da IntermediateRepresentation.
@@ -112,7 +108,7 @@ public class SecondPassProcessor {
         String operandString = indexed ? operand.replace(",X", "") : operand;
 
         // Obtém o opcode a partir do mnemônico
-        int opcode = OpcodeMapper.getOpcode(mnemonic);
+        int opcode = Mapper.getOpcode(mnemonic);
 
         // Resolve o endereço do operando (retorna em bytes)
         int operandAddress = resolveOperandAddress(operandString, symbolTable);

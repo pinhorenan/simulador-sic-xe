@@ -7,9 +7,6 @@ import java.util.List;
 
 public class Linker {
 
-    // TODO: Adicionar um MenuItem para a opção de linkar arquivos de objeto no menu da interface.
-    // TODO: Possívelmente implementar uma Application (janela) separada para o linker. **Devia fazer isso para o loader/assembler também.
-
     public ObjectFile link(List<ObjectFile> objectFiles) {
         if (objectFiles == null || objectFiles.isEmpty()) {
             throw new IllegalArgumentException("A lista de arquivos de objeto não pode ser nula ou vazia.");
@@ -52,7 +49,7 @@ public class Linker {
     private ObjectFile createLinkedObjectFile(byte[] combinedObjectCode, List<String> resolvedSymbols) {
         // Cria um novo arquivo de objeto a partir do código combinado e dos símbolos resolvidos
         int startAddress = 0;  // O endereço inicial pode ser ajustado conforme necessário
-        SymbolTable symbolTable = new SymbolTable(); // //TODO Alimentar essa tabela com a resolvedTable
+        SymbolTable symbolTable = new SymbolTable(); // TODO: Passar a tabela de símbolos correta
 
         // Cria e retorna o arquivo de objeto final
         return new ObjectFile(startAddress, combinedObjectCode, symbolTable, "linked_program.obj");

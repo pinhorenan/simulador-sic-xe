@@ -1,7 +1,7 @@
 package sicxesimulator.simulator.view.components;
 
 import javafx.scene.control.TableColumn;
-import sicxesimulator.simulator.view.SimulationApp.SymbolEntry;
+import sicxesimulator.simulator.view.SymbolEntry;
 
 public class SymbolTableView extends BaseTableView<SymbolEntry> {
 

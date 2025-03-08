@@ -28,18 +28,14 @@ import java.util.*;
 public class SimulationApp extends Application implements SimulationView {
     private SimulationController controller;
     private Stage primaryStage;
+    protected SimulationToolbar simulationToolbar;
 
     // Quadrante esquerdo
-    private TextArea inputArea;         // Entrada de código
-    private TextArea outputArea;        // Saída de mensagens
-    private HBox leftContent;           // Container para o lado esquerdo
-    private SimulationToolbar simToolbar;  // Botões de controle
+    private TextArea inputArea;
+    private TextArea outputArea;
+    private TextArea expandedArea;
 
-    // Quadrante direito
-    private TextArea expandedArea;      // Código expandido
-    private Button reloadButton;        // Botão para reprocessar macros
-
-    // Tabelas (agora empilhadas verticalmente)
+    // Tabelas
     private MemoryTableView memoryTable;
     private RegisterTableView registerTable;
     private SymbolTableView symbolTable;
@@ -59,6 +55,7 @@ public class SimulationApp extends Application implements SimulationView {
         controller = new SimulationController(model, this);
         viewConfig = model.getViewConfig();
         viewConfig.addFormatChangeListener(newFormat -> updateAllTables());
+        simulationToolbar = new SimulationToolbar(controller, this);
 
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
@@ -155,57 +152,17 @@ public class SimulationApp extends Application implements SimulationView {
         outputTitled.setCollapsible(false);
 
         // Primeira linha de botões: Montar, Carregar, Ver código expandido
-        HBox toolbarGroup1 = createToolbarGroup1();
+        HBox simulationControls = simulationToolbar.getFileControls();
 
         // Segunda linha de botões: Executar, Pausar, Próximo, Resetar
-        HBox toolbarGroup2 = createToolbarGroup2();
+        HBox executionControls = simulationToolbar.getExecutionControls();
 
-        leftPane.getChildren().addAll(inputExpandedRow, toolbarGroup1, outputTitled, toolbarGroup2);
+        leftPane.getChildren().addAll(inputExpandedRow, simulationControls, outputTitled, executionControls);
         VBox.setVgrow(inputExpandedRow, Priority.ALWAYS);
 
         return leftPane;
     }
 
-
-    private HBox createToolbarGroup1() {
-        Button montar = new Button("Montar");
-        montar.setOnAction(e -> controller.handleAssembleAction());
-
-        Button carregar = new Button("Carregar");
-        carregar.setOnAction(e -> controller.handleLoadObjectFileAction()); // Certifique-se de ter esse método ou adapte
-
-        Button verExp = new Button("Ver código expandido");
-        verExp.setOnAction(e -> controller.handleShowExpandedCodeAction()); // Certifique-se de ter esse método ou adapte
-
-        HBox group1 = new HBox(10, montar, carregar, verExp);
-        group1.setAlignment(Pos.CENTER);
-        return group1;
-    }
-
-    private HBox createToolbarGroup2() {
-        Button executar = new Button("Executar");
-        executar.setOnAction(e -> controller.handleRunAction());
-
-        Button pausar = new Button("Pausar");
-        pausar.setOnAction(e -> controller.handlePauseAction());
-
-        Button proximo = new Button("Próximo");
-        proximo.setOnAction(e -> controller.handleNextAction());
-
-        Button reset = new Button("Reset");
-        reset.setOnAction(e -> controller.handleResetAction());
-
-        HBox group2 = new HBox(10, executar, pausar, proximo, reset);
-        group2.setAlignment(Pos.CENTER);
-        return group2;
-    }
-
-
-    /**
-     * Cria o painel direito (VBox) com:
-     * - Código expandido (TextArea com ScrollPane).
-     * - Botão Reload para atualizar o código expandido.
-     */
     /**
      * Cria o painel direito (VBox) com:
      * - Parte superior: área de código expandido e botão Reload.
@@ -226,12 +183,6 @@ public class SimulationApp extends Application implements SimulationView {
         return rightPane;
     }
 
-
-    /**
-     * Cria o painel que contém as tabelas de Memória, Registradores e Símbolos,
-     * empilhadas verticalmente, com cada uma tendo uma altura preferencial menor.
-     */
-
     /**
      * Cria as tabelas de Memória, Registradores e Símbolos empilhadas verticalmente.
      */
@@ -248,6 +199,7 @@ public class SimulationApp extends Application implements SimulationView {
         registerScroll.setFitToWidth(true);
         registerScroll.setFitToHeight(true);
 
+        //noinspection ExtractMethodRecommender
         ScrollPane symbolScroll = new ScrollPane(symbolTable);
         symbolScroll.setFitToWidth(true);
         symbolScroll.setFitToHeight(true);
@@ -268,15 +220,6 @@ public class SimulationApp extends Application implements SimulationView {
         tablesBox.setAlignment(Pos.TOP_LEFT);
         return tablesBox;
     }
-
-    /**
-     * Cria o painel inferior, que neste layout é colocado na coluna direita,
-     * se desejar que as tabelas fiquem no canto da esquerda, basta incluí-las na coluna esquerda.
-     * Aqui, neste exemplo, vamos colocar as tabelas na coluna esquerda.
-     */
-    // Se desejar, você pode mover a chamada de createMemoryRegisterSymbolPane() para a coluna esquerda.
-    // Neste exemplo, as tabelas já estão na coluna esquerda (em createLeftPane), então não é necessário
-    // criar outro painel para elas na parte inferior.
 
     /**
      * Cria a barra inferior de status.
@@ -302,17 +245,53 @@ public class SimulationApp extends Application implements SimulationView {
         Menu fileMenu = new Menu("Arquivo");
         Menu sampleMenu = new Menu("Exemplos");
         MenuItem sample1 = new MenuItem("Carregar código exemplo 1");
-        sample1.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_1, "Simulador SIC/XE - Exemplo 1"));
+        sample1.setOnAction(e -> {
+            try {
+                controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_1, "Simulador SIC/XE - Exemplo 1");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         MenuItem sample2 = new MenuItem("Carregar código exemplo 2");
-        sample2.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_2, "Simulador SIC/XE - Exemplo 2"));
+        sample2.setOnAction(e -> {
+            try {
+                controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_2, "Simulador SIC/XE - Exemplo 2");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         MenuItem sample3 = new MenuItem("Carregar código exemplo 3");
-        sample3.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_3, "Simulador SIC/XE - Exemplo 3"));
+        sample3.setOnAction(e -> {
+            try {
+                controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_3, "Simulador SIC/XE - Exemplo 3");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         MenuItem sample4 = new MenuItem("Carregar código exemplo 4");
-        sample4.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_4, "Simulador SIC/XE - Exemplo 4"));
+        sample4.setOnAction(e -> {
+            try {
+                controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_4, "Simulador SIC/XE - Exemplo 4");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         MenuItem sample5 = new MenuItem("Carregar código exemplo 5");
-        sample5.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_5, "Simulador SIC/XE - Exemplo 5"));
+        sample5.setOnAction(e -> {
+            try {
+                controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_5, "Simulador SIC/XE - Exemplo 5");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         MenuItem sample6 = new MenuItem("Carregar código exemplo 6");
-        sample6.setOnAction(e -> controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_6, "Simulador SIC/XE - Exemplo 6"));
+        sample6.setOnAction(e -> {
+            try {
+                controller.handleLoadSampleCodeAction(SampleCodes.SAMPLE_CODE_6, "Simulador SIC/XE - Exemplo 6");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         sampleMenu.getItems().addAll(sample1, sample2, sample3, sample4, sample5, sample6);
         fileMenu.getItems().add(sampleMenu);
 
@@ -325,13 +304,13 @@ public class SimulationApp extends Application implements SimulationView {
 
         Menu viewMenu = new Menu("Exibição");
         MenuItem hexView = new MenuItem("Hexadecimal");
-        hexView.setOnAction(e -> { setViewFormat("HEX"); updateViewFormatLabel("Hexadecimal"); });
+        hexView.setOnAction(e -> controller.handleHexViewAction());
         MenuItem octView = new MenuItem("Octal");
-        octView.setOnAction(e -> { setViewFormat("OCT"); updateViewFormatLabel("Octal"); });
+        octView.setOnAction(e -> controller.handleOctalViewAction());
         MenuItem decView = new MenuItem("Decimal");
-        decView.setOnAction(e -> { setViewFormat("DEC"); updateViewFormatLabel("Decimal"); });
+        decView.setOnAction(e -> controller.handleDecimalViewAction());
         MenuItem binView = new MenuItem("Binário");
-        binView.setOnAction(e -> { setViewFormat("BIN"); updateViewFormatLabel("Binário"); });
+        binView.setOnAction(e -> controller.handleBinaryViewAction());
         viewMenu.getItems().addAll(hexView, octView, decView, binView);
 
         Menu helpMenu = new Menu("Ajuda");
@@ -398,13 +377,6 @@ public class SimulationApp extends Application implements SimulationView {
         return expandedArea;
     }
 
-    public void appendExpandedCode(String expandedCode) {
-        Platform.runLater(() -> {
-            expandedArea.clear();
-            expandedArea.appendText(expandedCode);
-        });
-    }
-
     @Override
     public void appendOutput(String message) {
         Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
@@ -426,12 +398,12 @@ public class SimulationApp extends Application implements SimulationView {
 
     @Override
     public void disableControls() {
-        // Implementar se houver botões a serem desabilitados
+        simulationToolbar.disableExecutionButtons();
     }
 
     @Override
     public void enableControls() {
-        // Implementar se houver botões a serem habilitados
+        simulationToolbar.enableExecutionButtons();
     }
 
     @Override

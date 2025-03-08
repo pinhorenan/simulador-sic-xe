@@ -4,7 +4,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ChoiceDialog;
-import javafx.scene.layout.Region;
+import javafx.scene.control.DialogPane;
 import sicxesimulator.logger.SimulatorLogger;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.assembler.models.ObjectFile;
@@ -33,11 +33,9 @@ public class SimulationController {
             List<String> expandedSource = model.processMacros(sourceLines);
 
             // Opcional: exibir o código expandido na saída (ou em uma janela separada)
+            view.clearOutput();
             view.clearExpandedCode();
-            view.appendExpandedCode("Código expandido:");
-            for (String line : expandedSource) {
-                view.appendExpandedCode(line);
-            }
+            handleUpdateExpandedCode();
 
             // Agora passa o código expandido para o Assembler
             model.assembleCode(expandedSource);
@@ -56,23 +54,16 @@ public class SimulationController {
         }
     }
 
-
-    public void handleShowExpandedCodeAction() {
+    public void handleUpdateExpandedCode() {
         try {
             List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
             List<String> expanded = model.processMacros(sourceLines);
-            // Exibe o código expandido em um diálogo
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Código Expandido");
-            alert.setHeaderText("Resultado da Expansão de Macros");
-            alert.setContentText(String.join("\n", expanded));
-            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-            alert.showAndWait();
+            // Atualiza o expandedArea com o conteúdo expandido
+            view.getExpandedArea().setText(String.join("\n", expanded));
         } catch (IOException ex) {
             view.showError("Erro ao expandir macros: " + ex.getMessage());
         }
     }
-
 
     public void handleRunAction() {
         int pc = model.getMachine().getControlUnit().getIntValuePC();
@@ -129,7 +120,6 @@ public class SimulationController {
         }
     }
 
-
     public void handleNextAction() {
         if (model.hasAssembledCode()) {
             if (!model.isFinished()) {
@@ -170,13 +160,14 @@ public class SimulationController {
     }
 
     public void handleResetAction() {
-        view.getInputField().clear();
         view.getRegisterTable().getItems().clear();
         view.getMemoryTable().getItems().clear();
         view.getSymbolTable().getItems().clear();
         model.reset();
         view.updateAllTables();
+        view.getInputField().clear();
         view.getOutputArea().clear();
+        view.getExpandedArea().clear();
         view.getStage().setTitle("Simulador SIC/XE");
 
         String resetMsg = "Simulação resetada. PC, registradores e memória reiniciados.";
@@ -195,23 +186,28 @@ public class SimulationController {
             view.showError("Nenhum código foi montado ainda.");
             return;
         }
-        // Exibe um ChoiceDialog para seleção do arquivo objeto
-        ChoiceDialog<ObjectFile> dialog = new ChoiceDialog<>(objectFiles.get(objectFiles.size() - 1), objectFiles);
+        ChoiceDialog<ObjectFile> dialog = new ChoiceDialog<>(objectFiles.get(objectFiles.size()-1), objectFiles);
         dialog.setTitle("Carregar Arquivo Montado");
         dialog.setHeaderText("Escolha um arquivo para carregar");
         dialog.setContentText("Arquivos disponíveis:");
 
+        // Customiza o DialogPane com estilos CSS
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-background-color: #f0f0f0;");
+
         dialog.showAndWait().ifPresent(selected -> {
             model.loadObjectFile(selected);
-            view.enableControls();
             view.appendOutput("Arquivo montado carregado: " + selected.getFilename());
+            view.enableControls();
             view.updateAllTables();
+            handleUpdateExpandedCode();
         });
     }
 
 
-    public void handleLoadSampleCodeAction(String sampleCode, String title) {
+    public void handleLoadSampleCodeAction(String sampleCode, String title) throws IOException {
         model.loadSampleCode(sampleCode, view, title);
+        handleUpdateExpandedCode();
     }
 
     public void handleChangeMemorySizeAction(int newSize) {
@@ -243,6 +239,11 @@ public class SimulationController {
         view.updateViewFormatLabel("Decimal");
     }
 
+    public void handleBinaryViewAction() {
+        view.setViewFormat("BIN");
+        view.updateViewFormatLabel("Binário");
+    }
+
     public void handleHelpAction() {
         view.showHelpWindow();
     }
@@ -256,4 +257,5 @@ public class SimulationController {
     public Assembler getAssembler() {
         return model.getAssembler();
     }
+
 }

@@ -4,22 +4,21 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import sicxesimulator.machine.memory.Memory;
-import java.util.Map;
 
 public class MemoryTest {
 
     @Test
     public void testMemorySizeBelowMinimum() {
-        // Em JUnit 5, ao invés de @Test(expected = ...)
-        // use assertThrows para verificar exceções.
-        assertThrows(IllegalArgumentException.class, () -> new Memory(512));
+        // Como a nova implementação não lança exceção para tamanhos abaixo de um mínimo,
+        // apenas criamos a memória e verificamos o tamanho.
+        Memory mem = new Memory(512);
+        assertEquals(512, mem.getMemorySize());
     }
 
     @Test
     public void testGetSizeInBytes() {
-        Memory mem = new Memory(1024); // 1024 bytes ⇾ 341 palavras (3 bytes por palavra)
-        int expectedSize = 341 * 3;
-        assertEquals(expectedSize, mem.getSizeInBytes());
+        Memory mem = new Memory(1024);
+        assertEquals(1024, mem.getMemorySize());
     }
 
     @Test
@@ -35,28 +34,36 @@ public class MemoryTest {
     @Test
     public void testWriteAndReadByte() {
         Memory mem = new Memory(1024);
-        int wordAddress = 5;
-        int offset = 1;
+        // Usando endereço em bytes diretamente. Por exemplo, escrevemos no byte de índice 5.
+        int byteAddr = 5;
         int value = 0xAB;
-
-        mem.writeByte(wordAddress, offset, value);
-        int readValue = mem.readByte(wordAddress, offset);
+        mem.writeByte(byteAddr, value);
+        int readValue = mem.readByte(byteAddr);
         assertEquals(value, readValue);
     }
 
     @Test
     public void testMemoryMapOnlyNonZero() {
         Memory mem = new Memory(1024);
-        // Escreve um valor não zero em uma palavra
+        // Escreve uma palavra com valor não zero em uma posição.
+        // Neste exemplo, escrevemos {0x00, 0x0F, 0x00} na palavra de índice 2.
         byte[] data = {0x00, 0x0F, 0x00};
         int wordAddress = 2;
         mem.writeWord(wordAddress, data);
 
-        Map<Integer, Integer> map = mem.getMemoryMap();
+        byte[] map = mem.getMemoryMap();
 
-        // Somente o byte com valor 0x0F deve estar mapeado
-        int byteAddress = wordAddress * 3 + 1;
-        assertTrue(map.containsKey(byteAddress));
-        assertEquals(0x0F, map.get(byteAddress).intValue());
+        // Calcula o endereço em bytes do segundo byte da palavra 2
+        int targetAddress = wordAddress * 3 + 1;
+
+        // Verifica que o byte no targetAddress é 0x0F e todos os outros bytes são 0.
+        for (int i = 0; i < map.length; i++) {
+            int val = map[i] & 0xFF;
+            if (i == targetAddress) {
+                assertEquals(0x0F, val, "Valor no endereço " + i + " deve ser 0x0F");
+            } else {
+                assertEquals(0, val, "Valor no endereço " + i + " deve ser 0");
+            }
+        }
     }
 }

@@ -3,12 +3,15 @@ package sicxesimulator.simulator.controller;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ChoiceDialog;
+import javafx.scene.layout.Region;
 import sicxesimulator.logger.SimulatorLogger;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.simulator.model.SimulationModel;
 import sicxesimulator.simulator.view.SimulationApp;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,36 +25,54 @@ public class SimulationController {
     }
 
     // Handlers
-
     public void handleAssembleAction() {
         String sourceText = view.getInputText();
         List<String> sourceLines = Arrays.asList(sourceText.split("\\r?\\n"));
         try {
-            model.assembleCode(sourceLines);
+            // Processa as macros e obtém o código expandido
+            List<String> expandedSource = model.processMacros(sourceLines);
+
+            // Opcional: exibir o código expandido na saída (ou em uma janela separada)
+            view.clearExpandedCode();
+            view.appendExpandedCode("Código expandido:");
+            for (String line : expandedSource) {
+                view.appendExpandedCode(line);
+            }
+
+            // Agora passa o código expandido para o Assembler
+            model.assembleCode(expandedSource);
             view.updateAllTables();
 
             String formattedCode = model.getLastObjectFile().toString();
-            view.clearOutput();
             view.appendOutput("Programa montado e carregado com sucesso!");
             view.appendOutput(formattedCode);
 
-            // Log da montagem
+            // Registra logs de montagem e código objeto
             SimulatorLogger.logAssemblyCode(sourceText);
             SimulatorLogger.logMachineCode(formattedCode);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IOException e) {
             view.showError("Erro na montagem: " + e.getMessage());
             SimulatorLogger.logError("Erro na montagem", e);
         }
     }
 
-    public void handleShowObjectCodeAction() {
-        if (model.getLastObjectFile() != null) {
-            String formattedCode = model.getLastObjectFile().toString();
-            view.appendOutput(formattedCode);
-        } else {
-            view.appendOutput("Nenhum programa montado!");
+
+    public void handleShowExpandedCodeAction() {
+        try {
+            List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
+            List<String> expanded = model.processMacros(sourceLines);
+            // Exibe o código expandido em um diálogo
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Código Expandido");
+            alert.setHeaderText("Resultado da Expansão de Macros");
+            alert.setContentText(String.join("\n", expanded));
+            alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+            alert.showAndWait();
+        } catch (IOException ex) {
+            view.showError("Erro ao expandir macros: " + ex.getMessage());
         }
     }
+
 
     public void handleRunAction() {
         int pc = model.getMachine().getControlUnit().getIntValuePC();
@@ -149,7 +170,6 @@ public class SimulationController {
     }
 
     public void handleResetAction() {
-        view.generateStateLog();
         view.getInputField().clear();
         view.getRegisterTable().getItems().clear();
         view.getMemoryTable().getItems().clear();
@@ -169,17 +189,26 @@ public class SimulationController {
         alert.showAndWait();
     }
 
-    public void handleLoadObjectFileAction(ObjectFile selectedFile) {
-        if (selectedFile == null) {
-            view.showError("Nenhum arquivo selecionado!");
+    public void handleLoadObjectFileAction() {
+        List<ObjectFile> objectFiles = model.getAssembler().getGeneratedObjectFiles();
+        if (objectFiles.isEmpty()) {
+            view.showError("Nenhum código foi montado ainda.");
             return;
         }
+        // Exibe um ChoiceDialog para seleção do arquivo objeto
+        ChoiceDialog<ObjectFile> dialog = new ChoiceDialog<>(objectFiles.get(objectFiles.size() - 1), objectFiles);
+        dialog.setTitle("Carregar Arquivo Montado");
+        dialog.setHeaderText("Escolha um arquivo para carregar");
+        dialog.setContentText("Arquivos disponíveis:");
 
-        model.loadObjectFile(selectedFile);
-        view.enableControls();
-        view.appendOutput("Arquivo montado carregado: " + selectedFile.getFilename());
-        view.updateAllTables();
+        dialog.showAndWait().ifPresent(selected -> {
+            model.loadObjectFile(selected);
+            view.enableControls();
+            view.appendOutput("Arquivo montado carregado: " + selected.getFilename());
+            view.updateAllTables();
+        });
     }
+
 
     public void handleLoadSampleCodeAction(String sampleCode, String title) {
         model.loadSampleCode(sampleCode, view, title);

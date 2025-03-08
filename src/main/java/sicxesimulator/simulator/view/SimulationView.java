@@ -48,6 +48,10 @@ public interface SimulationView {
     void disableControls();
     void enableControls();
 
+    // PEGAR INPUT E OUTPUT
+    TextArea getOutputArea();
+    TextArea getInputField();
+
     // Reset completo
     void fullReset();
 

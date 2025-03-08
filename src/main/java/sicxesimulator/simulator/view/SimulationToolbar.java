@@ -2,23 +2,33 @@ package sicxesimulator.simulator.view;
 
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.*;
 import sicxesimulator.simulator.controller.SimulationController;
 import sicxesimulator.assembler.models.ObjectFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public class SimulationToolbar extends HBox {
+    private final SimulationApp view;
     private final Button assembleButton;
     private final Button loadButton;
+    private final Button showExpandedButton;
     private final Button runButton;
     private final Button pauseButton;
     private final Button nextButton;
 
-    public SimulationToolbar(SimulationController controller) {
+    public SimulationToolbar(SimulationController controller, SimulationApp view) {
+        this.view = view;
         this.setSpacing(10);
 
         this.assembleButton = createAssembleButton(controller);
         this.loadButton = createLoadButton(controller);
+        // Novo botão para ver o código expandido após macroexpansão
+        this.showExpandedButton = createShowExpandedCodeButton(controller);
         this.runButton = createRunButton(controller);
         this.pauseButton = createPauseButton(controller);
         this.nextButton = createNextButton(controller);
@@ -27,6 +37,7 @@ public class SimulationToolbar extends HBox {
         this.getChildren().addAll(
                 assembleButton,
                 loadButton,
+                showExpandedButton,
                 runButton,
                 pauseButton,
                 nextButton,
@@ -35,7 +46,7 @@ public class SimulationToolbar extends HBox {
     }
 
     /**
-     * Habilita ou desabilita os botões de execução (Rodar e Pausar) e ajusta o estilo para simular o efeito "acinzentado".
+     * Habilita os botões de execução (Rodar, Pausar e Próximo).
      */
     public void enableExecutionButtons() {
         runButton.setDisable(false);
@@ -47,6 +58,9 @@ public class SimulationToolbar extends HBox {
         nextButton.setStyle(style);
     }
 
+    /**
+     * Desabilita os botões de execução (Rodar, Pausar e Próximo).
+     */
     public void disableExecutionButtons() {
         runButton.setDisable(true);
         pauseButton.setDisable(true);
@@ -57,7 +71,6 @@ public class SimulationToolbar extends HBox {
         nextButton.setStyle(style);
     }
 
-
     private Button createAssembleButton(SimulationController controller) {
         Button button = new Button("Montar");
         button.setOnAction(e -> controller.handleAssembleAction());
@@ -67,6 +80,34 @@ public class SimulationToolbar extends HBox {
     private Button createLoadButton(SimulationController controller) {
         Button button = new Button("Carregar");
         button.setOnAction(e -> showLoadDialog(controller));
+        return button;
+    }
+
+    private Button createShowExpandedCodeButton(SimulationController controller) {
+        Button button = new Button("Ver Código Expandido");
+        button.setOnAction(e -> {
+            String sourceText = view.getInputField().getText();
+            List<String> sourceLines = List.of(sourceText.split("\\r?\\n"));
+            try {
+                // Processa as macros e obtém o código expandido
+                List<String> expanded = controller.getSimulationModel().processMacros(sourceLines);
+                // Exibe o código expandido em um diálogo
+                TextArea textArea = new TextArea(String.join("\n", expanded));
+                textArea.setEditable(false);
+                textArea.setWrapText(false);
+                ScrollPane scrollPane = new ScrollPane(textArea);
+                scrollPane.setFitToWidth(true);
+                scrollPane.setPrefWidth(600);
+                scrollPane.setPrefHeight(400);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Código Expandido");
+                alert.setHeaderText("Veja o código após a expansão de macros:");
+                alert.getDialogPane().setContent(scrollPane);
+                alert.showAndWait();
+            } catch (IOException ex) {
+                showAlert("Erro", "Erro ao expandir macros: " + ex.getMessage());
+            }
+        });
         return button;
     }
 
@@ -96,7 +137,6 @@ public class SimulationToolbar extends HBox {
 
     /**
      * Exibe um diálogo para carregar um arquivo objeto.
-     * Agora, a lista de opções inclui, separadamente, os códigos de exemplo e os arquivos montados.
      */
     private void showLoadDialog(SimulationController controller) {
         List<ObjectFile> objectFiles = controller.getSimulationModel().getAssembler().getGeneratedObjectFiles();
@@ -120,20 +160,9 @@ public class SimulationToolbar extends HBox {
         dialog.setContentText("Arquivos disponíveis:");
 
         dialog.showAndWait().ifPresent(selected ->
-                controller.handleLoadObjectFileAction(selected.objectFile())
+                controller.handleLoadObjectFileAction()
         );
     }
-
-    /**
-     * Record para oppões de arquivo objeto.
-     */
-    private record ObjectFileOption(ObjectFile objectFile) {
-        @Override
-        public String toString() {
-            return objectFile.getFilename();
-        }
-    }
-
 
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -143,4 +172,13 @@ public class SimulationToolbar extends HBox {
         alert.showAndWait();
     }
 
+    /**
+     * Record para opções de arquivo objeto.
+     */
+    private record ObjectFileOption(ObjectFile objectFile) {
+        @Override
+        public String toString() {
+            return objectFile.getFilename();
+        }
+    }
 }

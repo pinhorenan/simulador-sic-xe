@@ -47,11 +47,12 @@ public class SimulationModel {
 
     public List<String> processMacros(List<String> sourceLines) throws IOException {
         String tempInputFile = "temp.asm";
-        String macroOutputFile = "MASMAPRG.ASM"; // Nome definido nas especificações: não mudar!!!!
+        String macroOutputFile = "MASMAPRG.ASM"; // Nome definido nas especificações
         Files.write(Path.of(tempInputFile), sourceLines, StandardCharsets.UTF_8);
         macroProcessor.process(tempInputFile, macroOutputFile);
         return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
     }
+
 
     public void loadObjectFile(ObjectFile selectedFile) {
         if (selectedFile != null) {
@@ -59,6 +60,7 @@ public class SimulationModel {
             lastObjectFile = selectedFile; // Atualiza o último carregado
         }
     }
+
 
     public void updateLastObjectFile(ObjectFile objectFile) {
         this.lastObjectFile = objectFile;
@@ -68,8 +70,8 @@ public class SimulationModel {
         return lastObjectFile;
     }
 
-    public void assembleCode(List<String> sourceLines) {
-        ObjectFile machineCode = assembler.assemble(sourceLines);
+    public void assembleCode(List<String> macroProcessedWords) {
+        ObjectFile machineCode = assembler.assemble(macroProcessedWords);
         updateLastObjectFile(machineCode);
     }
 

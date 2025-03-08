@@ -36,5 +36,50 @@ public class SampleCodes {
             RESULT RESW  1
             END    START
             """;
-}
 
+    public static final String SAMPLE_CODE_4 = """
+            COPYMAC MACRO
+                   LDA SRC
+                   STA DST
+                   MEND
+            START   START 0
+                    COPYMAC
+                    RSUB
+            SRC     WORD  5
+            DST     RESW  1
+            END     START
+            """;
+
+    // Exemplo 5: Macro para Adição de Dois Números
+    public static final String SAMPLE_CODE_5 = """
+            ADDMAC MACRO
+                   LDA   NUM1
+                   ADD   NUM2
+                   STA   RESULT
+                   MEND
+            PROG   START 0
+                   ADDMAC
+                   RSUB
+            NUM1   WORD  10
+            NUM2   WORD  20
+            RESULT RESW  1
+            END    PROG
+            """;
+
+    // Exemplo 6: Macro Aninhada
+    public static final String SAMPLE_CODE_6 = """
+            MAC1   MACRO
+                   LDA   X
+                   MEND
+            MAC2   MACRO
+                   MAC1
+                   ADD   Y
+                   MEND
+            PROG   START 0
+                   MAC2
+                   RSUB
+            X      WORD  3
+            Y      WORD  4
+            END    PROG
+            """;
+}

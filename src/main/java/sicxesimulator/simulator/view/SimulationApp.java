@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import sicxesimulator.assembler.Assembler;
+import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.machine.Machine;
 import sicxesimulator.machine.cpu.Register;
@@ -28,7 +29,9 @@ import java.util.*;
 public class SimulationApp extends Application implements SimulationView {
     private SimulationController controller;
     private Stage primaryStage;
+    private BorderPane root;
     protected SimulationToolbar simulationToolbar;
+    private ListView<String> objectFileListView;
 
     // Quadrante esquerdo
     private TextArea inputArea;
@@ -53,14 +56,20 @@ public class SimulationApp extends Application implements SimulationView {
         Machine machine = new Machine();
         SimulationModel model = new SimulationModel(machine, new Assembler(), new Loader(machine));
         controller = new SimulationController(model, this);
+        objectFileListView = new ListView<>();
         viewConfig = model.getViewConfig();
         viewConfig.addFormatChangeListener(newFormat -> updateAllTables());
         simulationToolbar = new SimulationToolbar(controller, this);
 
         BorderPane root = new BorderPane();
+        this.root = root;
         root.setTop(createMenuBar());
         root.setCenter(createMainContent());   // Layout principal: divisão left/right
         root.setBottom(createBottomBar());
+
+        // Adiciona a list view??
+        VBox layout = new VBox(10);
+        layout.getChildren().add(objectFileListView);
 
         Scene scene = new Scene(root, 1000, 600);
         primaryStage.setScene(scene);
@@ -74,6 +83,25 @@ public class SimulationApp extends Application implements SimulationView {
     private void configureStageProperties() {
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
+    }
+
+    public void initializeView() {
+        List<ObjectFile> objFiles = controller.getSimulationModel().getAssembledObjectFiles();
+
+        if (objFiles.isEmpty()) {
+            showNoFilesMessage();  // Se não houver arquivos, exibe a mensagem
+        } else {
+            controller.loadObjFilesToListView();  // Caso haja arquivos, carrega a ListView
+        }
+    }
+
+    public void showNoFilesMessage() {
+        // Exibe uma mensagem de alerta se não houver arquivos montados
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Aviso");
+        alert.setHeaderText("Nenhum arquivo montado");
+        alert.setContentText("Por favor, monte um programa primeiro.");
+        alert.showAndWait();  // Exibe o alerta e aguarda o fechamento
     }
 
     private void initializeUI() {
@@ -172,7 +200,6 @@ public class SimulationApp extends Application implements SimulationView {
         VBox rightPane = new VBox(10);
         rightPane.setPadding(new Insets(10));
 
-
         // Parte inferior: tabelas empilhadas verticalmente
         VBox tablesBox = createMemoryRegisterSymbolPane();
 
@@ -243,7 +270,24 @@ public class SimulationApp extends Application implements SimulationView {
         MenuBar menuBar = new MenuBar();
 
         Menu fileMenu = new Menu("Arquivo");
-        Menu sampleMenu = new Menu("Exemplos");
+        MenuItem openAsmFile = new MenuItem("Abrir Arquivo .ASM");
+        openAsmFile.setOnAction(e -> controller.handleOpenAsmFile());
+
+        MenuItem exportExpandedCode = new MenuItem("Exportar.ASM Expandido");
+        exportExpandedCode.setOnAction(e -> {
+            try {
+                controller.handleExportExpandedCode();
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        MenuItem exportObjFile = new MenuItem("Exportar Arquivo .OBJ");
+        exportObjFile.setOnAction(e -> controller.handleExportObjFile());
+
+        fileMenu.getItems().addAll(openAsmFile, exportExpandedCode, exportObjFile);
+
+        Menu sampleMenu = new Menu("Códigos Exemplo");
         MenuItem sample1 = new MenuItem("Carregar código exemplo 1");
         sample1.setOnAction(e -> {
             try {
@@ -293,14 +337,18 @@ public class SimulationApp extends Application implements SimulationView {
             }
         });
         sampleMenu.getItems().addAll(sample1, sample2, sample3, sample4, sample5, sample6);
-        fileMenu.getItems().add(sampleMenu);
 
-        Menu optionsMenu = new Menu("Opções");
-        MenuItem memorySizeItem = new MenuItem("Tamanho da memória");
-        memorySizeItem.setOnAction(e -> showMemorySizeDialog());
+        Menu memoryMenu = new Menu("Memória");
+        MenuItem clearMemoryItem = new MenuItem("Limpar Memória");
+        clearMemoryItem.setOnAction(e -> controller.handleClearMemoryAction());
+        MenuItem changeMemorySizeItem = new MenuItem("Tamanho da memória");
+        changeMemorySizeItem.setOnAction(e -> showMemorySizeDialog());
+        memoryMenu.getItems().addAll(changeMemorySizeItem, clearMemoryItem);
+
+        Menu executionMenu = new Menu("Execução");
         MenuItem executionSpeedItem = new MenuItem("Velocidade de execução");
         executionSpeedItem.setOnAction(e -> showExecutionSpeedDialog());
-        optionsMenu.getItems().addAll(memorySizeItem, executionSpeedItem);
+        executionMenu.getItems().add(executionSpeedItem);
 
         Menu viewMenu = new Menu("Exibição");
         MenuItem hexView = new MenuItem("Hexadecimal");
@@ -329,7 +377,6 @@ public class SimulationApp extends Application implements SimulationView {
             alert.setContentText("""
                     © 2025 SIC/XE
                     Time ROCK LEE VS GAARA
-                    Ícone: https://icons8.com/icon/NAL2lztANaO6/rust
                     """);
             alert.showAndWait();
         });
@@ -350,13 +397,13 @@ public class SimulationApp extends Application implements SimulationView {
         leonardoBraga.setOnAction(e -> getHostServices().showDocument("https://github.com/braga0425"));
         creditsMenu.getItems().addAll(renanPinho, luisRasch, gabrielMoura, arthurAlves, fabricioBartz, leonardoBraga);
 
-        menuBar.getMenus().addAll(fileMenu, optionsMenu, viewMenu, helpMenu, aboutMenu, creditsMenu);
+        menuBar.getMenus().addAll(fileMenu, sampleMenu, memoryMenu, executionMenu, viewMenu, helpMenu, aboutMenu, creditsMenu);
         return menuBar;
     }
 
-    // ----------------------------------------------------------------
+    // -------------------------------------------------------------
     // Métodos da interface SimulationView
-    // ----------------------------------------------------------------
+    // -------------------------------------------------------------
 
     @Override
     public String getInputText() {
@@ -487,7 +534,7 @@ public class SimulationApp extends Application implements SimulationView {
         Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
         helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
         helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
-        helpAlert.setContentText("// Conteúdo do help...");
+        helpAlert.setContentText("WIP");
         helpAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
         helpAlert.showAndWait();
     }
@@ -543,6 +590,10 @@ public class SimulationApp extends Application implements SimulationView {
     @Override
     public TableView<SymbolEntry> getSymbolTable() {
         return symbolTable;
+    }
+
+    public ListView<String> getObjectFileListView() {
+        return objectFileListView;
     }
 
     private void showWelcomeMessage() {
@@ -610,7 +661,6 @@ public class SimulationApp extends Application implements SimulationView {
             executionSpeedLabel.setText("Atraso de ciclo: " + delayInMs);
         });
     }
-
 
     // -------------------------------------------------------------
     // Estruturas auxiliares para as tabelas

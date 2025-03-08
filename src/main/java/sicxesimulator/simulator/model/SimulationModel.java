@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SimulationModel {
@@ -20,6 +21,8 @@ public class SimulationModel {
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
     private ObjectFile lastObjectFile = null;
+    private List<ModelListener> listeners = new ArrayList<>();
+    private List<ObjectFile> assembledObjectFiles = new ArrayList<>();
     private int startAddress;
     private int simulationSpeed;
     private boolean isPaused;
@@ -35,14 +38,38 @@ public class SimulationModel {
         this.simulationSpeed = 0;
     }
 
-    /// GETTERS
+    // Adiciona um listener para monitorar mudanças no modelo
+    public void addListener(ModelListener listener) {
+        listeners.add(listener);
+    }
 
-    public Machine getMachine() { return machine; }
+    // Notifica os listeners quando os arquivos forem atualizados
+    private void notifyListeners() {
+        for (ModelListener listener : listeners) {
+            listener.onFilesUpdated();  // Chama o método que atualizará a interface
+        }
+    }
 
-    public Assembler getAssembler() { return assembler; }
+    // Método para atualizar os arquivos de objetos
+    public void updateObjectFiles(List<ObjectFile> newFiles) {
+        this.assembledObjectFiles = newFiles;  // Atualiza a lista de arquivos
+        notifyListeners();  // Notifica os listeners sobre a mudança nos arquivos
+    }
+
+    public Machine getMachine() {
+        return machine;
+    }
+
+    public Assembler getAssembler() {
+        return assembler;
+    }
 
     public ViewConfig getViewConfig() {
         return viewConfig;
+    }
+
+    public List<ObjectFile> getAssembledObjectFiles() {
+        return assembledObjectFiles;
     }
 
     public List<String> processMacros(List<String> sourceLines) throws IOException {
@@ -53,17 +80,17 @@ public class SimulationModel {
         return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
     }
 
-
     public void loadObjectFile(ObjectFile selectedFile) {
         if (selectedFile != null) {
             loader.load(selectedFile);
             lastObjectFile = selectedFile; // Atualiza o último carregado
+            notifyListeners();  // Notifica os listeners quando um novo arquivo é carregado
         }
     }
 
-
     public void updateLastObjectFile(ObjectFile objectFile) {
         this.lastObjectFile = objectFile;
+        notifyListeners();  // Notifica os listeners sobre a atualização do arquivo
     }
 
     public ObjectFile getLastObjectFile() {
@@ -72,7 +99,8 @@ public class SimulationModel {
 
     public void assembleCode(List<String> macroProcessedWords) {
         ObjectFile machineCode = assembler.assemble(macroProcessedWords);
-        updateLastObjectFile(machineCode);
+        assembledObjectFiles.add(machineCode);
+        updateLastObjectFile(machineCode);  // Atualiza o último arquivo montado
     }
 
     public void runNextInstruction() {
@@ -90,7 +118,6 @@ public class SimulationModel {
             }
         }
     }
-
 
     private int getDelayForSpeed(int speed) {
         return switch (speed) {
@@ -145,5 +172,12 @@ public class SimulationModel {
     public void loadSampleCode(String sampleCode, SimulationApp view, String title) {
         view.getInputField().setText(sampleCode);
         view.getStage().setTitle(title);
+    }
+
+    public ObjectFile getObjectFileByName(String selectedFileName) {
+        return assembledObjectFiles.stream()
+                .filter(objFile -> objFile.getFilename().equals(selectedFileName))
+                .findFirst()
+                .orElse(null);
     }
 }

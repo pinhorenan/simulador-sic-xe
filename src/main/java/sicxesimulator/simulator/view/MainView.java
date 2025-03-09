@@ -1,6 +1,5 @@
 package sicxesimulator.simulator.view;
 
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -8,19 +7,18 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import sicxesimulator.assembler.models.ObjectFile;
-import sicxesimulator.simulator.controller.MainController;
+import sicxesimulator.simulator.controller.Controller;
 import sicxesimulator.simulator.model.SampleCodes;
-import sicxesimulator.simulator.model.MainModel;
+import sicxesimulator.simulator.model.Model;
 import sicxesimulator.simulator.view.components.*;
 import sicxesimulator.utils.ViewConfig;
 
 import java.io.IOException;
 import java.util.*;
 
-public class MainApp extends Application {
-    private static MainModel injectedModel;
-    private MainController controller;
+public class MainView extends javafx.application.Application {
+    private static Model injectedModel;
+    private Controller controller;
 
     // Configurações de exibição
     private ViewConfig viewConfig;
@@ -50,40 +48,75 @@ public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
-
-        // Verifica se o model foi injetado; se não, lança exceção ou cria um padrão.
         if (injectedModel == null) {
             throw new IllegalStateException("O model não foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");
         }
-        MainModel model = injectedModel;
-        controller = new MainController(model, this);
+        Model model = injectedModel;
+        controller = new Controller(model, this);
+        simulationToolbar = new SimulationToolbar(controller, this);
         objectFileListView = new ListView<>();
 
         // Configurações de exibição
         viewConfig = model.getViewConfig();
         viewConfig.addFormatChangeListener(newFormat -> updateAllTables());
-        simulationToolbar = new SimulationToolbar(controller, this);
 
+        // Cria o layout principal
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
-        root.setCenter(createMainContent());
+        root.setCenter(createMainContent());   // Aqui, createMainContent() cria o inputArea
         root.setBottom(createBottomBar());
-
-        // Se necessário, adicione a list view a algum container (aqui parece que ela não está sendo utilizada no layout principal)
-        VBox layout = new VBox(10);
-        layout.getChildren().add(objectFileListView);
 
         Scene scene = new Scene(root, 1000, 600);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Simulador SIC/XE");
         primaryStage.show();
 
+        // Agora, após a criação dos componentes (inputArea já foi instanciado em createLeftPane()),
+        // podemos configurar os bindings do SimulationToolbar.
+        simulationToolbar.setupBindings();
+
         configureStageProperties();
         initializeUI();
     }
 
+
     ///  Métodos de montagem da interface
-    ///
+
+    private VBox createMemoryRegisterSymbolPane() {
+        memoryTable = new MemoryTableView();
+        registerTable = new RegisterTableView();
+        symbolTable = new SymbolTableView();
+
+        ScrollPane memoryScroll = new ScrollPane(memoryTable);
+        memoryScroll.setFitToWidth(true);
+        memoryScroll.setFitToHeight(true);
+
+        ScrollPane registerScroll = new ScrollPane(registerTable);
+        registerScroll.setFitToWidth(true);
+        registerScroll.setFitToHeight(true);
+
+        //noinspection ExtractMethodRecommender
+        ScrollPane symbolScroll = new ScrollPane(symbolTable);
+        symbolScroll.setFitToWidth(true);
+        symbolScroll.setFitToHeight(true);
+
+        TitledPane memoryTitled = new TitledPane("Memória", memoryScroll);
+        memoryTitled.setCollapsible(false);
+        TitledPane registerTitled = new TitledPane("Registradores", registerScroll);
+        registerTitled.setCollapsible(false);
+        TitledPane symbolTitled = new TitledPane("Símbolos", symbolScroll);
+        symbolTitled.setCollapsible(false);
+
+        // Define alturas preferenciais para que cada painel fique menor
+        memoryTitled.setPrefHeight(150);
+        registerTitled.setPrefHeight(150);
+        symbolTitled.setPrefHeight(150);
+
+        VBox tablesBox = new VBox(10, memoryTitled, registerTitled, symbolTitled);
+        tablesBox.setAlignment(Pos.TOP_LEFT);
+        return tablesBox;
+    }
+
     private HBox createMainContent() {
         HBox mainContent = new HBox(10);
         mainContent.setPadding(new Insets(10));
@@ -153,50 +186,18 @@ public class MainApp extends Application {
         VBox rightPane = new VBox(10);
         rightPane.setPadding(new Insets(10));
 
-        // Parte inferior: tabelas empilhadas verticalmente
+        // Cria as tabelas
         VBox tablesBox = createMemoryRegisterSymbolPane();
+        // Obtém o container do botão RESET da SimulationToolbar
+        HBox resetBox = simulationToolbar.getResetControl();
 
-        // Adiciona as duas seções ao painel direito
-        rightPane.getChildren().addAll(tablesBox);
+        // Adiciona as tabelas e, abaixo, o botão RESET
+        rightPane.getChildren().addAll(tablesBox, resetBox);
         VBox.setVgrow(tablesBox, Priority.ALWAYS);
 
         return rightPane;
     }
 
-    private VBox createMemoryRegisterSymbolPane() {
-        memoryTable = new MemoryTableView();
-        registerTable = new RegisterTableView();
-        symbolTable = new SymbolTableView();
-
-        ScrollPane memoryScroll = new ScrollPane(memoryTable);
-        memoryScroll.setFitToWidth(true);
-        memoryScroll.setFitToHeight(true);
-
-        ScrollPane registerScroll = new ScrollPane(registerTable);
-        registerScroll.setFitToWidth(true);
-        registerScroll.setFitToHeight(true);
-
-        //noinspection ExtractMethodRecommender
-        ScrollPane symbolScroll = new ScrollPane(symbolTable);
-        symbolScroll.setFitToWidth(true);
-        symbolScroll.setFitToHeight(true);
-
-        TitledPane memoryTitled = new TitledPane("Memória", memoryScroll);
-        memoryTitled.setCollapsible(false);
-        TitledPane registerTitled = new TitledPane("Registradores", registerScroll);
-        registerTitled.setCollapsible(false);
-        TitledPane symbolTitled = new TitledPane("Símbolos", symbolScroll);
-        symbolTitled.setCollapsible(false);
-
-        // Define alturas preferenciais para que cada painel fique menor
-        memoryTitled.setPrefHeight(150);
-        registerTitled.setPrefHeight(150);
-        symbolTitled.setPrefHeight(150);
-
-        VBox tablesBox = new VBox(10, memoryTitled, registerTitled, symbolTitled);
-        tablesBox.setAlignment(Pos.TOP_LEFT);
-        return tablesBox;
-    }
 
     private HBox createBottomBar() {
         executionSpeedLabel = new Label("Atraso de ciclo: ");
@@ -370,23 +371,24 @@ public class MainApp extends Application {
         return menuBar;
     }
 
+    ///  Métodos de configuração da interface
+
     private void configureStageProperties() {
         primaryStage.setMinWidth(800);
         primaryStage.setMinHeight(600);
     }
 
     public void initializeView() {
-        List<ObjectFile> objFiles = controller.getObjectFilesList();
-
-        if (objFiles.isEmpty()) {
-            showNoFilesMessage();  // Se não houver arquivos, exibe a mensagem
+        List<String> fileNames = controller.getObjectFileNames();
+        if (fileNames.isEmpty()) {
+            showNoFilesMessage();
         } else {
-            controller.loadObjFilesToListView();  // Caso haja arquivos, carrega a ListView
+            updateObjectFileListView(fileNames);
         }
     }
 
+
     private void initializeUI() {
-        disableControls();
         showWelcomeMessage();
         updateAllTables();
         updateViewFormatLabel();
@@ -418,12 +420,16 @@ public class MainApp extends Application {
 
     ///  Setters
 
+    public static void setModel(Model model) {
+        injectedModel = model;
+    }
+
     public void setWindowTitle(String title) {
         Platform.runLater(() -> primaryStage.setTitle(title));
     }
 
-    public static void setModel(MainModel model) {
-        injectedModel = model;
+    public void setViewFormat(String format) {
+        viewConfig.setAddressFormat(format);
     }
 
     ///  Métodos de atualização de componentes
@@ -472,6 +478,11 @@ public class MainApp extends Application {
         updateMemorySizeLabel();
     }
 
+    public void updateObjectFileListView(List<String> fileNames) {
+        objectFileListView.getItems().clear();
+        objectFileListView.getItems().addAll(fileNames);
+    }
+
     ///  Métodos limpeza de componentes
 
     public void clearOutputArea() {
@@ -508,10 +519,6 @@ public class MainApp extends Application {
             alert.setContentText(message);
             alert.showAndWait();
         });
-    }
-
-    public void setViewFormat(String format) {
-        viewConfig.setAddressFormat(format);
     }
 
     public void showHelpWindow() {
@@ -576,7 +583,7 @@ public class MainApp extends Application {
         });
     }
 
-    private void showWelcomeMessage() {
+    public void showWelcomeMessage() {
         String welcomeMessage = """
         ╔══════════════════════════════════════╗
         ║      Simulador SIC/XE                ║
@@ -609,14 +616,6 @@ public class MainApp extends Application {
 
     public void appendOutput(String message) {
         Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
-    }
-
-    public void disableControls() {
-        simulationToolbar.disableExecutionButtons();
-    }
-
-    public void enableControls() {
-        simulationToolbar.enableExecutionButtons();
     }
 
     ///  MAIN

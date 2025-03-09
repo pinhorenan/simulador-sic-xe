@@ -1,12 +1,14 @@
 package sicxesimulator.simulator.model;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.linker.Linker;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.macroprocessor.MacroProcessor;
 import sicxesimulator.machine.Machine;
-import sicxesimulator.simulator.view.MainApp;
+import sicxesimulator.simulator.view.MainView;
 import sicxesimulator.utils.*;
 
 import java.io.IOException;
@@ -15,8 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class MainModel {
+public class Model {
     private final Machine machine;
     private final Loader loader;
     private final Assembler assembler;
@@ -27,7 +30,7 @@ public class MainModel {
     private final List<ModelListener> listeners = new ArrayList<>();
 
     // Arquivos de objeto
-    private List<ObjectFile> objectFileList = new ArrayList<>();
+    private final List<ObjectFile> objectFileList = new ArrayList<>();
     private ObjectFile mostRecentObjectFile = null;
 
     // View state
@@ -36,11 +39,15 @@ public class MainModel {
     // Estado do modelo
     private int memorySize;
     private int simulationSpeed;
-    private boolean isPaused = false;
-    private boolean isFinished = false;
-    private boolean hasLoadedCoded = false;
 
-    public MainModel() {
+    // Estados reativos
+    private final BooleanProperty codeAssembled = new SimpleBooleanProperty(false);
+    private final BooleanProperty codeLoaded = new SimpleBooleanProperty(false);
+    private final BooleanProperty simulationPaused = new SimpleBooleanProperty(false);
+    private final BooleanProperty simulationFinished = new SimpleBooleanProperty(false);
+
+
+    public Model() {
         this.machine = new Machine();
         this.memorySize = machine.getMemorySize();
         this.loader = new Loader(machine);
@@ -71,6 +78,7 @@ public class MainModel {
         return assembler;
     }
 
+    @SuppressWarnings("unused")
     public Linker getLinker() {
         return linker;
     }
@@ -89,6 +97,19 @@ public class MainModel {
         return objectFileList;
     }
 
+    public List<String> getObjectFileNames() {
+        return objectFileList.stream()
+                .map(ObjectFile::getFilename)
+                .collect(Collectors.toList());
+    }
+
+    public ObjectFile getObjectFileByName(String selectedFileName) {
+        return objectFileList.stream()
+                .filter(objFile -> objFile.getFilename().equals(selectedFileName))
+                .findFirst()
+                .orElse(null);
+    }
+
     ///  Getters/Setters de atributos do modelo
 
     public void setSimulationSpeed(int newSimulationSpeed) {
@@ -99,6 +120,10 @@ public class MainModel {
         }
     }
 
+    public int getSimulationSpeed() {
+        return simulationSpeed;
+    }
+
     public void setMemorySize(int newMemorySize) {
         this.memorySize = newMemorySize;
     }
@@ -107,21 +132,34 @@ public class MainModel {
         return memorySize;
     }
 
-    /// Métodos de controle de execução
+    ///  Getters/Setters de estados reativos
 
-    public boolean isFinished() {
-        if (machine.getControlUnit().isHalted()) {
-            isFinished = true;
-        } else isFinished = false;
-        return isFinished;
+    public BooleanProperty codeAssembledProperty() {
+        return codeAssembled;
+    }
+    public void setCodeAssembled(boolean assembled) {
+        codeAssembled.set(assembled);
     }
 
-    public boolean isPaused() {
-        return isPaused;
+    public BooleanProperty codeLoadedProperty() {
+        return codeLoaded;
+    }
+    public void setCodeLoaded(boolean loaded) {
+        codeLoaded.set(loaded);
     }
 
-    public boolean hasLoadedCode() {
-        return hasLoadedCoded;
+    public BooleanProperty simulationFinishedProperty() {
+        return simulationFinished;
+    }
+    public void setSimulationFinished(boolean finished) {
+        simulationFinished.set(finished);
+    }
+
+    public BooleanProperty simulationPausedProperty() {
+        return simulationPaused;
+    }
+    public void setSimulationPaused(boolean paused) {
+        simulationPaused.set(paused);
     }
 
     /// Carregamento de arquivos
@@ -158,21 +196,10 @@ public class MainModel {
         machine.runCycle();
     }
 
-    public void pause() {
-        isPaused = true;
-    }
-
-    public void unpause() {
-        isPaused = false;
-    }
-
     public void reset() {
         machine.reset();
         assembler.reset();
         objectFileList.clear();
-        isPaused = false;
-        isFinished = false;
-        hasLoadedCoded = false;
     }
 
     ///  Métodos auxiliares
@@ -189,21 +216,10 @@ public class MainModel {
         }
     }
 
-    public int getCycleDelay() {
-        return Mapper.mapSimulationSpeedToCycleDelay(simulationSpeed);
-    }
-
-    public void loadSampleCode(String sampleCode, MainApp view, String title) {
+    public void loadSampleCode(String sampleCode, MainView mainView, String title) {
 
 
-        view.getInputField().setText(sampleCode);
-        view.getStage().setTitle(title);
-    }
-
-    public ObjectFile getObjectFileByName(String selectedFileName) {
-        return objectFileList.stream()
-                .filter(objFile -> objFile.getFilename().equals(selectedFileName))
-                .findFirst()
-                .orElse(null);
+        mainView.getInputField().setText(sampleCode);
+        mainView.getStage().setTitle(title);
     }
 }

@@ -8,7 +8,7 @@ module sicxesimulator {
 
     // Exporta apenas o(s) pacote(s) que deve(m) ser acessível(is) por
     // outros módulos ou pelo JavaFX.
-    // "view" exportado para o módulo javafx.graphics, por exemplo, se houver FXML que precise de acesso.
+    // "mainView" exportado para o módulo javafx.graphics, por exemplo, se houver FXML que precise de acesso.
     exports sicxesimulator.simulator.view to javafx.graphics;
     exports sicxesimulator.simulator.view.components to javafx.graphics;
     // Exemplo de pacote exportado sem restrição:
@@ -19,6 +19,7 @@ module sicxesimulator {
     exports sicxesimulator.loader;
     exports sicxesimulator.macroprocessor;
     exports sicxesimulator.assembler;
+    exports sicxesimulator.assembler.models;
     exports sicxesimulator.utils;
     exports sicxesimulator.simulator.model;
     exports sicxesimulator.simulator.controller;

@@ -1,6 +1,7 @@
 package sicxesimulator.simulator.controller;
 
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ChoiceDialog;
@@ -9,33 +10,30 @@ import javafx.stage.FileChooser;
 import sicxesimulator.logger.SimulatorLogger;
 import sicxesimulator.assembler.models.ObjectFile;
 import sicxesimulator.machine.cpu.Register;
-import sicxesimulator.simulator.model.MainModel;
-import sicxesimulator.simulator.view.MainApp;
-import sicxesimulator.simulator.view.MemoryEntry;
-import sicxesimulator.simulator.view.RegisterEntry;
-import sicxesimulator.simulator.view.SymbolEntry;
+import sicxesimulator.simulator.model.Model;
+import sicxesimulator.simulator.view.MainView;
+import sicxesimulator.simulator.view.components.MemoryEntry;
+import sicxesimulator.simulator.view.components.RegisterEntry;
+import sicxesimulator.simulator.view.components.SymbolEntry;
 import sicxesimulator.utils.Convert;
+import sicxesimulator.utils.Mapper;
 import sicxesimulator.utils.ValueFormatter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
-import java.util.stream.Collectors;
+import java.util.*;
 
-public class MainController {
-    private final MainModel model;
-    private final MainApp view;
+public class Controller {
+    private final Model model;
+    private final MainView mainView;
 
 
-    public MainController(MainModel model, MainApp view) {
+    public Controller(Model model, MainView mainView) {
         this.model = model;
-        this.view = view;
-        this.model.addListener(view::initializeView);
+        this.mainView = mainView;
+        this.model.addListener(mainView::initializeView);
     }
 
     ///  ============== BOTÕES PRINCIPAIS =================== ///
@@ -43,30 +41,31 @@ public class MainController {
     ///  Grupo Superior. SimulatorControls
 
     public void handleAssembleAction() {
-        String sourceText = view.getInputField().getText();
+        String sourceText = mainView.getInputField().getText();
         List<String> sourceLines = Arrays.asList(sourceText.split("\\r?\\n"));
         try {
             // Processa as macros e obtém o código expandido
             List<String> expandedSource = model.expandMacros(sourceLines);
 
             // Limpa a área de saída e a área de macros
-            view.clearOutputArea();
-            view.clearMacroOutArea();
+            mainView.clearOutputArea();
+            mainView.clearMacroOutArea();
             handleUpdateExpandedCode();
 
             // Agora passa o código expandido para o Assembler
             model.assembleCode(expandedSource);
-            view.updateAllTables();
+            mainView.updateAllTables();
+            model.setCodeAssembled(true);
 
             String formattedCode = model.getMostRecentObjectFile().toString();
-            view.appendOutput("Programa montado e carregado com sucesso!");
-            view.appendOutput(formattedCode);
+            mainView.appendOutput("Programa montado e carregado com sucesso!");
+            mainView.appendOutput(formattedCode);
 
             // Registra logs de montagem e código objeto
             SimulatorLogger.logAssemblyCode(sourceText);
             SimulatorLogger.logMachineCode(formattedCode);
         } catch (IllegalArgumentException | IOException e) {
-            view.showError("Erro na montagem: " + e.getMessage());
+            mainView.showError("Erro na montagem: " + e.getMessage());
             SimulatorLogger.logError("Erro na montagem", e);
         }
     }
@@ -74,7 +73,7 @@ public class MainController {
     public void handleLoadObjectFileAction() {
         List<ObjectFile> objectFiles = model.getObjectFilesList();
         if (objectFiles.isEmpty()) {
-            view.showError("Nenhum código foi montado ainda.");
+            mainView.showError("Nenhum código foi montado ainda.");
             return;
         }
         ChoiceDialog<ObjectFile> dialog = new ChoiceDialog<>(objectFiles.getLast(), objectFiles);
@@ -88,22 +87,23 @@ public class MainController {
 
         dialog.showAndWait().ifPresent(selected -> {
             model.loadObjectFile(selected);
-            view.appendOutput("Arquivo montado carregado: " + selected.getFilename());
-            view.enableControls();
-            view.updateAllTables();
+            model.setCodeLoaded(true);
+            mainView.appendOutput("Arquivo montado carregado: " + selected.getFilename());
+            mainView.updateAllTables();
             handleUpdateExpandedCode();
         });
+
     }
 
     public void handleUpdateExpandedCode() {
         try {
-            List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
+            List<String> sourceLines = Arrays.asList(mainView.getInputField().getText().split("\\r?\\n"));
             List<String> expanded = model.expandMacros(sourceLines);
 
             // Atualiza o expandedArea com o conteúdo expandido
-            view.getExpandedArea().setText(String.join("\n", expanded));
+            mainView.getExpandedArea().setText(String.join("\n", expanded));
         } catch (IOException ex) {
-            view.showError("Erro ao expandir macros: " + ex.getMessage());
+            mainView.showError("Erro ao expandir macros: " + ex.getMessage());
         }
     }
 
@@ -113,12 +113,12 @@ public class MainController {
         int pc = model.getMachine().getControlUnit().getIntValuePC();
         SimulatorLogger.logExecution("Início do ciclo de execução. PC inicial: " + String.format("%06X", pc));
 
-        if (model.hasLoadedCode()) {
-            if (!model.isFinished()) {
+        if (model.codeLoadedProperty().get()) {
+            if (!model.simulationFinishedProperty().get()) {
                 Task<Void> runTask = new Task<>() {
                     @Override
                     protected Void call() {
-                        while (!model.isFinished() && !model.isPaused()) {
+                        while (!model.simulationFinishedProperty().get() && !model.simulationPausedProperty().get()) {
                             try {
                                 // Capture o valor do PC em uma variável final
                                 final int currentPC = model.getMachine().getControlUnit().getIntValuePC();
@@ -131,93 +131,116 @@ public class MainController {
                                     log = "Log de execução não disponível.";
                                 }
                                 SimulatorLogger.logExecution("Instrução executada: " + log);
-
+                                model.setSimulationFinished(model.getMachine().getControlUnit().isHalted());
                                 // Captura o log em uma variável final para uso na lambda
                                 final String finalLog = log;
                                 Platform.runLater(() -> {
-                                    view.appendOutput(finalLog);
-                                    view.updateAllTables();
+                                    mainView.appendOutput(finalLog);
+                                    mainView.updateAllTables();
                                 });
 
                             } catch (Exception ex) {
                                 String errorMsg = ex.getMessage() != null ? ex.getMessage() : ex.toString();
                                 SimulatorLogger.logError("Erro durante execução. PC: "
                                         + model.getMachine().getControlUnit().getIntValuePC(), ex);
-                                Platform.runLater(() -> view.showError("Erro na execução: " + errorMsg));
+                                Platform.runLater(() -> mainView.showError("Erro na execução: " + errorMsg));
                                 break;
                             }
                             model.applyCycleDelay();
                         }
-                        if (model.isFinished()) {
+                        if (model.simulationFinishedProperty().get()) {
                             SimulatorLogger.logExecution("Execução concluída!");
-                            Platform.runLater(() -> view.appendOutput("Execução concluída!"));
+                            Platform.runLater(() -> mainView.appendOutput("Execução concluída!"));
                         }
                         return null;
                     }
                 };
                 new Thread(runTask).start();
             } else {
-                view.showError("Fim do programa!");
+                mainView.showError("Fim do programa!");
             }
         } else {
-            view.showError("Nenhum programa montado!");
+            mainView.showError("Nenhum programa montado!");
+        }
+
+        if (model.simulationFinishedProperty().get()) {
+            Platform.runLater(() -> mainView.showAlert(Alert.AlertType.INFORMATION,
+                    "Execução Concluída",
+                    "Simulação Finalizada",
+                    "A simulação foi concluída com sucesso!"));
         }
     }
 
     public void handleNextAction() {
-        if (model.hasLoadedCode()) {
-            if (!model.isFinished()) {
+        if (model.codeLoadedProperty().get()) {
+            if (!model.simulationFinishedProperty().get()) {
                 try {
                     model.runNextInstruction();
                     String log = model.getMachine().getControlUnit().getLastExecutionLog();
-                    view.appendOutput(log);
-                    view.updateAllTables();
+                    mainView.appendOutput(log);
+                    mainView.updateAllTables();
                     SimulatorLogger.logExecution(log);
+                    model.setSimulationFinished(model.getMachine().getControlUnit().isHalted());
                 } catch (Exception e) {
-                    view.showError("Erro na execução: " + e.getMessage());
+                    mainView.showError("Erro na execução: " + e.getMessage());
 
                     // Registra no log
                     SimulatorLogger.logError("Erro na execução", e);
                 }
             } else {
-                view.showError("Fim do programa!");
+                mainView.showError("Fim do programa!");
             }
         } else {
-            view.showError("Nenhum programa montado!");
+            mainView.showError("Nenhum programa montado!");
         }
     }
 
     public void handlePauseAction() {
-        if (!model.hasLoadedCode()) {
-            view.showError("Nenhum programa em execução para pausar!");
+        if (!model.codeLoadedProperty().get()) {
+            mainView.showError("Nenhum programa em execução para pausar!");
             return;
         }
-        if (model.isPaused()) {
-            view.appendOutput("Execução retomada!");
+        if (model.codeLoadedProperty().get()) {
+            mainView.appendOutput("Execução retomada!");
             SimulatorLogger.logExecution("Execução retomada.");
-            model.unpause();
+            model.setSimulationPaused(false);
         } else {
-            view.appendOutput("Execução pausada!");
+            mainView.appendOutput("Execução pausada!");
             SimulatorLogger.logExecution("Execução pausada.");
-            model.pause();
+            model.setSimulationPaused(true);
         }
     }
 
     public void handleResetAction() {
-        view.getRegisterTable().getItems().clear();
-        view.getMemoryTable().getItems().clear();
-        view.getSymbolTable().getItems().clear();
-        view.disableControls();
-        model.reset();
-        view.updateAllTables();
-        view.getInputField().clear();
-        view.getOutputArea().clear();
-        view.getExpandedArea().clear();
-        view.getStage().setTitle("Simulador SIC/XE");
+        // Limpa o conteúdo de todas tabelas
+        mainView.clearTables();
 
+        // Atualiza as tabelas
+        mainView.updateAllTables();
+
+        // Limpa o conteúdo de todos TextArea
+        mainView.getInputField().clear();
+        mainView.getOutputArea().clear();
+        mainView.getExpandedArea().clear();
+
+        // Atualiza todos os labels
+        mainView.updateAllLabels();
+
+
+        // Reseta o modelo
+        model.reset();
+
+        // Reseta o título da janela
+        mainView.setWindowTitle("Simulador SIC/XE");
+
+        // Exibe a mensagem de boas-vindas
+        mainView.showWelcomeMessage();
+
+        // Registra no log
         String resetMsg = "Simulação resetada. PC, registradores e memória reiniciados.";
         SimulatorLogger.logExecution(resetMsg);
 
+        // Exibe um alerta de confirmação
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Reset");
         alert.setHeaderText("Simulação resetada");
@@ -232,7 +255,7 @@ public class MainController {
     public void handleImportASM() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly", "*.asm"));
-        File file = fileChooser.showOpenDialog(view.getStage());
+        File file = fileChooser.showOpenDialog(mainView.getStage());
 
         if (file != null) {
             try {
@@ -242,10 +265,10 @@ public class MainController {
                     content.append(scanner.nextLine()).append("\n");
                 }
                 // Aqui chamamos o método da View para atualizar o TextArea com o conteúdo do arquivo
-                view.getInputField().setText(content.toString());
+                mainView.getInputField().setText(content.toString());
                 scanner.close();
             } catch (FileNotFoundException e) {
-                view.showError("Erro ao importar arquivo ASM: " + e.getMessage());
+                mainView.showError("Erro ao importar arquivo ASM: " + e.getMessage());
                 SimulatorLogger.logError("Erro ao importar arquivo ASM", e);
             }
         }
@@ -253,13 +276,13 @@ public class MainController {
 
     public void handleExportASM() throws IOException {
         // Pega o código fonte do campo de entrada e processa os macros
-        List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
+        List<String> sourceLines = Arrays.asList(mainView.getInputField().getText().split("\\r?\\n"));
         List<String> expanded = model.expandMacros(sourceLines);
 
         // Abrir o FileChooser para salvar o arquivo
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly Expandido", "*.asm"));
-        File file = fileChooser.showSaveDialog(view.getStage());
+        File file = fileChooser.showSaveDialog(mainView.getStage());
 
         if (file != null) {
             // Concatena as linhas da lista de strings em uma única string
@@ -270,7 +293,7 @@ public class MainController {
                 writer.write(expandedCode);  // Escreve o código expandido no arquivo
                 System.out.println("Arquivo .ASM Expandido exportado com sucesso!");
             } catch (IOException e) {
-                view.showError("Erro ao tentar escrever o código expandido: " + e.getMessage());
+                mainView.showError("Erro ao tentar escrever o código expandido: " + e.getMessage());
                 SimulatorLogger.logError("Erro ao tentar escrever o código expandido: ", e);
             }
         }
@@ -278,11 +301,11 @@ public class MainController {
 
     public void handleExportOBJ() {
         // Obtém o arquivo selecionado na ListView
-        String selectedFileName = view.getObjectFileListView().getSelectionModel().getSelectedItem();
+        String selectedFileName = mainView.getObjectFileListView().getSelectionModel().getSelectedItem();
 
         if (selectedFileName == null) {
             // Exibe a mensagem "Sem arquivos montados" se não houver arquivos selecionados
-            view.showNoFilesMessage();
+            mainView.showNoFilesMessage();
             return;  // Se o usuário não selecionou nenhum arquivo, sai do método
         }
 
@@ -295,7 +318,7 @@ public class MainController {
         // Abrir o FileChooser para salvar o arquivo
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos .OBJ", "*.obj"));
-        File file = fileChooser.showSaveDialog(view.getStage());
+        File file = fileChooser.showSaveDialog(mainView.getStage());
 
         if (file != null) {
             try (FileWriter writer = new FileWriter(file)) {
@@ -305,7 +328,7 @@ public class MainController {
                 }
                 System.out.println("Arquivo .OBJ exportado com sucesso!");
             } catch (IOException e) {
-                view.showError("Erro ao expandir macros: " + e.getMessage());
+                mainView.showError("Erro ao expandir macros: " + e.getMessage());
                 SimulatorLogger.logError("Erro ao expandir macros", e);
             }
         }
@@ -314,7 +337,11 @@ public class MainController {
     ///  2) menuBar Códigos Exemplo
 
     public void handleLoadSampleCodeAction(String sampleCode, String title) throws IOException {
-        model.loadSampleCode(sampleCode, view, title);
+        model.loadSampleCode(sampleCode, mainView, title);
+        mainView.showAlert(Alert.AlertType.INFORMATION,
+                "Código Carregado",
+                "Exemplo Carregado",
+                "O código de exemplo foi carregado com sucesso!");
         handleUpdateExpandedCode();
     }
 
@@ -322,8 +349,8 @@ public class MainController {
 
     public void handleClearMemoryAction() {
         model.getMachine().getMemory().clearMemory();
-        view.updateMemoryTable();
-        view.appendOutput("Memória limpa!");
+        mainView.updateMemoryTable();
+        mainView.appendOutput("Memória limpa!");
     }
 
     public void handleChangeMemorySizeAction(int newSizeInBytes) {
@@ -331,10 +358,10 @@ public class MainController {
             model.getMachine().changeMemorySize(newSizeInBytes);
             model.setMemorySize(newSizeInBytes);
 
-            view.appendOutput("Memória alterada para " + newSizeInBytes + " bytes.");
-            view.updateMemoryTable();
+            mainView.appendOutput("Memória alterada para " + newSizeInBytes + " bytes.");
+            mainView.updateMemoryTable();
         } catch (Exception e) {
-            view.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
+            mainView.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
         }
     }
 
@@ -347,29 +374,29 @@ public class MainController {
     ///  5) menuBar Exibir
 
     public void handleSetHexViewAction() {
-        view.setViewFormat("HEX");
-        view.updateViewFormatLabel();
+        mainView.setViewFormat("HEX");
+        mainView.updateViewFormatLabel();
     }
 
     public void handleSetOctalViewAction() {
-        view.setViewFormat("OCT");
-        view.updateViewFormatLabel();
-    } // Menu Exibir->Octal
+        mainView.setViewFormat("OCT");
+        mainView.updateViewFormatLabel();
+    }
 
     public void handleSetDecimalViewAction() {
-        view.setViewFormat("DEC");
-        view.updateViewFormatLabel();
-    } // Menu Exibir->Decimal
+        mainView.setViewFormat("DEC");
+        mainView.updateViewFormatLabel();
+    }
 
     public void handleSetBinaryViewAction() {
-        view.setViewFormat("BIN");
-        view.updateViewFormatLabel();
-    } // Menu Exibir->Binário
+        mainView.setViewFormat("BIN");
+        mainView.updateViewFormatLabel();
+    }
 
     ///  6) menuBar Ajuda
 
     public void handleHelpAction() {
-        view.showHelpWindow();
+        mainView.showHelpWindow();
     }
 
     ///  ============== MÉTODOS AUXILIARES =================== ///
@@ -414,42 +441,26 @@ public class MainController {
     }
 
     public List<String> getObjectFileNames() {
-        List<ObjectFile> objFiles = model.getObjectFilesList();
-        return objFiles.stream()
-                .map(ObjectFile::getFilename)
-                .collect(Collectors.toList());
-    }
-
-    public void loadObjFilesToListView() {
-        // Obter a lista de arquivos de objeto do model
-        List<ObjectFile> objFiles = model.getObjectFilesList();
-
-        // Limpar os itens existentes na ListView
-        view.getObjectFileListView().getItems().clear();
-
-        // Se não houver arquivos, exibe uma mensagem
-        if (objFiles.isEmpty()) {
-            view.showNoFilesMessage(); // Adiciona a mensagem de "sem arquivos"
-        } else {
-            // Adiciona os arquivos ao ListView (apenas os nomes dos arquivos)
-            for (ObjectFile objFile : objFiles) {
-                view.getObjectFileListView().getItems().add(objFile.getFilename());  // Adiciona o nome do arquivo
-            }
-
-            // Se você quiser selecionar o primeiro arquivo da lista automaticamente
-            view.getObjectFileListView().getSelectionModel().selectFirst();  // Seleciona o primeiro arquivo
-        }
+        return model.getObjectFileNames();
     }
 
     public String getCycleDelay() {
-        return null;
+        int simulationSpeed = model.getSimulationSpeed();
+        return Mapper.mapSimulationSpeedToCycleDelay(simulationSpeed)+ "ms";
+
     }
 
-    public List<ObjectFile> getObjectFilesList() {
-        // TODO: Implementar
-        return null;
+    // Retorne a propriedade codeAssembled do Model
+    public BooleanProperty getCodeAssembledProperty() {
+        return model.codeAssembledProperty();
     }
 
-    public void reset() {
+    public BooleanProperty getCodeLoadedProperty() {
+        return model.codeLoadedProperty();
     }
+
+    public BooleanProperty getSimulationFinishedProperty() {
+        return model.simulationFinishedProperty();
+    }
+
 }

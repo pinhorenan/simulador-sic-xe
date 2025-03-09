@@ -1,14 +1,17 @@
 package sicxesimulator.simulator.view.components;
 
+import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Pos;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
-import sicxesimulator.simulator.controller.MainController;
-import sicxesimulator.simulator.view.MainApp;
+import javafx.scene.layout.Priority;
+import sicxesimulator.simulator.controller.Controller;
+import sicxesimulator.simulator.view.MainView;
 
 public class SimulationToolbar extends HBox {
-    private final MainApp view;
-    private final MainController controller;
+    private final MainView mainView;
+    private final Controller controller;
+
     protected Button runButton;
     protected Button pauseButton;
     protected Button nextButton;
@@ -16,96 +19,89 @@ public class SimulationToolbar extends HBox {
     protected Button loadButton;
     protected Button updateExpandedButton;
     protected Button resetButton;
+
     protected HBox fileControls;
     protected HBox executionControls;
+    protected HBox resetControl;
 
-    public SimulationToolbar(MainController controller, MainApp view) {
-        this.view = view;
+    public SimulationToolbar(Controller controller, MainView mainView) {
+        this.mainView = mainView;
         this.controller = controller;
         this.setSpacing(10);
 
-        // Inicializa os controles de arquivo e de execução
+        // Inicializa todos os controles
         this.fileControls = createFileControls();
         this.executionControls = createExecutionControls();
+        this.resetControl = createResetButton();  // agora sim chamado corretamente
 
-        // Desabilita os botões de execução inicialmente
-        disableExecutionButtons();
 
-        // Adiciona os HBox com os botões ao layout
-        this.getChildren().addAll(
-                fileControls,   // Controles de arquivo
-                executionControls // Controles de execução
-        );
+        // Adiciona os controles ao layout
+        this.getChildren().addAll(fileControls, executionControls, resetControl);
     }
 
+    private HBox createFileControls() {
+        assembleButton = new Button("Montar");
+        assembleButton.setOnAction(e -> controller.handleAssembleAction());
 
-    public HBox createFileControls() {
-        // Cria os botões
-        Button montar = new Button("Montar");
-        assembleButton = montar;
-        montar.setOnAction(e -> controller.handleAssembleAction());
+        loadButton = new Button("Carregar");
+        loadButton.setOnAction(e -> controller.handleLoadObjectFileAction());
 
-        Button carregar = new Button("Carregar");
-        loadButton = carregar;
-        carregar.setOnAction(e -> controller.handleLoadObjectFileAction());
+        updateExpandedButton = new Button("Atualizar/Expandir Código");
+        updateExpandedButton.setOnAction(e -> controller.handleUpdateExpandedCode());
 
-        Button verExp = new Button("Atualizar/Expandir Código");
-        updateExpandedButton = verExp;
-        verExp.setOnAction(e -> controller.handleUpdateExpandedCode());
-
-        // Cria o HBox com os botões
-        HBox simulationControls = new HBox(10, montar, carregar, verExp);
-        simulationControls.setAlignment(Pos.CENTER);
-        return simulationControls;
+        HBox fileControls = new HBox(10, assembleButton, loadButton, updateExpandedButton);
+        fileControls.setAlignment(Pos.CENTER);
+        return fileControls;
     }
 
+    private HBox createExecutionControls() {
+        runButton = new Button("Executar");
+        runButton.setOnAction(e -> controller.handleRunAction());
 
-    public HBox createExecutionControls() {
-        Button executar = new Button("Executar");
-        runButton = executar;
-        executar.setOnAction(e -> controller.handleRunAction());
+        pauseButton = new Button("Pausar");
+        pauseButton.setOnAction(e -> controller.handlePauseAction());
 
-        Button pausar = new Button("Pausar");
-        pauseButton = pausar;
-        pausar.setOnAction(e -> controller.handlePauseAction());
+        nextButton = new Button("Próximo");
+        nextButton.setOnAction(e -> controller.handleNextAction());
 
-        Button proximo = new Button("Próximo");
-        nextButton = proximo;
-        proximo.setOnAction(e -> controller.handleNextAction());
-
-        Button reset = new Button("Reset");
-        resetButton = reset;
-        reset.setOnAction(e -> controller.handleResetAction());
-
-        HBox executionControls = new HBox(10, executar, pausar, proximo, reset);
+        HBox executionControls = new HBox(10, runButton, pauseButton, nextButton);
         executionControls.setAlignment(Pos.CENTER);
         return executionControls;
     }
 
-    /**
-     * Habilita os botões de execução (Rodar, Pausar e Próximo).
-     */
-    public void enableExecutionButtons() {
-        runButton.setDisable(false);
-        pauseButton.setDisable(false);
-        nextButton.setDisable(false);
-        String style = "-fx-opacity: 1";
-        runButton.setStyle(style);
-        pauseButton.setStyle(style);
-        nextButton.setStyle(style);
+    private HBox createResetButton() {
+        resetButton = new Button("Reset");
+        resetButton.setMaxWidth(Double.MAX_VALUE); // Faz o botão expandir horizontalmente
+
+        resetButton.setOnAction(e -> controller.handleResetAction());
+
+        HBox resetBox = new HBox(resetButton);
+        resetBox.setAlignment(Pos.CENTER);
+        resetBox.setFillHeight(true);
+        HBox.setHgrow(resetButton, Priority.ALWAYS); // O botão ocupa o espaço disponível
+
+        return resetBox;
     }
 
-    /**
-     * Desabilita os botões de execução (Rodar, Pausar e Próximo).
-     */
-    public void disableExecutionButtons() {
-        runButton.setDisable(true);
-        pauseButton.setDisable(true);
-        nextButton.setDisable(true);
-        String style = "-fx-opacity: 0.5;";
-        runButton.setStyle(style);
-        pauseButton.setStyle(style);
-        nextButton.setStyle(style);
+    public void setupBindings() {
+        assembleButton.disableProperty().bind(
+                mainView.getInputField().textProperty().isEmpty()
+        );
+
+        loadButton.disableProperty().bind(
+                controller.getCodeAssembledProperty().not()
+        );
+
+        updateExpandedButton.disableProperty().bind(
+                controller.getCodeAssembledProperty().not()
+        );
+
+        BooleanBinding executionAllowed = controller.getCodeLoadedProperty()
+                .and(controller.getSimulationFinishedProperty().not());
+
+        runButton.disableProperty().bind(executionAllowed.not());
+        pauseButton.disableProperty().bind(executionAllowed.not());
+        nextButton.disableProperty().bind(executionAllowed.not());
     }
 
     public HBox getFileControls() {
@@ -116,7 +112,11 @@ public class SimulationToolbar extends HBox {
         return executionControls;
     }
 
-    public MainApp getView() {
-        return view;
+    public HBox getResetControl() {
+        return resetControl;
+    }
+
+    public MainView getView() {
+        return mainView;
     }
 }

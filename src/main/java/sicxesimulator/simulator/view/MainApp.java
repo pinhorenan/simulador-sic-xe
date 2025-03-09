@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class MainApp extends Application {
+    private static MainModel injectedModel;
     private MainController controller;
 
     // Configurações de exibição
@@ -50,8 +51,11 @@ public class MainApp extends Application {
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
 
-        // Inicializa o
-        MainModel model = new MainModel();
+        // Verifica se o model foi injetado; se não, lança exceção ou cria um padrão.
+        if (injectedModel == null) {
+            throw new IllegalStateException("O model não foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");
+        }
+        MainModel model = injectedModel;
         controller = new MainController(model, this);
         objectFileListView = new ListView<>();
 
@@ -62,10 +66,10 @@ public class MainApp extends Application {
 
         BorderPane root = new BorderPane();
         root.setTop(createMenuBar());
-        root.setCenter(createMainContent());   // Layout principal: divisão left/right
+        root.setCenter(createMainContent());
         root.setBottom(createBottomBar());
 
-        // Adiciona a list view??
+        // Se necessário, adicione a list view a algum container (aqui parece que ela não está sendo utilizada no layout principal)
         VBox layout = new VBox(10);
         layout.getChildren().add(objectFileListView);
 
@@ -78,47 +82,8 @@ public class MainApp extends Application {
         initializeUI();
     }
 
-    private void configureStageProperties() {
-        primaryStage.setMinWidth(800);
-        primaryStage.setMinHeight(600);
-    }
-
-    public void initializeView() {
-        List<ObjectFile> objFiles = controller.getObjectFilesList();
-
-        if (objFiles.isEmpty()) {
-            showNoFilesMessage();  // Se não houver arquivos, exibe a mensagem
-        } else {
-            controller.loadObjFilesToListView();  // Caso haja arquivos, carrega a ListView
-        }
-    }
-
-    public void showNoFilesMessage() {
-        // Exibe uma mensagem de alerta se não houver arquivos montados
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Aviso");
-        alert.setHeaderText("Nenhum arquivo montado");
-        alert.setContentText("Por favor, monte um programa primeiro.");
-        alert.showAndWait();  // Exibe o alerta e aguarda o fechamento
-    }
-
-    private void initializeUI() {
-        disableControls();
-        showWelcomeMessage();
-        updateAllTables();
-        updateViewFormatLabel();
-        updateCycleDelayLabel();
-        updateMemorySizeLabel();
-    }
-
-    /**
-     * Cria o conteúdo principal dividido em duas colunas (HBox):
-     * - Lado Esquerdo: uma VBox com:
-     *      [Área de entrada] e [SimulationToolbar] (botões de controle)
-     * - Lado Direito: uma VBox com:
-     *      [Código expandido]
-     *      [Botão Reload]
-     */
+    ///  Métodos de montagem da interface
+    ///
     private HBox createMainContent() {
         HBox mainContent = new HBox(10);
         mainContent.setPadding(new Insets(10));
@@ -133,11 +98,6 @@ public class MainApp extends Application {
         return mainContent;
     }
 
-    /**
-     * Cria o painel esquerdo (VBox) com:
-     * - Área de entrada no topo.
-     * - SimulationToolbar (botões de controle) logo abaixo.
-     */
     private VBox createLeftPane() {
         VBox leftPane = new VBox(5);
         leftPane.setPadding(new Insets(5));
@@ -189,11 +149,6 @@ public class MainApp extends Application {
         return leftPane;
     }
 
-    /**
-     * Cria o painel direito (VBox) com:
-     * - Parte superior: área de código expandido e botão Reload.
-     * - Parte inferior: tabelas empilhadas verticalmente (Memória, Registradores e Símbolos).
-     */
     private VBox createRightPane() {
         VBox rightPane = new VBox(10);
         rightPane.setPadding(new Insets(10));
@@ -208,9 +163,6 @@ public class MainApp extends Application {
         return rightPane;
     }
 
-    /**
-     * Cria as tabelas de Memória, Registradores e Símbolos empilhadas verticalmente.
-     */
     private VBox createMemoryRegisterSymbolPane() {
         memoryTable = new MemoryTableView();
         registerTable = new RegisterTableView();
@@ -246,9 +198,6 @@ public class MainApp extends Application {
         return tablesBox;
     }
 
-    /**
-     * Cria a barra inferior de status.
-     */
     private HBox createBottomBar() {
         executionSpeedLabel = new Label("Atraso de ciclo: ");
         memorySizeLabel = new Label("Memória: ");
@@ -261,9 +210,6 @@ public class MainApp extends Application {
         return bottomBar;
     }
 
-    /**
-     * Cria o menu superior.
-     */
     private MenuBar createMenuBar() {
         MenuBar menuBar = new MenuBar();
 
@@ -424,61 +370,35 @@ public class MainApp extends Application {
         return menuBar;
     }
 
-    /**
-     * Cria uma mensagem de boas-vindas para o usuário.
-     */
-    private void showWelcomeMessage() {
-        String welcomeMessage = """
-        ╔══════════════════════════════════════╗
-        ║      Simulador SIC/XE                ║
-        ║      © 2025 SIC/XE Rock Lee vs Gaara ║
-        ╚══════════════════════════════════════╝
-
-        -> Edite seu código assembly
-        -> Use os controles de execução
-        -> Configure via menus
-        -> Monitore registradores/memória
-
-        Dica: Comece carregando um exemplo!
-        """;
-        // Exibe cada linha na área de código expandido (ou na saída de status)
-        Arrays.stream(welcomeMessage.split("\n"))
-                .filter(line -> !line.trim().isEmpty())
-                .forEach(this::appendOutput);
+    private void configureStageProperties() {
+        primaryStage.setMinWidth(800);
+        primaryStage.setMinHeight(600);
     }
 
-    /**
-     * Exibe um diálogo para alterar o tamanho da memória.
-     */
-    public void showMemorySizeDialog() {
-        TextInputDialog dialog = new TextInputDialog(controller.getMemorySize()+ "bytes");
-        dialog.setTitle("Alterar Tamanho da Memória");
-        dialog.setHeaderText("Defina o tamanho da memória");
-        dialog.setContentText("Digite um número inteiro positivo:");
-        dialog.showAndWait().ifPresent(input -> {
-            try {
-                int newSize = Integer.parseInt(input);
-                if (newSize <= 0) {
-                    throw new NumberFormatException("Valor deve ser maior que zero.");
-                }
-                controller.handleChangeMemorySizeAction(newSize);
-                memorySizeLabel.setText("Memória: " + newSize + " bytes");
-                appendOutput("Tamanho da memória alterado para: " + newSize + " bytes.");
-            } catch (NumberFormatException ex) {
-                showError("Valor inválido! Por favor, insira um número inteiro positivo.");
-            }
-        });
+    public void initializeView() {
+        List<ObjectFile> objFiles = controller.getObjectFilesList();
+
+        if (objFiles.isEmpty()) {
+            showNoFilesMessage();  // Se não houver arquivos, exibe a mensagem
+        } else {
+            controller.loadObjFilesToListView();  // Caso haja arquivos, carrega a ListView
+        }
     }
 
-    /**
-     * @return A ListView de arquivos de objeto
-     */
-    public ListView<String> getObjectFileListView() {
-        return objectFileListView;
+    private void initializeUI() {
+        disableControls();
+        showWelcomeMessage();
+        updateAllTables();
+        updateViewFormatLabel();
+        updateCycleDelayLabel();
+        updateMemorySizeLabel();
     }
 
+    ///  Getters
 
-    ///  Getters de TextAreas
+    public Stage getStage() {
+        return primaryStage;
+    }
 
     public TextArea getInputField() {
         return inputArea;
@@ -492,29 +412,22 @@ public class MainApp extends Application {
         return macroOutArea;
     }
 
-    public void appendOutput(String message) {
-        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
+    public ListView<String> getObjectFileListView() {
+        return objectFileListView;
     }
 
-    public void clearOutputArea() {
-        outputArea.clear();
+    ///  Setters
+
+    public void setWindowTitle(String title) {
+        Platform.runLater(() -> primaryStage.setTitle(title));
     }
 
-    public void clearMacroOutArea() {
-        macroOutArea.clear();
+    public static void setModel(MainModel model) {
+        injectedModel = model;
     }
 
-    public void disableControls() {
-        simulationToolbar.disableExecutionButtons();
-    }
+    ///  Métodos de atualização de componentes
 
-    public void enableControls() {
-        simulationToolbar.enableExecutionButtons();
-    }
-
-    /**
-     * Atualiza todas as tabelas de memória, registradores e símbolos.
-     */
     public void updateAllTables() {
         Platform.runLater(() -> {
             updateMemoryTable();
@@ -523,66 +436,22 @@ public class MainApp extends Application {
         });
     }
 
-    /**
-     * Atualiza a tabela de memória com os valores atuais.
-     */
     public void updateMemoryTable() {
         memoryTable.getItems().clear();
         List<MemoryEntry> entries = controller.getMemoryEntries();
         memoryTable.getItems().addAll(entries);
     }
 
-
-    /**
-     * Atualiza a tabela de registradores com os valores atuais.
-     */
     public void updateRegisterTable() {
         registerTable.getItems().clear();
         List<RegisterEntry> entries = controller.getRegisterEntries();
         registerTable.getItems().addAll(entries);
     }
 
-    /**
-     * Atualiza a tabela de símbolos com os valores atuais.
-     */
     public void updateSymbolTable() {
         symbolTable.getItems().clear();
         List<SymbolEntry> entries = controller.getSymbolEntries();
         symbolTable.getItems().addAll(entries);
-    }
-
-
-    public void showError(String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Erro de Simulação");
-            alert.setHeaderText("Ocorreu um erro durante a execução");
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
-    }
-
-    public void showAlert(Alert.AlertType type, String title, String header, String content) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(type);
-            alert.setTitle(title);
-            alert.setHeaderText(header);
-            alert.setContentText(content);
-            alert.showAndWait();
-        });
-    }
-
-    public void showHelpWindow() {
-        Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
-        helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
-        helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
-        helpAlert.setContentText("WIP");
-        helpAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-        helpAlert.showAndWait();
-    }
-
-    public void setViewFormat(String format) {
-        viewConfig.setAddressFormat(format);
     }
 
     public void updateViewFormatLabel() {
@@ -603,12 +472,14 @@ public class MainApp extends Application {
         updateMemorySizeLabel();
     }
 
-    public Stage getStage() {
-        return primaryStage;
+    ///  Métodos limpeza de componentes
+
+    public void clearOutputArea() {
+        outputArea.clear();
     }
 
-    public void setWindowTitle(String title) {
-        Platform.runLater(() -> primaryStage.setTitle(title));
+    public void clearMacroOutArea() {
+        macroOutArea.clear();
     }
 
     public void clearTables() {
@@ -617,16 +488,39 @@ public class MainApp extends Application {
         symbolTable.getItems().clear();
     }
 
-    public RegisterTableView getRegisterTable() {
-        return registerTable;
+    ///  Métodos de Show
+
+    public void showAlert(Alert.AlertType type, String title, String header, String content) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(type);
+            alert.setTitle(title);
+            alert.setHeaderText(header);
+            alert.setContentText(content);
+            alert.showAndWait();
+        });
     }
 
-    public MemoryTableView getMemoryTable() {
-        return memoryTable;
+    public void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Erro de Simulação");
+            alert.setHeaderText("Ocorreu um erro durante a execução");
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
     }
 
-    public SymbolTableView getSymbolTable() {
-        return symbolTable;
+    public void setViewFormat(String format) {
+        viewConfig.setAddressFormat(format);
+    }
+
+    public void showHelpWindow() {
+        Alert helpAlert = new Alert(Alert.AlertType.INFORMATION);
+        helpAlert.setTitle("Ajuda - Funcionalidades e Tutorial");
+        helpAlert.setHeaderText("Funcionalidades, Comandos e Tutorial");
+        helpAlert.setContentText("WIP");
+        helpAlert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+        helpAlert.showAndWait();
     }
 
     public void showExecutionSpeedDialog() {
@@ -654,6 +548,78 @@ public class MainApp extends Application {
             executionSpeedLabel.setText("Atraso de ciclo: " + delayInMs);
         });
     }
+
+    public void showMemorySizeDialog() {
+        TextInputDialog dialog = new TextInputDialog(controller.getMemorySize() + " bytes");
+        dialog.setTitle("Alterar Tamanho da Memória");
+        dialog.setHeaderText("Defina o tamanho da memória");
+        dialog.setContentText("Digite um número inteiro positivo:");
+        dialog.showAndWait().ifPresent(input -> {
+            try {
+                int newSize = Integer.parseInt(input);
+                if (newSize <= 0) {
+                    showAlert(Alert.AlertType.WARNING,
+                            "Valor Inválido",
+                            "Tamanho da Memória",
+                            "O valor deve ser maior que zero!");
+                    return;
+                }
+                controller.handleChangeMemorySizeAction(newSize);
+                memorySizeLabel.setText("Memória: " + newSize + " bytes");
+                appendOutput("Tamanho da memória alterado para: " + newSize + " bytes.");
+            } catch (NumberFormatException ex) {
+                showAlert(Alert.AlertType.ERROR,
+                        "Erro",
+                        "Valor Inválido",
+                        "Por favor, insira um número inteiro positivo.");
+            }
+        });
+    }
+
+    private void showWelcomeMessage() {
+        String welcomeMessage = """
+        ╔══════════════════════════════════════╗
+        ║      Simulador SIC/XE                ║
+        ║      © 2025 SIC/XE Rock Lee vs Gaara ║
+        ╚══════════════════════════════════════╝
+
+        -> Edite seu código assembly
+        -> Use os controles de execução
+        -> Configure via menus
+        -> Monitore registradores/memória
+
+        Dica: Comece carregando um exemplo!
+        """;
+        // Exibe cada linha na área de código expandido (ou na saída de status)
+        Arrays.stream(welcomeMessage.split("\n"))
+                .filter(line -> !line.trim().isEmpty())
+                .forEach(this::appendOutput);
+    }
+
+    public void showNoFilesMessage() {
+        // Exibe uma mensagem de alerta se não houver arquivos montados
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Aviso");
+        alert.setHeaderText("Nenhum arquivo montado");
+        alert.setContentText("Por favor, monte um programa primeiro.");
+        alert.showAndWait();  // Exibe o alerta e aguarda o fechamento
+    }
+
+    ///  Métodos de controle de componentes
+
+    public void appendOutput(String message) {
+        Platform.runLater(() -> outputArea.appendText("> " + message + "\n"));
+    }
+
+    public void disableControls() {
+        simulationToolbar.disableExecutionButtons();
+    }
+
+    public void enableControls() {
+        simulationToolbar.enableExecutionButtons();
+    }
+
+    ///  MAIN
 
     public static void main(String[] args) {
         launch(args);

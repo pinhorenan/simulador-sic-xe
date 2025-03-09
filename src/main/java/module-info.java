@@ -15,4 +15,11 @@ module sicxesimulator {
     // (Se o teste ou outra parte do código no mesmo módulo precisa enxergar "machine",
     //  e/ou se você quer que seja público para quem usar seu módulo.)
     exports sicxesimulator.machine;
+    exports sicxesimulator.linker;
+    exports sicxesimulator.loader;
+    exports sicxesimulator.macroprocessor;
+    exports sicxesimulator.assembler;
+    exports sicxesimulator.utils;
+    exports sicxesimulator.simulator.model;
+    exports sicxesimulator.simulator.controller;
 }

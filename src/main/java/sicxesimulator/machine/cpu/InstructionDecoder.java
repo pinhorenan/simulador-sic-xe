@@ -42,7 +42,7 @@ public class InstructionDecoder {
             effectiveAddress = calculateEffectiveAddress(operands[0], operands[1], operands[2], operands[3], operands[4]);
         }
 
-        return new Instruction(opcode, operands, format, indexed, false, effectiveAddress);
+        return new Instruction(opcode, operands, format, indexed,  effectiveAddress);
     }
 
     /**

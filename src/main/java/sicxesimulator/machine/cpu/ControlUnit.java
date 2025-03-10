@@ -49,11 +49,11 @@ public class ControlUnit {
 
         // Log dos dados decodificados
         logger.info(String.format("Instrução decodificada: Formato %d, Opcode %s, EffectiveAddress %06X, Operandos %s, Indexed: %s",
-                currentInstruction.getFormat(),
-                Integer.toHexString(currentInstruction.getOpcode()),
-                currentInstruction.getEffectiveAddress(),
-                java.util.Arrays.toString(currentInstruction.getOperands()),
-                currentInstruction.isIndexed()));
+                currentInstruction.format(),
+                Integer.toHexString(currentInstruction.opcode()),
+                currentInstruction.effectiveAddress(),
+                java.util.Arrays.toString(currentInstruction.operands()),
+                currentInstruction.indexed()));
 
         // Incrementa o PC (antes da execução, para manter o PC para cálculos PC-relativos)
         incrementPC(currentInstruction.getSizeInBytes());
@@ -72,11 +72,11 @@ public class ControlUnit {
      * Inclui um switch-case para instruções de formato 2 e 3.
      */
     private String executeInstruction() {
-        int format = currentInstruction.getFormat();
-        int opcode = currentInstruction.getOpcode();
-        int[] operands = currentInstruction.getOperands();
-        boolean indexed = currentInstruction.isIndexed();
-        int effectiveAddress = currentInstruction.getEffectiveAddress();
+        int format = currentInstruction.format();
+        int opcode = currentInstruction.opcode();
+        int[] operands = currentInstruction.operands();
+        boolean indexed = currentInstruction.indexed();
+        int effectiveAddress = currentInstruction.effectiveAddress();
         String log;
 
         // Log antes da execução
@@ -209,7 +209,7 @@ public class ControlUnit {
                 }
                 break;
             default:
-                throw new IllegalStateException("Formato de instrução não implementado: " + currentInstruction.getFormat());
+                throw new IllegalStateException("Formato de instrução não implementado: " + currentInstruction.format());
         }
         return log;
     }

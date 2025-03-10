@@ -422,7 +422,7 @@ public class ExecutionUnit {
             logger.info(log);
             return log;
         } else { // LDX
-            int effectiveAddress = instruction.getEffectiveAddress();
+            int effectiveAddress = instruction.effectiveAddress();
             byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
             int value = Convert.bytesToInt(wordBytes);
             registers.getRegister("X").setValue(value);

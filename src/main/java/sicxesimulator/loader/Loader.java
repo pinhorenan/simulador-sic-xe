@@ -1,10 +1,11 @@
 package sicxesimulator.loader;
 
-import sicxesimulator.assembler.models.ObjectFile;
+import sicxesimulator.models.ObjectFile;
 import sicxesimulator.machine.Machine;
-import sicxesimulator.machine.memory.Memory;
+import sicxesimulator.machine.Memory;
 import java.util.logging.Logger;
 
+@SuppressWarnings("ClassCanBeRecord")
 public class Loader {
     private static final Logger logger = Logger.getLogger(Loader.class.getName());
     private final Machine machine;
@@ -18,21 +19,20 @@ public class Loader {
 
     public void load(ObjectFile objectFile) {
         Memory memory = machine.getMemory();
-        int startByteAddress = objectFile.getStartAddress();
-
-        // Valida o endereço de início
-        validateStartAddress(startByteAddress);
-        int startWordAddress = startByteAddress / 3; // Conversão para índice de palavra
+        // Agora, startAddress já está em termos de palavras
+        int startWordAddress = objectFile.getStartAddress();
 
         byte[] objectCode = objectFile.getObjectCode();
         validateObjectCode(objectCode);
-        validateMemoryBounds(memory, startWordAddress, objectCode.length);
+        validateMemoryBounds(memory, startWordAddress, objectCode.length / 3);
 
         loadProgramIntoMemory(memory, startWordAddress, objectCode);
-        initializeProgramCounter(startByteAddress); // Usa o endereço em bytes sem multiplicar
+        // Inicializa o PC usando o endereço em palavras, sem conversão
+        machine.getControlUnit().setIntValuePC(startWordAddress);
 
-        logSuccess(startByteAddress, objectCode);
+        logSuccess(startWordAddress, objectCode);
     }
+
 
     private void validateObjectCode(byte[] objectCode) {
         if (objectCode.length % 3 != 0) {
@@ -40,15 +40,8 @@ public class Loader {
         }
     }
 
-    private void validateStartAddress(int startByteAddress) {
-        if (startByteAddress % 3 != 0) {
-            throw new IllegalArgumentException("Endereço inicial deve ser múltiplo de 3.");
-        }
-    }
-
-    private void validateMemoryBounds(Memory memory, int startWordAddress, int codeLength) {
-        int requiredWords = codeLength / 3;
-        if (startWordAddress < 0 || (startWordAddress + requiredWords) > memory.getAddressRange()) {
+    private void validateMemoryBounds(Memory memory, int startWordAddress, int wordCount) {
+        if (startWordAddress < 0 || (startWordAddress + wordCount) > memory.getAddressRange()) {
             throw new IllegalArgumentException("Programa excede os limites da memória.");
         }
     }
@@ -61,15 +54,10 @@ public class Loader {
         }
     }
 
-    private void initializeProgramCounter(int startAddress) {
-        // Corrigido: usa o startAddress diretamente, pois já está em bytes.
-        machine.getControlUnit().setIntValuePC(startAddress);
-    }
-
-    private void logSuccess(int startByteAddress, byte[] objectCode) {
+    private void logSuccess(int startWordAddress, byte[] objectCode) {
         logger.info(() -> String.format(
-                "Programa carregado:\nEndereço inicial (byte): 0x%06X\nTamanho: %d bytes",
-                startByteAddress,
+                "Programa carregado:\nEndereço inicial (palavra): 0x%04X\nTamanho: %d bytes",
+                startWordAddress,
                 objectCode.length
         ));
     }

@@ -1,6 +1,7 @@
 package sicxesimulator.machine.cpu;
 
-import sicxesimulator.machine.memory.Memory;
+import sicxesimulator.machine.Memory;
+import sicxesimulator.models.Instruction;
 import sicxesimulator.utils.Convert;
 
 import java.util.logging.Logger;

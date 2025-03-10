@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import sicxesimulator.machine.cpu.ExecutionUnit;
 import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.machine.cpu.RegisterSet;
-import sicxesimulator.machine.memory.Memory;
 import sicxesimulator.utils.Convert;
 
 public class ExecutionUnitTest {

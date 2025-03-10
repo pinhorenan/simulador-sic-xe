@@ -1,6 +1,8 @@
 package sicxesimulator.machine.cpu;
 
-import sicxesimulator.machine.memory.Memory;
+import sicxesimulator.machine.Memory;
+import sicxesimulator.models.Instruction;
+
 import java.util.logging.Logger;
 
 public class ControlUnit {

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sicxesimulator.machine.cpu.ControlUnit;
 import sicxesimulator.machine.cpu.RegisterSet;
-import sicxesimulator.machine.memory.Memory;
 
 public class InstructionDecoderTest {
 

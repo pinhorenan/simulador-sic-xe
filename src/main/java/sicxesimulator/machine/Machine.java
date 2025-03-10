@@ -1,7 +1,6 @@
 package sicxesimulator.machine;
 
 import sicxesimulator.machine.cpu.ControlUnit;
-import sicxesimulator.machine.memory.Memory;
 
 /**
  * Representa a máquina SIC/XE, composta por uma unidade de controle e uma memória.
@@ -48,13 +47,13 @@ public class Machine {
 
     /**
      * Retorna a memória da máquina.
-     * @return
+     * @return A memória.
      */
     public Memory getMemory() { return this.memory; }
 
     /**
      * Retorna o tamanho da memória da máquina (em bytes).
-     * @return
+     * @return O tamanho da memória.
      */
     public int getMemorySize() {
         return memory.getSize();
@@ -62,7 +61,8 @@ public class Machine {
 
     /**
      * Retorna a unidade de controle da máquina.
-     * @return
+     * @return  A unidade de controle.
      */
+    @SuppressWarnings("ClassEscapesDefinedScope")
     public ControlUnit getControlUnit() { return controlUnit; }
 }

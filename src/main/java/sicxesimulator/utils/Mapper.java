@@ -1,9 +1,11 @@
 package sicxesimulator.utils;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class Mapper {
-
     private static final Map<String, Integer> OPCODES = Map.ofEntries(
             Map.entry("ADD", 0x18),
             Map.entry("ADDR", 0x90),
@@ -44,10 +46,16 @@ public abstract class Mapper {
             Map.entry("TIX", 0x2C),
             Map.entry("TIXR", 0xB8)
     );
+    private static final Set<String> VALID_MNEMONICS = new HashSet<>(Arrays.asList(
+            "START", "END", "BYTE", "WORD", "RESB", "RESW", "BASE", "NOBASE", "EQU", "LTORG",
+            "ADD", "ADDR", "AND", "CLEAR", "COMP", "COMPR", "DIV", "DIVR",
+            "J", "JEQ", "JGT", "JLT", "JSUB", "LDA", "LDB", "LDCH", "LDL", "LDS",
+            "LDT", "LDX", "MUL", "MULR", "OR", "RMO", "RSUB", "SHIFTL", "SHIFTR",
+            "STA", "STB", "STCH", "STL", "STS", "STT", "STX", "SUB", "SUBR", "TIX",
+            "TIXR"
+    ));
 
-    public static boolean isValidMnemonic(String mnemonic) {
-        return OPCODES.containsKey(mnemonic.toUpperCase());
-    }
+    // Getters
 
     public static int getOpcode(String mnemonic) {
         if (!isValidMnemonic(mnemonic))
@@ -55,8 +63,20 @@ public abstract class Mapper {
         return OPCODES.get(mnemonic.toUpperCase());
     }
 
-    public static int mapSimulationSpeedToCycleDelay(int speed) {
-        return switch (speed) {
+    // Checkers
+
+    public static boolean isValidMnemonic(String mnemonic) {
+        return OPCODES.containsKey(mnemonic.toUpperCase());
+    }
+
+    public static boolean isMnemonic(String token) {
+        return VALID_MNEMONICS.contains(token.toUpperCase());
+    }
+
+    // Mappers
+
+    public static int mapSimulationSpeedToCycleDelay(int simulationSpeeed) {
+        return switch (simulationSpeeed) {
             case 1 -> 1000;
             case 2 -> 500;
             case 3 -> 250;

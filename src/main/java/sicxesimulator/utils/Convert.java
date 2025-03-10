@@ -1,5 +1,11 @@
 package sicxesimulator.utils;
 
+import sicxesimulator.models.ObjectFile;
+import sicxesimulator.simulator.view.components.tables.ObjectFileTableItem;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public final class Convert {
     // Impede a instanciação
     private Convert() { }
@@ -41,7 +47,7 @@ public final class Convert {
             int high = Character.digit(hex.charAt(i), 16);
             int low = Character.digit(hex.charAt(i + 1), 16);
             if (high == -1 || low == -1) {
-                throw new IllegalArgumentException("Caracter hexadecimal inválido encontrado.");
+                throw new IllegalArgumentException("Caractere hexadecimal inválido encontrado.");
             }
             data[i / 2] = (byte) ((high << 4) + low);
         }
@@ -62,7 +68,7 @@ public final class Convert {
         int value = ((wordBytes[0] & 0xFF) << 16)
                 | ((wordBytes[1] & 0xFF) << 8)
                 | (wordBytes[2] & 0xFF);
-        // Extende o sinal para 32 bits
+        // Estende o sinal para 32 bits
         return (value << 8) >> 8;
     }
 
@@ -101,15 +107,13 @@ public final class Convert {
         return String.format("%48s", Long.toBinaryString(masked)).replace(' ', '0');
     }
 
-
-    /**
-     * Verifica se um valor cabe em 24 bits com sinal.
-     * Intervalo: de -2^23 a 2^23 - 1.
-     *
-     * @param value O valor a verificar.
-     * @return true se o valor estiver dentro do intervalo de 24 bits com sinal.
-     */
-    public static boolean fitsIn24Bits(int value) {
-        return value >= -(1 << 23) && value < (1 << 23);
+    public static List<ObjectFileTableItem> objectFileToObjectFileTableItem(List<ObjectFile> savedFiles) {
+        List<ObjectFileTableItem> tableItems = new ArrayList<>();
+        for (ObjectFile objectFile : savedFiles) {
+            // Converte cada ObjectFile para ObjectFileTableItem
+            tableItems.add(new ObjectFileTableItem(objectFile));
+        }
+        return tableItems;
     }
+
 }

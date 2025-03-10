@@ -1,6 +1,7 @@
-package sicxesimulator.simulator.view.components;
+package sicxesimulator.simulator.view.components.tables;
 
 import javafx.scene.control.TableColumn;
+import sicxesimulator.simulator.view.records.MemoryEntry;
 
 public class MemoryTableView extends BaseTableView<MemoryEntry> {
 
@@ -13,6 +14,7 @@ public class MemoryTableView extends BaseTableView<MemoryEntry> {
         TableColumn<MemoryEntry, String> addressCol = createColumn(columnTitles[0], "address");
         TableColumn<MemoryEntry, String> valueCol = createColumn(columnTitles[1], "value");
 
+        //noinspection unchecked
         this.getColumns().addAll(addressCol, valueCol);
     }
 }

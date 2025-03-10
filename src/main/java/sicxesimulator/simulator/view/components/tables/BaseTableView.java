@@ -1,4 +1,4 @@
-package sicxesimulator.simulator.view.components;
+package sicxesimulator.simulator.view.components.tables;
 
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;

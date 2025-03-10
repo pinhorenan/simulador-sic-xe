@@ -1,6 +1,7 @@
-package sicxesimulator.simulator.view.components;
+package sicxesimulator.simulator.view.components.tables;
 
 import javafx.scene.control.TableColumn;
+import sicxesimulator.simulator.view.records.RegisterEntry;
 
 public class RegisterTableView extends BaseTableView<RegisterEntry> {
 
@@ -13,6 +14,7 @@ public class RegisterTableView extends BaseTableView<RegisterEntry> {
         TableColumn<RegisterEntry, String> nameCol = createColumn(columnTitles[0], "name");
         TableColumn<RegisterEntry, String> valueCol = createColumn(columnTitles[1], "value");
 
+        //noinspection unchecked
         this.getColumns().addAll(nameCol, valueCol);
     }
 }

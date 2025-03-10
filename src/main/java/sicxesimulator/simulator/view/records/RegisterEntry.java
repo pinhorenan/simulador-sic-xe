@@ -1,3 +1,3 @@
-package sicxesimulator.simulator.view.components;
+package sicxesimulator.simulator.view.records;
 
 public record RegisterEntry(String name, String value) {}

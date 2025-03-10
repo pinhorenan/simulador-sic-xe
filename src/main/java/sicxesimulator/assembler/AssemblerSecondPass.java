@@ -1,17 +1,16 @@
-package sicxesimulator.assembler.processing;
+package sicxesimulator.assembler;
 
-import sicxesimulator.assembler.models.AssemblyLine;
-import sicxesimulator.assembler.models.IntermediateRepresentation;
-import sicxesimulator.assembler.models.ObjectFile;
-import sicxesimulator.assembler.models.SymbolTable;
+import sicxesimulator.models.AssemblyLine;
+import sicxesimulator.models.IntermediateRepresentation;
+import sicxesimulator.models.ObjectFile;
+import sicxesimulator.models.SymbolTable;
 import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.Mapper;
 
-import java.util.logging.Logger;
+import sicxesimulator.logger.SimulatorLogger;
 
-public class SecondPassProcessor {
-    private static final Logger logger = Logger.getLogger(SecondPassProcessor.class.getName());
 
+public class AssemblerSecondPass {
     /**
      * Gera o código objeto a partir da IntermediateRepresentation.
      * Cada instrução é assumida em formato 3 (3 bytes),
@@ -20,34 +19,40 @@ public class SecondPassProcessor {
      * @param midObject Representação intermediária gerada pela primeira passagem.
      * @return ObjectFile contendo o endereço inicial e o código objeto.
      */
-    public ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
+    protected ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
         // Endereço inicial em palavras
         int startAddress = midObject.getStartAddress();
 
         // Calcula o tamanho total em bytes, somando 3 bytes por instrução (formato 3)
-        int programBytes = midObject.getAssemblyLines()
+        int programSize = midObject.getAssemblyLines()
                 .stream()
                 .mapToInt(this::getInstructionSize)
                 .sum();
 
-        byte[] objectCode = new byte[programBytes];
+        byte[] objectCode = new byte[programSize];
 
         for (AssemblyLine line : midObject.getAssemblyLines()) {
-            // Converte line.getAddress() (palavras) para bytes e subtrai startAddress (também em palavras):
+            // Converte line.getAddress() (palavras) para bytes e subtrai startAddress (também em palavras)
             int offset = (line.getAddress() - startAddress) * 3;
 
             // Verifica se offset é válido no array
             if (offset < 0 || offset >= objectCode.length) {
-                logger.severe("Offset inválido: " + offset + " para array de tamanho " + objectCode.length);
+                SimulatorLogger.logError("Offset inválido: " + offset + "para array de tamanho " + objectCode.length, null);
                 continue;
             }
 
-            // Gera o código objeto para a instrução
-            byte[] code = generateObjectCode(line, midObject.getSymbolTable());
+            // Gera o código objeto para a instrução, tratando exceções
+            byte[] code;
+            try {
+                code = generateObjectCode(line, midObject.getSymbolTable());
+            } catch (Exception e) {
+                SimulatorLogger.logError("Erro gerando código objeto da linha: " + line, e);
+                continue;
+            }
 
             // Verifica se cabe no array
             if (offset + code.length > objectCode.length) {
-                logger.severe("Código excede tamanho do objectCode. Offset: " + offset);
+                SimulatorLogger.logError("Código excede tamanho do objectCode. Offset: " + offset, null);
                 continue;
             }
 
@@ -56,8 +61,9 @@ public class SecondPassProcessor {
         }
 
         SymbolTable symbolTable = midObject.getSymbolTable();
-
         String programName = midObject.getProgramName();
+
+        SimulatorLogger.logMachineCode("Código objeto gerado para o programa: " + programName);
 
         // Retorna o objeto com o startAddress (em palavras) e o array de bytes
         return new ObjectFile(startAddress, objectCode, symbolTable, programName);
@@ -68,7 +74,6 @@ public class SecondPassProcessor {
      */
     private int getInstructionSize(AssemblyLine line) {
         // DA PRA IMPLEMENTA O DE 4 DPS
-
         return 3;
     }
 
@@ -120,15 +125,10 @@ public class SecondPassProcessor {
         // Byte 0: opcode com n=1 e i=1 (ou seja, adiciona 0x03)
         code[0] = (byte) (opcode | 0x03);
 
-        // Byte 1: construir os flags e os 4 bits altos do deslocamento:
-        // - Bit 7: x (indexado), se aplicável.
-        // - Bit 6: b (base-relativo); aqui, para PC-relativo simples, deixamos 0.
-        // - Bit 5: p (PC-relativo) -> deve ser 1.
-        // - Bit 4: e (formato extendido) -> 0, pois estamos tratando somente de formato 3.
-        // - Bits 3-0: os 4 bits altos do deslocamento.
+        // Byte 1: constrói os flags e os 4 bits altos do deslocamento:
         int secondByte = 0;
         if (indexed) {
-            secondByte |= 0x80; // seta x
+            secondByte |= 0x80; // seta o bit x para indexado
         }
         secondByte |= 0x20; // seta o bit p para PC-relativo
         secondByte |= ((disp >> 8) & 0x0F); // insere os 4 bits altos do deslocamento
@@ -140,7 +140,6 @@ public class SecondPassProcessor {
         return code;
     }
 
-
     /**
      * Resolve o endereço do operando, retornando valor em bytes.
      * Se for símbolo, multiplica por 3 para converter de palavras para bytes.
@@ -148,25 +147,24 @@ public class SecondPassProcessor {
     private int resolveOperandAddress(String operand, SymbolTable symbolTable) {
         if (operand == null) return 0;
 
-        // Imediato (#45)
+        // Imediato: ex. "#45"
         if (operand.startsWith("#")) {
             return parseNumber(operand.substring(1));
         }
 
         // Se for símbolo
         if (symbolTable.contains(operand)) {
-            // line.getAddress() e symbolTable.getAddress() armazenam endereços em palavras
-            // Precisamos de bytes => multiply por 3
+            // Os endereços no symbol table estão em palavras, converte para bytes
             return symbolTable.getAddress(operand) * 3;
         }
 
-        // Senão, parsea como decimal ou hex
+        // Senão, tenta parsear como número decimal ou hexadecimal
         return parseNumber(operand);
     }
 
     /**
-     * Calcula o deslocamento PC-relativo para formato 3:
-     * PC da próxima instrução = (line.getAddress() * 3) + 3 bytes
+     * Calcula o deslocamento PC-relativo para o formato 3:
+     * PC da próxima instrução = (line.getAddress() * 3) + 3 bytes.
      */
     private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
         int currentInstructionByteAddr = line.getAddress() * 3;
@@ -178,9 +176,8 @@ public class SecondPassProcessor {
         return disp & 0xFFF;
     }
 
-
     /**
-     * Converte diretiva BYTE no caso X'...' ou C'...'
+     * Converte diretiva BYTE no formato X'...' ou C'...'
      */
     private byte[] parseByteOperand(String operand) {
         if (operand == null) {
@@ -198,27 +195,25 @@ public class SecondPassProcessor {
     }
 
     /**
-     * Converte string numérica (decimal ou hex) em int.
+     * Converte uma string numérica (decimal ou hexadecimal) em int.
      */
     private int parseNumber(String operand) {
         if (operand == null) {
             throw new IllegalArgumentException("Operando ausente.");
         }
-        // Decimal
-        if (operand.matches("\\d+")) {
+        if (operand.matches("\\d+")) { // Decimal
             return Integer.parseInt(operand);
         }
-        // Hex
-        if (operand.matches("[0-9A-Fa-f]+")) {
+        if (operand.matches("[0-9A-Fa-f]+")) { // Hexadecimal
             return Integer.parseInt(operand, 16);
         }
         throw new IllegalArgumentException("Formato inválido de número: " + operand);
     }
 
     /**
-     * Reinicializa estado, se houver.
+     * Reinicializa o estado, se necessário.
      */
     public void reset() {
-        logger.info("Resetando SecondPassProcessor.");
+        SimulatorLogger.logMachineCode("Resetando SecondPassProcessor.");
     }
 }

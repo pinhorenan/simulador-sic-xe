@@ -1,30 +1,23 @@
-package sicxesimulator.assembler.processing;
+package sicxesimulator.assembler;
 
-import sicxesimulator.assembler.models.AssemblyLine;
-import sicxesimulator.assembler.models.IntermediateRepresentation;
+import sicxesimulator.models.AssemblyLine;
+import sicxesimulator.models.IntermediateRepresentation;
+import sicxesimulator.logger.SimulatorLogger;
+import sicxesimulator.utils.Mapper;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.logging.Logger;
 
-public class FirstPassProcessor {
-    private static final Logger logger = Logger.getLogger(FirstPassProcessor.class.getName());
-
-    private static final Set<String> VALID_MNEMONICS = new HashSet<>(Arrays.asList(
-            "START", "END", "BYTE", "WORD", "RESB", "RESW", "BASE", "NOBASE", "EQU", "LTORG",
-            "ADD", "ADDR", "AND", "CLEAR", "COMP", "COMPR", "DIV", "DIVR",
-            "J", "JEQ", "JGT", "JLT", "JSUB", "LDA", "LDB", "LDCH", "LDL", "LDS",
-            "LDT", "LDX", "MUL", "MULR", "OR", "RMO", "RSUB", "SHIFTL", "SHIFTR",
-            "STA", "STB", "STCH", "STL", "STS", "STT", "STX", "SUB", "SUBR", "TIX",
-            "TIXR"
-    ));
-
+class AssemblerFirstPass {
     private int locationCounter = 0;
     private int startAddress = 0;
 
-    public IntermediateRepresentation process(List<String> sourceLines) {
+    /**
+     * Processa as linhas de código-fonte e gera uma IntermediateRepresentation.
+     *
+     * @param sourceLines Lista de linhas de código assembly.
+     * @return Representação intermediária contendo linhas de assembly, símbolos e endereços.
+     */
+    protected IntermediateRepresentation process(List<String> sourceLines) {
         boolean endFound = false;
         IntermediateRepresentation midCode = new IntermediateRepresentation();
         int lineNumber = 0;
@@ -43,12 +36,12 @@ public class FirstPassProcessor {
             String operand = null;
 
             if (parts.length > 0) {
-                if (isMnemonic(parts[0])) {
+                if (Mapper.isMnemonic(parts[0])) {
                     mnemonic = parts[0];
                     if (parts.length > 1) {
                         operand = parts[1];
                     }
-                } else if (parts.length > 1 && isMnemonic(parts[1])) {
+                } else if (parts.length > 1 && Mapper.isMnemonic(parts[1])) {
                     label = parts[0];
                     mnemonic = parts[1];
                     if (parts.length > 2) {
@@ -58,7 +51,9 @@ public class FirstPassProcessor {
             }
 
             if (mnemonic == null) {
-                throw new IllegalArgumentException("Linha inválida na linha " + lineNumber + ": " + line);
+                String errorMsg = "Linha inválida na linha " + lineNumber + ": " + line;
+                SimulatorLogger.logError(errorMsg, null);
+                throw new IllegalArgumentException(errorMsg);
             }
 
             if (mnemonic.equalsIgnoreCase("START")) {
@@ -66,9 +61,11 @@ public class FirstPassProcessor {
                     startAddress = parseAddress(operand);
                     locationCounter = startAddress;
                     midCode.setStartAddress(startAddress);
-                    logger.info("Start Address definido como: " + Integer.toHexString(startAddress));
+                    SimulatorLogger.logAssemblyCode("Iniciando programa com START na linha " + lineNumber + ": endereço " + startAddress);
                 } catch (Exception e) {
-                    throw new IllegalArgumentException("Erro ao processar START na linha " + lineNumber + ": " + operand);
+                    String errorMsg = "Erro ao processar START na linha " + lineNumber + ": " + operand;
+                    SimulatorLogger.logError(errorMsg, e);
+                    throw new IllegalArgumentException(errorMsg, e);
                 }
                 if (label != null) {
                     midCode.addSymbol(label, locationCounter);
@@ -80,13 +77,12 @@ public class FirstPassProcessor {
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
                 midCode.setFinalAddress(locationCounter);
-                logger.info("Diretiva END encontrada na linha " + lineNumber);
+                SimulatorLogger.logAssemblyCode("Diretiva END encontrada na linha " + lineNumber + ". Endereço final: " + locationCounter);
                 continue;
             }
 
             if (label != null) {
                 midCode.addSymbol(label, locationCounter);
-                logger.info("Registrando símbolo '" + label + "' no endereço: " + Integer.toHexString(locationCounter));
             }
 
             int size = getInstructionSize(mnemonic, operand);
@@ -96,7 +92,9 @@ public class FirstPassProcessor {
         }
 
         if (!endFound) {
-            throw new IllegalArgumentException("Diretiva END não encontrada.");
+            String errorMsg = "Diretiva END não encontrada.";
+            SimulatorLogger.logError(errorMsg, null);
+            throw new IllegalArgumentException(errorMsg);
         }
 
         return midCode;
@@ -104,18 +102,18 @@ public class FirstPassProcessor {
 
     private int parseAddress(String operand) {
         if (operand == null) {
-            throw new IllegalArgumentException("Operando ausente para endereço.");
+            String errorMsg = "Operando ausente para endereço.";
+            SimulatorLogger.logError(errorMsg, null);
+            throw new IllegalArgumentException(errorMsg);
         }
         if (operand.matches("\\d+")) {
             return Integer.parseInt(operand);
         } else if (operand.matches("[0-9A-Fa-f]+")) {
             return Integer.parseInt(operand, 16);
         }
-        throw new IllegalArgumentException("Formato inválido de endereço: " + operand);
-    }
-
-    private boolean isMnemonic(String token) {
-        return VALID_MNEMONICS.contains(token.toUpperCase());
+        String errorMsg = "Formato inválido de endereço: " + operand;
+        SimulatorLogger.logError(errorMsg, null);
+        throw new IllegalArgumentException(errorMsg);
     }
 
     private int getInstructionSize(String mnemonic, String operand) {
@@ -124,12 +122,18 @@ public class FirstPassProcessor {
         }
         if (mnemonic.equalsIgnoreCase("RESW") || mnemonic.equalsIgnoreCase("RESB")) {
             if (operand == null) {
-                throw new IllegalArgumentException("Operando ausente para a diretiva " + mnemonic);
+                String errorMsg = "Operando ausente para a diretiva " + mnemonic;
+                SimulatorLogger.logError(errorMsg, null);
+                throw new IllegalArgumentException(errorMsg);
             }
             return mnemonic.equalsIgnoreCase("RESW") ? Integer.parseInt(operand) : (Integer.parseInt(operand) + 2) / 3;
         }
         if (mnemonic.equalsIgnoreCase("BYTE")) {
-            if (operand == null) throw new IllegalArgumentException("Operando ausente para BYTE.");
+            if (operand == null) {
+                String errorMsg = "Operando ausente para BYTE.";
+                SimulatorLogger.logError(errorMsg, null);
+                throw new IllegalArgumentException(errorMsg);
+            }
             return operand.startsWith("C'") ? (operand.length() - 3 + 2) / 3 : operand.startsWith("X'") ? (operand.length() - 3 + 1) / 2 : 1;
         }
         return 1;
@@ -138,5 +142,6 @@ public class FirstPassProcessor {
     public void reset() {
         locationCounter = 0;
         startAddress = 0;
+        SimulatorLogger.logAssemblyCode("Resetando FirstPassProcessor.");
     }
 }

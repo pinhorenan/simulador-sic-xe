@@ -1,20 +1,17 @@
-package sicxesimulator.machine.memory;
+package sicxesimulator.machine;
 
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 /**
  * Representa a memória do computador, que é um array de bytes.
  */
 public class Memory {
-	private static final Logger logger = Logger.getLogger(Memory.class.getName());
 	private final byte[] memory;  // Memória em bytes
 	private final int memorySize; // Tamanho da memória
 
 	public Memory(int size) {
 		this.memorySize = size;
 		this.memory = new byte[size];
-		logger.info("Memória inicializada com tamanho de " + size + " bytes.");
 	}
 
 	/**
@@ -28,8 +25,6 @@ public class Memory {
 		}
 		byte[] word = new byte[3];
 		System.arraycopy(memory, wordIndex * 3, word, 0, 3);
-		logger.fine(String.format("readWord: Lida palavra no índice %d -> %02X %02X %02X",
-				wordIndex, word[0], word[1], word[2]));
 		return word;
 	}
 
@@ -42,9 +37,8 @@ public class Memory {
 		if (byteAddr >= memorySize) {
 			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memória.");
 		}
-		int value = memory[byteAddr] & 0xFF;  // Retorna o byte como valor positivo (0-255)
-		logger.fine(String.format("readByte: Lido byte no endereço %d -> %02X", byteAddr, value));
-		return value;
+        // Retorna o byte como valor positivo (0-255)
+        return memory[byteAddr] & 0xFF;
 	}
 
 	/**
@@ -60,8 +54,6 @@ public class Memory {
 			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memória.");
 		}
 		System.arraycopy(word, 0, memory, wordIndex * 3, 3);
-		logger.fine(String.format("writeWord: Escrita palavra no índice %d -> %02X %02X %02X",
-				wordIndex, word[0], word[1], word[2]));
 	}
 
 	/**
@@ -74,7 +66,6 @@ public class Memory {
 			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memória.");
 		}
 		memory[byteAddr] = (byte) (value & 0xFF);  // Armazena apenas o byte
-		logger.fine(String.format("writeByte: Escrito byte no endereço %d -> %02X", byteAddr, value & 0xFF));
 	}
 
 	/**
@@ -106,7 +97,6 @@ public class Memory {
 	 */
 	public void clearMemory() {
 		Arrays.fill(memory, (byte) 0);
-		logger.info("Memória limpa.");
 	}
 
 	@Override

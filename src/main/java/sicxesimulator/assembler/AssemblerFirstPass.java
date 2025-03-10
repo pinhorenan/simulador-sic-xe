@@ -76,7 +76,6 @@ class AssemblerFirstPass {
 
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
-                midCode.setFinalAddress(locationCounter);
                 SimulatorLogger.logAssemblyCode("Diretiva END encontrada na linha " + lineNumber + ". Endereço final: " + locationCounter);
                 continue;
             }
@@ -86,7 +85,7 @@ class AssemblerFirstPass {
             }
 
             int size = getInstructionSize(mnemonic, operand);
-            AssemblyLine asmLine = new AssemblyLine(label, mnemonic, operand, locationCounter, lineNumber);
+            AssemblyLine asmLine = new AssemblyLine(label, mnemonic, operand, locationCounter);
             midCode.addAssemblyLine(asmLine);
             locationCounter += size;
         }

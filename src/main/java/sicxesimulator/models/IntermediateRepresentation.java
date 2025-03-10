@@ -1,4 +1,4 @@
-package sicxesimulator.assembler.models;
+package sicxesimulator.models;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,6 @@ public class IntermediateRepresentation {
     private final List<AssemblyLine> assemblyLines;
     private String programName;
     private int startAddress;
-    private int finalAddress;
 
     // Construtor que permite definir o endereço de início
     public IntermediateRepresentation(int startAddress) {
@@ -36,15 +35,6 @@ public class IntermediateRepresentation {
 
     public void setStartAddress(int startAddress) {
         this.startAddress = startAddress;
-    }
-
-
-    public int getFinalAddress() {
-        return finalAddress;
-    }
-
-    public void setFinalAddress(int finalAddress) {
-        this.finalAddress = finalAddress;
     }
 
     public String getProgramName() {

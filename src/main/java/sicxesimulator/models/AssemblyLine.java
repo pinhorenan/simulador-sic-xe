@@ -1,24 +1,17 @@
-package sicxesimulator.assembler.models;
+package sicxesimulator.models;
 
 public class AssemblyLine {
-    private String label;
-    private String mnemonic;
-    private String operand;
-    private int address;
-    private int lineNumber;
+    private final String label;
+    private final String mnemonic;
+    private final String operand;
+    private final int address;
 
-    public AssemblyLine(String label, String mnemonic, String operand, int address, int lineNumber) {
+    public AssemblyLine(String label, String mnemonic, String operand, int address) {
         this.label = label;
         this.mnemonic = mnemonic;
         this.operand = operand;
         this.address = address;
-        this.lineNumber = lineNumber;
     }
-
-    public String getLabel() {
-        return label;
-    }
-
     public String getMnemonic() {
         return mnemonic;
     }
@@ -29,10 +22,6 @@ public class AssemblyLine {
 
     public int getAddress() {
         return address;
-    }
-
-    public int getLineNumber() {
-        return lineNumber;
     }
 
     @Override

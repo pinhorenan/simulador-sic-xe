@@ -1,6 +1,11 @@
-package sicxesimulator.assembler.models;
+package sicxesimulator.models;
 
-public class ObjectFile {
+import java.io.Serial;
+import java.io.Serializable;
+
+public class ObjectFile implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L; // Adiciona um serialVersionUID
     private final int startAddress; // Endereço de início em palavras (cada palavra = 3 bytes)
     private final byte[] objectCode; // Código objeto em bytes
     private final SymbolTable symbolTable;
@@ -38,19 +43,9 @@ public class ObjectFile {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Endereço inicial: ").append(String.format("%04X", startAddress)).append("\n");
-        sb.append("Tamanho do programa: ").append(getProgramLength()).append(" bytes\n");
-        sb.append("Object Code:\n");
-        int counter = 0;
-        for (byte b : objectCode) {
-            sb.append(String.format("%02X ", b));
-            counter++;
-            if (counter == 9) {
-                sb.append("\n");
-                counter = 0;
-            }
-        }
-        return sb.toString().trim();
+        String stringBuilder = "Nome do programa: " + fileName + "\n" +
+                "Endereço inicial: " + String.format("%04X", startAddress) + "\n" +
+                "Tamanho do programa: " + getProgramLength() + " bytes\n";
+        return stringBuilder.trim();
     }
 }

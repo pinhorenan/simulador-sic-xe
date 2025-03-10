@@ -1,10 +1,14 @@
-package sicxesimulator.assembler.models;
+package sicxesimulator.models;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SymbolTable {
-    private Map<String, Integer> symbols;
+public class SymbolTable implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;  // Adicione um serialVersionUID
+    private final Map<String, Integer> symbols;
 
     public SymbolTable() {
         symbols = new HashMap<>();

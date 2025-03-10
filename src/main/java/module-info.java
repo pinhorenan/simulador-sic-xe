@@ -3,6 +3,7 @@ module sicxesimulator {
     requires javafx.fxml;
     requires javafx.media;
     requires java.logging;
+    requires java.desktop;
 
     opens sicxesimulator.simulator.view to javafx.fxml, javafx.controls, javafx.media;
     opens sicxesimulator.simulator.view.components to javafx.fxml, javafx.controls, javafx.media;

@@ -4,36 +4,31 @@ import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
-import javafx.scene.control.ChoiceDialog;
-import javafx.scene.control.DialogPane;
 import javafx.stage.FileChooser;
 import sicxesimulator.logger.SimulatorLogger;
-import sicxesimulator.assembler.models.ObjectFile;
+import sicxesimulator.models.ObjectFile;
 import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.simulator.model.Model;
 import sicxesimulator.simulator.view.MainView;
-import sicxesimulator.simulator.view.components.MemoryEntry;
-import sicxesimulator.simulator.view.components.RegisterEntry;
-import sicxesimulator.simulator.view.components.SymbolEntry;
-import sicxesimulator.utils.Convert;
-import sicxesimulator.utils.Mapper;
-import sicxesimulator.utils.ValueFormatter;
+import sicxesimulator.simulator.view.components.tables.ObjectFileTableItem;
+import sicxesimulator.simulator.view.records.MemoryEntry;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
+import sicxesimulator.simulator.view.records.RegisterEntry;
+import sicxesimulator.simulator.view.records.SymbolEntry;
+import sicxesimulator.utils.*;
+
+import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Controller {
     private final Model model;
-    private final MainView mainView;
+    private final MainView view;
 
-
-    public Controller(Model model, MainView mainView) {
+    public Controller(Model model, MainView view) {
         this.model = model;
-        this.mainView = mainView;
-        this.model.addListener(mainView::initializeView);
+        this.view = view;
+        this.model.addListener(view::initializeView);
     }
 
     ///  ============== BOTÕES PRINCIPAIS =================== ///
@@ -41,69 +36,128 @@ public class Controller {
     ///  Grupo Superior. SimulatorControls
 
     public void handleAssembleAction() {
-        String sourceText = mainView.getInputField().getText();
+        String sourceText = view.getInputField().getText();
         List<String> sourceLines = Arrays.asList(sourceText.split("\\r?\\n"));
         try {
             // Processa as macros e obtém o código expandido
             List<String> expandedSource = model.expandMacros(sourceLines);
 
             // Limpa a área de saída e a área de macros
-            mainView.clearOutputArea();
-            mainView.clearMacroOutArea();
+            view.clearOutputArea();
+            view.clearMacroOutArea();
             handleUpdateExpandedCode();
 
             // Agora passa o código expandido para o Assembler
             model.assembleCode(expandedSource);
-            mainView.updateAllTables();
-            model.setCodeAssembled(true);
+            view.updateAllTables();
+
+            // Pega o código objeto gerado
+
+            ObjectFile objectFile = model.getMostRecentObjectFile();
+
+            // Salva o código objeto
+            saveObjectFile(objectFile);
 
             String formattedCode = model.getMostRecentObjectFile().toString();
-            mainView.appendOutput("Programa montado e carregado com sucesso!");
-            mainView.appendOutput(formattedCode);
+            view.appendOutput("Programa montado e carregado com sucesso!");
+            view.appendOutput(formattedCode);
 
             // Registra logs de montagem e código objeto
             SimulatorLogger.logAssemblyCode(sourceText);
             SimulatorLogger.logMachineCode(formattedCode);
         } catch (IllegalArgumentException | IOException e) {
-            mainView.showError("Erro na montagem: " + e.getMessage());
+            DialogUtil.showError("Erro na montagem: " + e.getMessage());
             SimulatorLogger.logError("Erro na montagem", e);
         }
     }
 
+    // Método de carregamento de ObjectFile sem parâmetros
     public void handleLoadObjectFileAction() {
-        List<ObjectFile> objectFiles = model.getObjectFilesList();
-        if (objectFiles.isEmpty()) {
-            mainView.showError("Nenhum código foi montado ainda.");
+        // Obtenha os itens selecionados via selection model
+        List<ObjectFileTableItem> selectedItems = view.getObjectFileTableView().getSelectionModel().getSelectedItems();
+
+        if (selectedItems.size() == 1) {
+            ObjectFile selectedFile = selectedItems.get(0).getObjectFile();
+            handleLoadObjectFileAction(selectedFile);
+        } else {
+            DialogUtil.showError("Selecione apenas um arquivo para carregar!");
+        }
+    }
+
+
+
+    // Sobrecarga com um parâmetro ObjectFile
+    public void handleLoadObjectFileAction(ObjectFile selectedFile) {
+        if (selectedFile == null) {
+            DialogUtil.showError("Nenhum código foi montado ainda.");
             return;
         }
-        ChoiceDialog<ObjectFile> dialog = new ChoiceDialog<>(objectFiles.getLast(), objectFiles);
-        dialog.setTitle("Carregar Arquivo Montado");
-        dialog.setHeaderText("Escolha um arquivo para carregar");
-        dialog.setContentText("Arquivos disponíveis:");
-
-        // Customiza o DialogPane com estilos CSS
-        DialogPane dialogPane = dialog.getDialogPane();
-        dialogPane.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-background-color: #f0f0f0;");
-
-        dialog.showAndWait().ifPresent(selected -> {
-            model.loadObjectFile(selected);
-            model.setCodeLoaded(true);
-            mainView.appendOutput("Arquivo montado carregado: " + selected.getFilename());
-            mainView.updateAllTables();
-            handleUpdateExpandedCode();
-        });
-
+        model.loadObjectFile(selectedFile);
+        model.setCodeLoaded(true);
+        view.appendOutput("Arquivo montado carregado: " + selectedFile.getFilename());
+        view.updateAllTables();
+        handleUpdateExpandedCode();
     }
 
     public void handleUpdateExpandedCode() {
         try {
-            List<String> sourceLines = Arrays.asList(mainView.getInputField().getText().split("\\r?\\n"));
+            List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
             List<String> expanded = model.expandMacros(sourceLines);
 
             // Atualiza o expandedArea com o conteúdo expandido
-            mainView.getExpandedArea().setText(String.join("\n", expanded));
+            view.getMacroArea().setText(String.join("\n", expanded));
         } catch (IOException ex) {
-            mainView.showError("Erro ao expandir macros: " + ex.getMessage());
+            DialogUtil.showError("Erro ao expandir macros: " + ex.getMessage());
+        }
+    }
+
+    public void handleLinkSelectedFilesAction() {
+        // Obtém os itens selecionados via selection model
+        List<ObjectFileTableItem> selectedItems = view.getObjectFileTableView().getSelectionModel().getSelectedItems();
+
+        if (selectedItems.size() < 2) {
+            DialogUtil.showError("Selecione ao menos 2 arquivos para linkar!");
+            return;
+        }
+
+        // Converte os itens selecionados em ObjectFile
+        List<ObjectFile> selectedFiles = selectedItems.stream()
+                .map(ObjectFileTableItem::getObjectFile)
+                .collect(Collectors.toList());
+
+        // Realiza a linkagem
+        handleLinkAction(selectedFiles.stream().map(ObjectFile::getFilename).collect(Collectors.toList()));
+    }
+
+
+
+    public void handleLinkAction(List<String> selectedFileNames) {
+        if (selectedFileNames == null || selectedFileNames.isEmpty()) {
+            DialogUtil.showError("Selecione ao menos um programa para linkar!");
+            return;
+        }
+
+        List<ObjectFile> selectedObjectFiles = new ArrayList<>();
+        for (String fileName : selectedFileNames) {
+            ObjectFile obj = model.getObjectFileByName(fileName);
+            if (obj != null) {
+                selectedObjectFiles.add(obj);
+            }
+        }
+
+        if (selectedObjectFiles.isEmpty()) {
+            DialogUtil.showError("Nenhum ObjectFile válido foi encontrado para linkagem!");
+            return;
+        }
+
+        try {
+            int loadAddress = 0x300; // ou permitir que o usuário defina esse valor
+            boolean fullRelocation = true; // conforme a necessidade
+            ObjectFile linkedObject = model.linkProgram(selectedObjectFiles, loadAddress, fullRelocation);
+            view.appendOutput("Linkagem concluída! Programa linkado: " + linkedObject.getFilename());
+            view.updateAllTables();
+        } catch (Exception e) {
+            DialogUtil.showError("Erro durante a linkagem: " + e.getMessage());
         }
     }
 
@@ -135,36 +189,36 @@ public class Controller {
                                 // Captura o log em uma variável final para uso na lambda
                                 final String finalLog = log;
                                 Platform.runLater(() -> {
-                                    mainView.appendOutput(finalLog);
-                                    mainView.updateAllTables();
+                                    view.appendOutput(finalLog);
+                                    view.updateAllTables();
                                 });
 
                             } catch (Exception ex) {
                                 String errorMsg = ex.getMessage() != null ? ex.getMessage() : ex.toString();
                                 SimulatorLogger.logError("Erro durante execução. PC: "
                                         + model.getMachine().getControlUnit().getIntValuePC(), ex);
-                                Platform.runLater(() -> mainView.showError("Erro na execução: " + errorMsg));
+                                Platform.runLater(() -> DialogUtil.showError("Erro na execução: " + errorMsg));
                                 break;
                             }
                             model.applyCycleDelay();
                         }
                         if (model.simulationFinishedProperty().get()) {
                             SimulatorLogger.logExecution("Execução concluída!");
-                            Platform.runLater(() -> mainView.appendOutput("Execução concluída!"));
+                            Platform.runLater(() -> view.appendOutput("Execução concluída!"));
                         }
                         return null;
                     }
                 };
                 new Thread(runTask).start();
             } else {
-                mainView.showError("Fim do programa!");
+                DialogUtil.showError("Fim do programa!");
             }
         } else {
-            mainView.showError("Nenhum programa montado!");
+            DialogUtil.showError("Nenhum programa montado!");
         }
 
         if (model.simulationFinishedProperty().get()) {
-            Platform.runLater(() -> mainView.showAlert(Alert.AlertType.INFORMATION,
+            Platform.runLater(() -> DialogUtil.showAlert(Alert.AlertType.INFORMATION,
                     "Execução Concluída",
                     "Simulação Finalizada",
                     "A simulação foi concluída com sucesso!"));
@@ -177,35 +231,35 @@ public class Controller {
                 try {
                     model.runNextInstruction();
                     String log = model.getMachine().getControlUnit().getLastExecutionLog();
-                    mainView.appendOutput(log);
-                    mainView.updateAllTables();
+                    view.appendOutput(log);
+                    view.updateAllTables();
                     SimulatorLogger.logExecution(log);
                     model.setSimulationFinished(model.getMachine().getControlUnit().isHalted());
                 } catch (Exception e) {
-                    mainView.showError("Erro na execução: " + e.getMessage());
+                    DialogUtil.showError("Erro na execução: " + e.getMessage());
 
                     // Registra no log
                     SimulatorLogger.logError("Erro na execução", e);
                 }
             } else {
-                mainView.showError("Fim do programa!");
+                DialogUtil.showError("Fim do programa!");
             }
         } else {
-            mainView.showError("Nenhum programa montado!");
+            DialogUtil.showError("Nenhum programa montado!");
         }
     }
 
     public void handlePauseAction() {
         if (!model.codeLoadedProperty().get()) {
-            mainView.showError("Nenhum programa em execução para pausar!");
+            DialogUtil.showError("Nenhum programa em execução para pausar!");
             return;
         }
         if (model.codeLoadedProperty().get()) {
-            mainView.appendOutput("Execução retomada!");
+            view.appendOutput("Execução retomada!");
             SimulatorLogger.logExecution("Execução retomada.");
             model.setSimulationPaused(false);
         } else {
-            mainView.appendOutput("Execução pausada!");
+            view.appendOutput("Execução pausada!");
             SimulatorLogger.logExecution("Execução pausada.");
             model.setSimulationPaused(true);
         }
@@ -213,28 +267,27 @@ public class Controller {
 
     public void handleResetAction() {
         // Limpa o conteúdo de todas tabelas
-        mainView.clearTables();
+        view.clearTables();
 
         // Atualiza as tabelas
-        mainView.updateAllTables();
+        view.updateAllTables();
 
         // Limpa o conteúdo de todos TextArea
-        mainView.getInputField().clear();
-        mainView.getOutputArea().clear();
-        mainView.getExpandedArea().clear();
+        view.getInputField().clear();
+        view.getOutputArea().clear();
+        view.getMacroArea().clear();
 
         // Atualiza todos os labels
-        mainView.updateAllLabels();
-
+        view.updateAllLabels();
 
         // Reseta o modelo
         model.reset();
 
         // Reseta o título da janela
-        mainView.setWindowTitle("Simulador SIC/XE");
+        view.setWindowTitle("Simulador SIC/XE");
 
         // Exibe a mensagem de boas-vindas
-        mainView.showWelcomeMessage();
+        view.showWelcomeMessage();
 
         // Registra no log
         String resetMsg = "Simulação resetada. PC, registradores e memória reiniciados.";
@@ -250,25 +303,26 @@ public class Controller {
 
     ///  ============== MENU SUPERIOR =================== ///
 
-    /// 1) menuBar Arquivo
-
     public void handleImportASM() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly", "*.asm"));
-        File file = fileChooser.showOpenDialog(mainView.getStage());
+
+        // Define o diretório inicial
+        File initialDir = new File(System.getProperty("user.dir") + "/src/main/resources/samples");
+        if (initialDir.exists() && initialDir.isDirectory()) {
+            fileChooser.setInitialDirectory(initialDir);
+        }
+
+        File file = fileChooser.showOpenDialog(view.getStage());
 
         if (file != null) {
             try {
-                StringBuilder content = new StringBuilder();
-                Scanner scanner = new Scanner(file);
-                while (scanner.hasNextLine()) {
-                    content.append(scanner.nextLine()).append("\n");
-                }
-                // Aqui chamamos o método da View para atualizar o TextArea com o conteúdo do arquivo
-                mainView.getInputField().setText(content.toString());
-                scanner.close();
-            } catch (FileNotFoundException e) {
-                mainView.showError("Erro ao importar arquivo ASM: " + e.getMessage());
+                // Usa FileUtils para ler o conteúdo do arquivo inteiro com UTF-8
+                String content = FileUtils.readFile(file.getAbsolutePath());
+                // Atualiza o TextArea com o conteúdo lido
+                view.getInputField().setText(content);
+            } catch (IOException e) {
+                DialogUtil.showError("Erro ao importar arquivo ASM: " + e.getMessage());
                 SimulatorLogger.logError("Erro ao importar arquivo ASM", e);
             }
         }
@@ -276,81 +330,112 @@ public class Controller {
 
     public void handleExportASM() throws IOException {
         // Pega o código fonte do campo de entrada e processa os macros
-        List<String> sourceLines = Arrays.asList(mainView.getInputField().getText().split("\\r?\\n"));
+        List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
         List<String> expanded = model.expandMacros(sourceLines);
 
-        // Abrir o FileChooser para salvar o arquivo
+        // Configura o FileChooser com o diretório inicial desejado
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly Expandido", "*.asm"));
-        File file = fileChooser.showSaveDialog(mainView.getStage());
 
+        // Define o diretório inicial para exportação
+        File outputDir = new File(System.getProperty("user.dir") + "/src/main/resources/output");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs(); // Cria o diretório, se não existir
+        }
+        fileChooser.setInitialDirectory(outputDir);
+
+        // Define o nome padrão: se houver um objeto montado, usa o programName, senão "Programa.asm"
+        String defaultName = "Programa.asm";
+        if (model.getMostRecentObjectFile() != null && model.getMostRecentObjectFile().getFilename() != null) {
+            defaultName = model.getMostRecentObjectFile().getFilename() + ".asm";
+        }
+        fileChooser.setInitialFileName(defaultName);
+
+        File file = fileChooser.showSaveDialog(view.getStage());
         if (file != null) {
-            // Concatena as linhas da lista de strings em uma única string
+            // Concatena as linhas em uma única string
             String expandedCode = String.join("\n", expanded);
-
-            // Tenta escrever o código expandido no arquivo
-            try (FileWriter writer = new FileWriter(file)) {
-                writer.write(expandedCode);  // Escreve o código expandido no arquivo
+            try {
+                FileUtils.writeFile(file.getAbsolutePath(), expandedCode);
                 System.out.println("Arquivo .ASM Expandido exportado com sucesso!");
             } catch (IOException e) {
-                mainView.showError("Erro ao tentar escrever o código expandido: " + e.getMessage());
-                SimulatorLogger.logError("Erro ao tentar escrever o código expandido: ", e);
+                DialogUtil.showError("Erro ao tentar escrever o código expandido: " + e.getMessage());
+                SimulatorLogger.logError("Erro ao tentar escrever o código expandido:", e);
             }
         }
     }
 
     public void handleExportOBJ() {
-        // Obtém o arquivo selecionado na ListView
-        String selectedFileName = mainView.getObjectFileListView().getSelectionModel().getSelectedItem();
+        // Obtém a entrada selecionada na TableView de arquivos montados
+        ObjectFileTableItem selectedItem = view.getObjectFileTableView().getSelectionModel().getSelectedItem();
 
-        if (selectedFileName == null) {
-            // Exibe a mensagem "Sem arquivos montados" se não houver arquivos selecionados
-            mainView.showNoFilesMessage();
-            return;  // Se o usuário não selecionou nenhum arquivo, sai do método
+        // Se nenhum item foi selecionado, utiliza o objeto mais recente, se existir
+        ObjectFile selectedFile;
+        if (selectedItem == null) {
+            if (model.getMostRecentObjectFile() != null) {
+                selectedFile = model.getMostRecentObjectFile();
+            } else {
+                DialogUtil.showError("Nenhum código foi montado ainda.");
+                return;
+            }
+        } else {
+            selectedFile = selectedItem.getObjectFile(); // Obtém o ObjectFile a partir do ObjectFileTableItem
         }
 
-        // Obter o objeto `ObjectFile` correspondente ao nome selecionado
-        ObjectFile selectedFile = model.getObjectFileByName(selectedFileName);
+        // Verifica se o ObjectFile foi encontrado
+        if (selectedFile == null) {
+            DialogUtil.showError("Arquivo de objeto não encontrado.");
+            return;
+        }
 
         // Obtém o conteúdo do código objeto
-        byte[] objFileContent = selectedFile.getObjectCode();  // Pega o código objeto
+        byte[] objFileContent = selectedFile.getObjectCode();
 
-        // Abrir o FileChooser para salvar o arquivo
+        // Configura o FileChooser para salvar o arquivo
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos .OBJ", "*.obj"));
-        File file = fileChooser.showSaveDialog(mainView.getStage());
+        File outputDir = new File(System.getProperty("user.dir") + "/src/main/resources/output");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+        fileChooser.setInitialDirectory(outputDir);
 
+        // Define o nome padrão para o OBJ: usa o filename do ObjectFile
+        String defaultName = selectedFile.getFilename();
+        if (!defaultName.toLowerCase().endsWith(".obj")) {
+            defaultName += ".obj";
+        }
+        fileChooser.setInitialFileName(defaultName);
+
+        // Abre o FileChooser para o usuário escolher onde salvar
+        File file = fileChooser.showSaveDialog(view.getStage());
         if (file != null) {
-            try (FileWriter writer = new FileWriter(file)) {
-                // Escreve o conteúdo do código objeto no arquivo
+            try {
+                // Converte o conteúdo do arquivo OBJ para hexadecimal
+                StringBuilder hexContent = new StringBuilder();
                 for (byte b : objFileContent) {
-                    writer.write(String.format("%02X ", b));  // Escreve o byte como hex
+                    hexContent.append(String.format("%02X ", b));
                 }
+                // Escreve o conteúdo hexadecimal no arquivo
+                FileUtils.writeFile(file.getAbsolutePath(), hexContent.toString());
                 System.out.println("Arquivo .OBJ exportado com sucesso!");
             } catch (IOException e) {
-                mainView.showError("Erro ao expandir macros: " + e.getMessage());
-                SimulatorLogger.logError("Erro ao expandir macros", e);
+                // Caso ocorra algum erro durante a escrita do arquivo
+                DialogUtil.showError("Erro ao exportar arquivo OBJ: " + e.getMessage());
+                SimulatorLogger.logError("Erro ao exportar arquivo OBJ", e);
             }
         }
     }
 
-    ///  2) menuBar Códigos Exemplo
 
-    public void handleLoadSampleCodeAction(String sampleCode, String title) throws IOException {
-        model.loadSampleCode(sampleCode, mainView, title);
-        mainView.showAlert(Alert.AlertType.INFORMATION,
-                "Código Carregado",
-                "Exemplo Carregado",
-                "O código de exemplo foi carregado com sucesso!");
-        handleUpdateExpandedCode();
-    }
+    ///  2. menuBar Montador
 
     ///  3) menuBar Memória
 
     public void handleClearMemoryAction() {
         model.getMachine().getMemory().clearMemory();
-        mainView.updateMemoryTable();
-        mainView.appendOutput("Memória limpa!");
+        view.updateMemoryTable();
+        view.appendOutput("Memória limpa!");
     }
 
     public void handleChangeMemorySizeAction(int newSizeInBytes) {
@@ -358,10 +443,10 @@ public class Controller {
             model.getMachine().changeMemorySize(newSizeInBytes);
             model.setMemorySize(newSizeInBytes);
 
-            mainView.appendOutput("Memória alterada para " + newSizeInBytes + " bytes.");
-            mainView.updateMemoryTable();
+            view.appendOutput("Memória alterada para " + newSizeInBytes + " bytes.");
+            view.updateMemoryTable();
         } catch (Exception e) {
-            mainView.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
+            DialogUtil.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
         }
     }
 
@@ -374,35 +459,40 @@ public class Controller {
     ///  5) menuBar Exibir
 
     public void handleSetHexViewAction() {
-        mainView.setViewFormat("HEX");
-        mainView.updateViewFormatLabel();
+        view.setViewFormat("HEX");
+        view.updateViewFormatLabel();
     }
 
     public void handleSetOctalViewAction() {
-        mainView.setViewFormat("OCT");
-        mainView.updateViewFormatLabel();
+        view.setViewFormat("OCT");
+        view.updateViewFormatLabel();
     }
 
     public void handleSetDecimalViewAction() {
-        mainView.setViewFormat("DEC");
-        mainView.updateViewFormatLabel();
+        view.setViewFormat("DEC");
+        view.updateViewFormatLabel();
     }
 
     public void handleSetBinaryViewAction() {
-        mainView.setViewFormat("BIN");
-        mainView.updateViewFormatLabel();
+        view.setViewFormat("BIN");
+        view.updateViewFormatLabel();
     }
 
     ///  6) menuBar Ajuda
 
     public void handleHelpAction() {
-        mainView.showHelpWindow();
+        view.showHelpWindow();
     }
 
     ///  ============== MÉTODOS AUXILIARES =================== ///
 
     public int getMemorySize() {
         return model.getMemorySize();
+    }
+
+    public String getCycleDelay() {
+        int simulationSpeed = model.getSimulationSpeed();
+        return Mapper.mapSimulationSpeedToCycleDelay(simulationSpeed)+ "ms";
     }
 
     public List<MemoryEntry> getMemoryEntries() {
@@ -440,20 +530,11 @@ public class Controller {
         return entries;
     }
 
-    public List<String> getObjectFileNames() {
-        return model.getObjectFileNames();
+    public List<ObjectFile> getLinkableObjectFiles() {
+        return model.getObjectFilesList();
     }
 
-    public String getCycleDelay() {
-        int simulationSpeed = model.getSimulationSpeed();
-        return Mapper.mapSimulationSpeedToCycleDelay(simulationSpeed)+ "ms";
-
-    }
-
-    // Retorne a propriedade codeAssembled do Model
-    public BooleanProperty getCodeAssembledProperty() {
-        return model.codeAssembledProperty();
-    }
+    /// ==================== MÉTODOS DE PROPRIEDADE ==================== ///
 
     public BooleanProperty getCodeLoadedProperty() {
         return model.codeLoadedProperty();
@@ -463,4 +544,83 @@ public class Controller {
         return model.simulationFinishedProperty();
     }
 
+    public void saveObjectFile(ObjectFile objectFile) {
+        // Cria o diretório "saved" caso não exista
+        File savedDir = new File("src/main/resources/saved");
+        if (!savedDir.exists()) {
+            savedDir.mkdirs();
+        }
+
+        // Define o nome do arquivo como o nome do programa com a extensão.obj
+        File file = new File(savedDir, objectFile.getFilename() + ".obj");
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+            // Escreve o ObjectFile no arquivo
+            oos.writeObject(objectFile);
+        } catch (IOException e) {
+            DialogUtil.showError("Erro ao salvar o arquivo: " + e.getMessage());
+        }
+    }
+
+    public List<ObjectFile> loadSavedObjectFiles() {
+        List<ObjectFile> loadedFiles = new ArrayList<>();
+        File savedDir = new File("src/main/resources/saved");
+
+        // Verifica se o diretório existe
+        if (savedDir.exists() && savedDir.isDirectory()) {
+            File[] files = savedDir.listFiles((dir, name) -> name.endsWith(".obj"));  // Filtra arquivos .obj
+            if (files != null) {
+                for (File file : files) {
+                    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                        // Carrega o ObjectFile do arquivo
+                        ObjectFile objectFile = (ObjectFile) ois.readObject();
+                        loadedFiles.add(objectFile);
+                    } catch (IOException | ClassNotFoundException e) {
+                        DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());
+                    }
+                }
+            }
+        }
+        return loadedFiles;
+    }
+
+    public void handleInitializeObjectFiles() {
+        // Carrega os arquivos salvos
+        List<ObjectFile> savedFiles = loadSavedObjectFiles();
+
+        // Converte os ObjectFiles para ObjectFileTableItems
+        List<ObjectFileTableItem> tableItems = Convert.objectFileToObjectFileTableItem(savedFiles);
+
+        // Atualiza a tabela de ObjectFiles na View
+        view.updateObjectFileTableView(tableItems);
+    }
+
+    public void handleDeleteSelectedFilesAction() {
+        // Obtém os itens selecionados via selection model
+        List<ObjectFileTableItem> selectedItems = view.getObjectFileTableView().getSelectionModel().getSelectedItems();
+        if (selectedItems == null || selectedItems.isEmpty()) {
+            DialogUtil.showError("Nenhum arquivo selecionado para exclusão.");
+            return;
+        }
+
+        // Itera sobre os itens selecionados e os remove
+        for (ObjectFileTableItem item : selectedItems) {
+            ObjectFile objectFile = item.getObjectFile();
+            // Remove o ObjectFile do modelo
+            model.removeObjectFile(objectFile);
+
+            // Remove o arquivo físico do diretório "saved"
+            File file = new File("src/main/resources/saved", objectFile.getFilename() + ".obj");
+            if (file.exists()) {
+                file.delete();
+            }
+        }
+
+        // Atualiza a tabela com os arquivos restantes
+        List<ObjectFileTableItem> tableItems = new ArrayList<>();
+        for (ObjectFile file : model.getObjectFilesList()) {
+            tableItems.add(new ObjectFileTableItem(file));
+        }
+        view.updateObjectFileTableView(tableItems);
+    }
 }

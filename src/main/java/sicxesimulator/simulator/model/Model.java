@@ -2,13 +2,12 @@ package sicxesimulator.simulator.model;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import sicxesimulator.assembler.models.ObjectFile;
+import sicxesimulator.models.ObjectFile;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.linker.Linker;
 import sicxesimulator.loader.Loader;
 import sicxesimulator.macroprocessor.MacroProcessor;
 import sicxesimulator.machine.Machine;
-import sicxesimulator.simulator.view.MainView;
 import sicxesimulator.utils.*;
 
 import java.io.IOException;
@@ -17,14 +16,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Model {
     private final Machine machine;
     private final Loader loader;
+    private final Linker linker;
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
-    private final Linker linker;
 
     // Listeners
     private final List<ModelListener> listeners = new ArrayList<>();
@@ -41,7 +39,6 @@ public class Model {
     private int simulationSpeed;
 
     // Estados reativos
-    private final BooleanProperty codeAssembled = new SimpleBooleanProperty(false);
     private final BooleanProperty codeLoaded = new SimpleBooleanProperty(false);
     private final BooleanProperty simulationPaused = new SimpleBooleanProperty(false);
     private final BooleanProperty simulationFinished = new SimpleBooleanProperty(false);
@@ -64,7 +61,7 @@ public class Model {
 
     private void notifyListeners() {
         for (ModelListener listener : listeners) {
-            listener.onFilesUpdated();  // Chama o método que atualizará a interface
+            listener.onFilesUpdated();
         }
     }
 
@@ -72,15 +69,6 @@ public class Model {
 
     public Machine getMachine() {
         return machine;
-    }
-
-    public Assembler getAssembler() {
-        return assembler;
-    }
-
-    @SuppressWarnings("unused")
-    public Linker getLinker() {
-        return linker;
     }
 
     public ViewConfig getViewConfig() {
@@ -95,12 +83,6 @@ public class Model {
 
     public List<ObjectFile> getObjectFilesList() {
         return objectFileList;
-    }
-
-    public List<String> getObjectFileNames() {
-        return objectFileList.stream()
-                .map(ObjectFile::getFilename)
-                .collect(Collectors.toList());
     }
 
     public ObjectFile getObjectFileByName(String selectedFileName) {
@@ -132,18 +114,10 @@ public class Model {
         return memorySize;
     }
 
-    ///  Getters/Setters de estados reativos
-
-    public BooleanProperty codeAssembledProperty() {
-        return codeAssembled;
-    }
-    public void setCodeAssembled(boolean assembled) {
-        codeAssembled.set(assembled);
-    }
-
     public BooleanProperty codeLoadedProperty() {
         return codeLoaded;
     }
+
     public void setCodeLoaded(boolean loaded) {
         codeLoaded.set(loaded);
     }
@@ -151,6 +125,7 @@ public class Model {
     public BooleanProperty simulationFinishedProperty() {
         return simulationFinished;
     }
+
     public void setSimulationFinished(boolean finished) {
         simulationFinished.set(finished);
     }
@@ -158,11 +133,12 @@ public class Model {
     public BooleanProperty simulationPausedProperty() {
         return simulationPaused;
     }
+
     public void setSimulationPaused(boolean paused) {
         simulationPaused.set(paused);
     }
 
-    /// Carregamento de arquivos
+    /// Controle dos módulos (montador, processador de macros, ligador, carregador)
 
     public void assembleCode(List<String> macroProcessedWords) {
         ObjectFile machineCode = assembler.assemble(macroProcessedWords);
@@ -190,7 +166,13 @@ public class Model {
         notifyListeners();
     }
 
-   /// Controle de execução do programa
+    public ObjectFile linkProgram(List<ObjectFile> objectFiles, int loadAddress, boolean fullRelocation) {
+        ObjectFile linkedObject = linker.link(objectFiles, loadAddress, fullRelocation);
+        updateObjectFileList(linkedObject);
+        return linkedObject;
+    }
+
+    /// Controle de execução do programa
 
     public void runNextInstruction() {
         machine.runCycle();
@@ -200,6 +182,9 @@ public class Model {
         machine.reset();
         assembler.reset();
         objectFileList.clear();
+        setCodeLoaded(false);
+        setSimulationFinished(false);
+        setSimulationPaused(false);
     }
 
     ///  Métodos auxiliares
@@ -216,10 +201,8 @@ public class Model {
         }
     }
 
-    public void loadSampleCode(String sampleCode, MainView mainView, String title) {
-
-
-        mainView.getInputField().setText(sampleCode);
-        mainView.getStage().setTitle(title);
+    public void removeObjectFile(ObjectFile objectFile) {
+        objectFileList.remove(objectFile);
     }
 }
+

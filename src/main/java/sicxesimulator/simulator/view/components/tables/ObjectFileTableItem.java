@@ -7,7 +7,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class ObjectFileTableItem {
-    private final BooleanProperty selected;  // Propriedade para o checkbox (seleção)
     private final StringProperty programName;  // Nome do programa
     private final StringProperty size;  // Tamanho do arquivo
     private final StringProperty mountDate;  // Data de montagem
@@ -16,27 +15,9 @@ public class ObjectFileTableItem {
     // Construtor da classe que inicializa as propriedades
     public ObjectFileTableItem(ObjectFile objectFile) {
         this.objectFile = objectFile;
-        this.selected = new SimpleBooleanProperty(false);  // Inicialmente não selecionado
         this.programName = new SimpleStringProperty(objectFile.getFilename());  // Nome do programa
         this.size = new SimpleStringProperty(objectFile.getProgramLength() + " bytes");  // Tamanho do programa
         this.mountDate = new SimpleStringProperty(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));  // Data atual
-    }
-
-    // Métodos para manipular a seleção via checkbox
-    public boolean isSelected() {
-        return selected.get();
-    }
-
-    public void setSelected() {
-        if (selected.get()) {
-            selected.set(false);  // Se já está selecionado, desmarque
-        } else {
-            selected.set(true);  // Se não está selecionado, marque
-        }
-    }
-
-    public BooleanProperty selectedProperty() {
-        return selected;  // Retorna a propriedade observável
     }
 
     // Métodos para manipulação do nome do programa

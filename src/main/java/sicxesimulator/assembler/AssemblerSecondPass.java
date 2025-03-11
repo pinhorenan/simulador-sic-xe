@@ -7,7 +7,7 @@ import sicxesimulator.models.SymbolTable;
 import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.Map;
 
-import sicxesimulator.logger.SimulatorLogger;
+import sicxesimulator.utils.SimulatorLogger;
 
 
 public class AssemblerSecondPass {

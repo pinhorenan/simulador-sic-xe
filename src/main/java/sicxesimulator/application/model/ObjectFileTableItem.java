@@ -1,4 +1,4 @@
-package sicxesimulator.simulator.model;
+package sicxesimulator.application.model;
 
 import javafx.beans.property.*;
 import sicxesimulator.models.ObjectFile;

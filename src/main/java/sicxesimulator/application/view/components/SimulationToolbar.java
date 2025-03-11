@@ -1,4 +1,4 @@
-package sicxesimulator.simulator.view.components;
+package sicxesimulator.application.view.components;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -6,8 +6,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
-import sicxesimulator.simulator.controller.Controller;
-import sicxesimulator.simulator.view.MainView;
+import sicxesimulator.application.controller.Controller;
+import sicxesimulator.application.view.MainView;
 
 /**
  * Essa classe é responsável por criar e gerenciar os botões principais da interface gráfica.

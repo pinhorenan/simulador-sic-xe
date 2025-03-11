@@ -1,4 +1,4 @@
-package sicxesimulator.simulator.view.components.tables;
+package sicxesimulator.application.view.components.tables;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -9,7 +9,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
-import sicxesimulator.simulator.model.ObjectFileTableItem;
+import sicxesimulator.application.model.ObjectFileTableItem;
 
 public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
 

@@ -1,11 +1,11 @@
-package sicxesimulator.simulator.controller;
+package sicxesimulator.application.controller;
 
 import javafx.stage.FileChooser;
-import sicxesimulator.logger.SimulatorLogger;
+import sicxesimulator.utils.SimulatorLogger;
 import sicxesimulator.models.ObjectFile;
-import sicxesimulator.simulator.model.Model;
-import sicxesimulator.simulator.view.MainView;
-import sicxesimulator.simulator.view.components.tables.ObjectFileTableItem;
+import sicxesimulator.application.model.Model;
+import sicxesimulator.application.view.MainView;
+import sicxesimulator.application.model.ObjectFileTableItem;
 import sicxesimulator.utils.DialogUtil;
 import sicxesimulator.utils.FileUtils;
 
@@ -25,6 +25,7 @@ public class MenuBarController {
 
     ///  ============== MENU SUPERIOR =================== ///
 
+    // Ação do menuItem "Importar código-fonte"
     public void handleImportASM() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly", "*.asm"));
@@ -50,6 +51,7 @@ public class MenuBarController {
         }
     }
 
+    // Ação do menuItem "Exportar código expandido"
     public void handleExportASM() throws IOException {
         // Pega o código fonte do campo de entrada e processa os macros
         List<String> sourceLines = Arrays.asList(view.getInputField().getText().split("\\r?\\n"));
@@ -88,6 +90,7 @@ public class MenuBarController {
         }
     }
 
+    // Ação do menuItem "Exportar Arquivo Objeto"
     public void handleExportOBJ() {
         // Obtém a entrada selecionada na TableView de arquivos montados
         ObjectFileTableItem selectedItem = view.getObjectFileTableView().getSelectionModel().getSelectedItem();
@@ -151,14 +154,16 @@ public class MenuBarController {
         }
     }
 
-        ///  3) menuBar Memória
+    ///  2. menuBar Memória
 
+    // Ação do menuItem "Limpar memória"
     public void handleClearMemoryAction() {
         model.getMachine().getMemory().clearMemory();
         view.updateMemoryTableView();
         view.appendOutput("Memória limpa!");
     }
 
+    // Ação do menuItem "Alterar tamanho da memória"
     public void handleChangeMemorySizeAction(int newSizeInBytes) {
         try {
             model.getMachine().changeMemorySize(newSizeInBytes);
@@ -173,27 +178,32 @@ public class MenuBarController {
 
     ///  4) menuBar Execução
 
+    // Ação do menuItem "Mudar velocidade de execução"
     public void handleChangeRunningSpeedAction(int newSimulationSpeed) {
         model.setSimulationSpeed(newSimulationSpeed);
     }
 
     ///  5) menuBar Exibir
 
+    // Ação do menuItem "Exibição → Hexadecimal"
     public void handleSetHexViewAction() {
         view.setViewFormat("HEX");
         view.updateViewFormatLabel();
     }
 
+    // Ação do menuItem "Exibição → Octal"
     public void handleSetOctalViewAction() {
         view.setViewFormat("OCT");
         view.updateViewFormatLabel();
     }
 
+    // Ação do menuItem "Exibição → Decimal"
     public void handleSetDecimalViewAction() {
         view.setViewFormat("DEC");
         view.updateViewFormatLabel();
     }
 
+    // Ação do menuItem "Exibição → Binário"
     public void handleSetBinaryViewAction() {
         view.setViewFormat("BIN");
         view.updateViewFormatLabel();
@@ -201,6 +211,7 @@ public class MenuBarController {
 
     ///  6) menuBar Ajuda
 
+    // Ação do menuItem "Ajuda" (exibe a janela de ajuda)
     public void handleHelpAction() {
         view.showHelpWindow();
     }

@@ -1,4 +1,4 @@
-package sicxesimulator.logger;
+package sicxesimulator.utils;
 
 import java.io.IOException;
 import java.util.logging.*;

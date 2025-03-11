@@ -1,19 +1,19 @@
-package sicxesimulator.simulator.controller;
+package sicxesimulator.application.controller;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
-import sicxesimulator.logger.SimulatorLogger;
+import sicxesimulator.utils.SimulatorLogger;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.machine.cpu.Register;
-import sicxesimulator.simulator.model.Model;
-import sicxesimulator.simulator.view.MainView;
-import sicxesimulator.simulator.view.components.tables.ObjectFileTableItem;
-import sicxesimulator.simulator.view.records.MemoryEntry;
+import sicxesimulator.application.model.Model;
+import sicxesimulator.application.view.MainView;
+import sicxesimulator.application.model.ObjectFileTableItem;
+import sicxesimulator.application.model.records.MemoryEntry;
 
-import sicxesimulator.simulator.view.records.RegisterEntry;
-import sicxesimulator.simulator.view.records.SymbolEntry;
+import sicxesimulator.application.model.records.RegisterEntry;
+import sicxesimulator.application.model.records.SymbolEntry;
 import sicxesimulator.utils.*;
 import sicxesimulator.utils.Map;
 
@@ -326,7 +326,7 @@ public class Controller {
         return entries;
     }
 
-    public List<ObjectFile> getObjectFileListFromModel() {
+    public List<ObjectFile> getObjectFilesFromModel() {
         return model.getObjectFilesList();
     }
 

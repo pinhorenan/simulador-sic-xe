@@ -1,4 +1,4 @@
-package sicxesimulator.simulator.view;
+package sicxesimulator.application.view;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -9,14 +9,15 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import sicxesimulator.models.ObjectFile;
-import sicxesimulator.simulator.controller.Controller;
-import sicxesimulator.simulator.controller.MenuBarController;
-import sicxesimulator.simulator.model.Model;
-import sicxesimulator.simulator.view.components.SimulationToolbar;
-import sicxesimulator.simulator.view.components.tables.*;
-import sicxesimulator.simulator.view.records.MemoryEntry;
-import sicxesimulator.simulator.view.records.RegisterEntry;
-import sicxesimulator.simulator.view.records.SymbolEntry;
+import sicxesimulator.application.controller.Controller;
+import sicxesimulator.application.controller.MenuBarController;
+import sicxesimulator.application.model.Model;
+import sicxesimulator.application.model.ObjectFileTableItem;
+import sicxesimulator.application.view.components.SimulationToolbar;
+import sicxesimulator.application.view.components.tables.*;
+import sicxesimulator.application.model.records.MemoryEntry;
+import sicxesimulator.application.model.records.RegisterEntry;
+import sicxesimulator.application.model.records.SymbolEntry;
 import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.DialogUtil;
 import sicxesimulator.utils.ViewConfig;
@@ -473,7 +474,7 @@ public class MainView extends javafx.application.Application {
     }
 
     public void initializeFilesView() {
-        List<ObjectFile> files = mainController.getObjectFileListFromModel();
+        List<ObjectFile> files = mainController.getObjectFilesFromModel();
         if (!files.isEmpty()) {
             objectFileTableView.clearEntries();
             updateObjectFileTableView();
@@ -511,7 +512,7 @@ public class MainView extends javafx.application.Application {
     /// ===== Métodos de atualização de componentes =====
 
     public void updateObjectFileTableView() {
-        List<ObjectFile> files = mainController.getObjectFileListFromModel();
+        List<ObjectFile> files = mainController.getObjectFilesFromModel();
         List<ObjectFileTableItem> items = Convert.objectFileToObjectFileTableItem(files);
         Platform.runLater(() -> objectFileTableView.getItems().addAll(items));
     }

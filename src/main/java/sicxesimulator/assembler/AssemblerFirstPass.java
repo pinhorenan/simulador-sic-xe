@@ -1,6 +1,6 @@
 package sicxesimulator.assembler;
 
-import sicxesimulator.logger.SimulatorLogger;
+import sicxesimulator.utils.SimulatorLogger;
 import sicxesimulator.models.AssemblyLine;
 import sicxesimulator.models.IntermediateRepresentation;
 import sicxesimulator.utils.Check;

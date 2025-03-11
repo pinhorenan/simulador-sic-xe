@@ -1,7 +1,7 @@
-package sicxesimulator.simulator.view.components.tables;
+package sicxesimulator.application.view.components.tables;
 
 import javafx.scene.control.TableColumn;
-import sicxesimulator.simulator.model.records.RegisterEntry;
+import sicxesimulator.application.model.records.RegisterEntry;
 
 public class RegisterTableView extends BaseTableView<RegisterEntry> {
 

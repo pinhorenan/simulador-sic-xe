@@ -1,7 +1,7 @@
 package sicxesimulator.utils;
 
 import sicxesimulator.models.ObjectFile;
-import sicxesimulator.simulator.view.components.tables.ObjectFileTableItem;
+import sicxesimulator.simulator.model.ObjectFileTableItem;
 
 import java.util.ArrayList;
 import java.util.List;

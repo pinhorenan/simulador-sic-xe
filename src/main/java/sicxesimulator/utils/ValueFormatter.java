@@ -41,7 +41,7 @@ public abstract class ValueFormatter {
         }
     }
 
-    public static String formatRegisterValue(@SuppressWarnings("ClassEscapesDefinedScope") Register reg, String format) {
+    public static String formatRegisterValue(Register reg, String format) {
         if ("F".equalsIgnoreCase(reg.getName())) {
             long value = reg.getLongValue();
             return switch (format.toUpperCase()) {

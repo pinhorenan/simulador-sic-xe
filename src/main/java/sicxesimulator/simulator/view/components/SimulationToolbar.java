@@ -5,8 +5,7 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.Region;
 import sicxesimulator.simulator.controller.Controller;
 import sicxesimulator.simulator.view.MainView;
 
@@ -17,19 +16,30 @@ public class SimulationToolbar extends HBox {
     private final MainView mainView;
     private final Controller controller;
 
-    // Botões
+    /// ===== Botões de controle da máquina =====
     protected Button runButton;
     protected Button pauseButton;
     protected Button nextButton;
-    protected Button assembleButton;
     protected Button loadButton;
-    protected Button linkButton;
-    protected Button resetButton;
-    protected Button deleteButton;
-    protected final VBox fileControls;
-    protected final HBox executionControls;
-    protected final HBox resetControl;
+    protected Button restartMachineButton;
 
+    /// ===== Botões de controle de arquivo =====
+    protected Button linkButton;
+    protected Button deleteButton;
+
+    /// ===== Botões de controle de montagem =====
+    protected Button assembleButton; /// Por enquanto usado individualmente
+
+    /// ===== Botões de controle de reset =====
+    @SuppressWarnings("unused")
+    protected Button resetButton; /// Por enquanto usado individualmente
+
+    /// ===== Botões de controle de saída =====
+    protected Button clearOutputButton; /// Por enquanto usado individualmente
+
+    /// ===== Containers de botões =====
+    protected final HBox objectFileTableViewButtons; /// Botões de controle de arquivo (Linkar, Deletar)
+    protected final HBox machineControlButtons; /// Botões de controle de execução (Executar, Pausar, Próximo, Carregar Programa, Reiniciar Máquina)
 
     /**
      * Construtor da classe. Recebe o controlador e a visão principal como parâmetros.
@@ -42,34 +52,40 @@ public class SimulationToolbar extends HBox {
         this.setSpacing(10);
 
         // Inicializa todos os controles
-        this.fileControls = createFileControls();
-        this.executionControls = createExecutionControls();
-        this.resetControl = createResetButton();  // agora sim chamado corretamente
+        this.objectFileTableViewButtons = createObjectFileTableViewButtons();
+        this.machineControlButtons = createMachineControlButtons();
+        this.assembleButton = createAssembleButton();
+        this.clearOutputButton = createClearOutputButton();
+    }
 
-        // TODO: Temporário
-        assembleButton = new Button("Montar");
-        assembleButton.setOnAction(e -> controller.handleAssembleAction());
+    /// ===== Métodos de criação de botões =====
 
-
-        // Adiciona os controles ao layout
-        this.getChildren().addAll(fileControls, executionControls, resetControl);
+    /**
+     * Cria um botão compacto com o texto especificado.
+     * @param text O texto do botão
+     * @return O botão criado
+     */
+    private Button createCompactButton(String text) {
+        Button button = new Button(text);
+        button.setPrefSize(80, 25); // Define um tamanho fixo compacto
+        button.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE); // Evita que ele fique menor
+        button.setMaxHeight(Double.NEGATIVE_INFINITY); // Impede crescimento vertical
+        return button;
     }
 
     /**
-     * Cria o VBox que contém os controles de arquivo. (Montar, Linkar, Deletar)
-     * É utilizado para criar o layout da interface gráfica exclusivamente dentro do construtor da classe.
-     * @return VBox com os controles de arquivo
+     * Cria o HBox que contém os botões de controle de arquivo. (Linkar, Deletar)
+     * @return HBox com os botões de controle de arquivo
      */
-    private VBox createFileControls() {
-
-        linkButton = new Button("Linkar");
+    private HBox createObjectFileTableViewButtons() {
+        linkButton = createCompactButton("Linkar");
         linkButton.setOnAction(e -> controller.handleLinkSelectedFilesAction());
 
-        deleteButton = new Button("Deletar");
+        deleteButton = createCompactButton("Deletar");
         deleteButton.setOnAction(e -> controller.handleDeleteSelectedFilesAction());
 
-        VBox fileControls = new VBox(10, linkButton, deleteButton);
-        fileControls.setAlignment(Pos.CENTER);
+        HBox fileControls = new HBox(10, linkButton, deleteButton);
+        fileControls.setAlignment(Pos.CENTER_RIGHT);
         return fileControls;
     }
 
@@ -78,7 +94,7 @@ public class SimulationToolbar extends HBox {
      * É utilizado para criar o layout da interface gráfica exclusivamente dentro do construtor da classe.
      * @return HBox com os controles de execução
      */
-    private HBox createExecutionControls() {
+    private HBox createMachineControlButtons() {
         runButton = new Button("Executar");
         runButton.setOnAction(e -> controller.handleRunAction());
 
@@ -91,29 +107,28 @@ public class SimulationToolbar extends HBox {
         loadButton = new Button("Carregar");
         loadButton.setOnAction(e -> controller.handleLoadObjectFileAction());
 
-        HBox executionControls = new HBox(10, runButton, pauseButton, nextButton, loadButton);
-        executionControls.setAlignment(Pos.CENTER);
-        return executionControls;
+        restartMachineButton = new Button("Reiniciar Máquina");
+        restartMachineButton.setOnAction(e -> controller.handleRestartAction());
+
+        HBox machineControlButtonsHBox = new HBox(10, runButton, pauseButton, nextButton, loadButton, restartMachineButton);
+        machineControlButtonsHBox.setAlignment(Pos.CENTER);
+        return machineControlButtonsHBox;
     }
 
-    /**
-     * Cria o HBox que contém o botão de reset.
-     * É utilizado para criar o layout da interface gráfica exclusivamente dentro do construtor da classe.
-     * @return HBox com o botão de reset
-     */
-    private HBox createResetButton() {
-        resetButton = new Button("Reset");
-        resetButton.setMaxWidth(Double.MAX_VALUE); // Faz o botão expandir horizontalmente
-
-        resetButton.setOnAction(e -> controller.handleResetAction());
-
-        HBox resetBox = new HBox(resetButton);
-        resetBox.setAlignment(Pos.CENTER);
-        resetBox.setFillHeight(true);
-        HBox.setHgrow(resetButton, Priority.ALWAYS); // O botão ocupa o espaço disponível
-
-        return resetBox;
+    public Button createClearOutputButton() {
+        clearOutputButton = createCompactButton("Limpar Saída");
+        clearOutputButton.setOnAction(e -> controller.handleClearOutputAction());
+        return clearOutputButton;
     }
+
+    public Button createAssembleButton() {
+        assembleButton = createCompactButton("Montar");
+        assembleButton.setOnAction(e -> controller.handleAssembleAction());
+        return assembleButton;
+    }
+
+
+    /// ===== Métodos de configuração de bindings =====
 
     /**
      * Configura as propriedades de desabilitação dos botões.
@@ -147,6 +162,16 @@ public class SimulationToolbar extends HBox {
                 atLeastOneSelected.not()
         );
 
+        // O botão "Carregar" deve ser habilitado se houver exatamente 1 item selecionado.
+        loadButton.disableProperty().bind(
+                oneSelected.not()
+        );
+
+        // O botão "Linkar" deve ser habilitado se houver 2 ou mais itens selecionados.
+        linkButton.disableProperty().bind(
+                twoOrMoreSelected.not()
+        );
+
         // Os botões de execução são habilitados se o código estiver carregado e a simulação não estiver finalizada.
         BooleanBinding executionAllowed = controller.getCodeLoadedProperty()
                 .and(controller.getSimulationFinishedProperty().not());
@@ -155,39 +180,21 @@ public class SimulationToolbar extends HBox {
         nextButton.disableProperty().bind(executionAllowed.not());
     }
 
-    /**
-     * Retorna o VBox que contém os controles de arquivo. (Montar, Linkar, Deletar)
-     * @return VBox com os controles de arquivo
-     */
-    public VBox getFileControls() {
-        return fileControls;
+    ///  ===== Métodos de acesso aos botões =====
+
+    public HBox getMachineControlButtonsHBox() {
+        return machineControlButtons;
     }
 
-    /**
-     * Retorna o HBox que contém os controles de execução. (Executar, Pausar, Próximo, Carregar)
-     * @return HBox com os controles de execução
-     */
-    public HBox getExecutionControls() {
-        return executionControls;
-    }
-
-    /**
-     * Retorna o HBox que contém o botão de reset.
-     * @return HBox com o botão de reset
-     */
-    public HBox getResetControl() {
-        return resetControl;
+    public HBox getObjectFileTableViewButtonsHBox() {
+        return objectFileTableViewButtons;
     }
 
     public Button getAssembleButton() {
         return assembleButton;
     }
 
-    public Button getLinkButton() {
-        return linkButton;
-    }
-
-    public Button getDeleteButton() {
-        return deleteButton;
+    public Button getClearMachineOutputButton() {
+        return clearOutputButton;
     }
 }

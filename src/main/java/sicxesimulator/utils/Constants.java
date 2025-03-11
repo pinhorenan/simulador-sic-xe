@@ -5,8 +5,26 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class Mapper {
-    private static final Map<String, Integer> OPCODES = Map.ofEntries(
+public abstract class Constants {
+
+    /**
+     * Registradores válidos.
+     */
+    public static final String[] VALID_REGISTERS = {"A", "X", "L", "B", "S", "T", "F", "PC", "SW"};
+
+    public static final Set<String> VALID_MNEMONICS = new HashSet<>(Arrays.asList(
+            "START", "END", "BYTE", "WORD", "RESB", "RESW", "BASE", "NOBASE", "EQU", "LTORG",
+            "ADD", "ADDR", "AND", "CLEAR", "COMP", "COMPR", "DIV", "DIVR",
+            "J", "JEQ", "JGT", "JLT", "JSUB", "LDA", "LDB", "LDCH", "LDL", "LDS",
+            "LDT", "LDX", "MUL", "MULR", "OR", "RMO", "RSUB", "SHIFTL", "SHIFTR",
+            "STA", "STB", "STCH", "STL", "STS", "STT", "STX", "SUB", "SUBR", "TIX",
+            "TIXR"
+    ));
+
+    /**
+     * Mapeamento de mnemônicos para códigos de operação (opcode).
+     */
+    public static final Map<String, Integer> OPCODES = Map.ofEntries(
             Map.entry("ADD", 0x18),
             Map.entry("ADDR", 0x90),
             Map.entry("AND", 0x40),
@@ -46,42 +64,7 @@ public abstract class Mapper {
             Map.entry("TIX", 0x2C),
             Map.entry("TIXR", 0xB8)
     );
-    private static final Set<String> VALID_MNEMONICS = new HashSet<>(Arrays.asList(
-            "START", "END", "BYTE", "WORD", "RESB", "RESW", "BASE", "NOBASE", "EQU", "LTORG",
-            "ADD", "ADDR", "AND", "CLEAR", "COMP", "COMPR", "DIV", "DIVR",
-            "J", "JEQ", "JGT", "JLT", "JSUB", "LDA", "LDB", "LDCH", "LDL", "LDS",
-            "LDT", "LDX", "MUL", "MULR", "OR", "RMO", "RSUB", "SHIFTL", "SHIFTR",
-            "STA", "STB", "STCH", "STL", "STS", "STT", "STX", "SUB", "SUBR", "TIX",
-            "TIXR"
-    ));
 
-    // Getters
+    public static final String SAVE_DIR = "src/main/resources/saved";
 
-    public static int getOpcode(String mnemonic) {
-        if (!isValidMnemonic(mnemonic))
-            throw new IllegalArgumentException("Instrução desconhecida: " + mnemonic);
-        return OPCODES.get(mnemonic.toUpperCase());
-    }
-
-    // Checkers
-
-    public static boolean isValidMnemonic(String mnemonic) {
-        return OPCODES.containsKey(mnemonic.toUpperCase());
-    }
-
-    public static boolean isMnemonic(String token) {
-        return VALID_MNEMONICS.contains(token.toUpperCase());
-    }
-
-    // Mappers
-
-    public static int mapSimulationSpeedToCycleDelay(int simulationSpeeed) {
-        return switch (simulationSpeeed) {
-            case 1 -> 1000;
-            case 2 -> 500;
-            case 3 -> 250;
-            case 4 -> 100;
-            default -> 0;
-        };
-    }
 }

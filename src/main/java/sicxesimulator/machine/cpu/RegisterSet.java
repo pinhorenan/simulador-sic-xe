@@ -7,6 +7,9 @@ import java.util.Map;
 public class RegisterSet {
     protected final Map<String, Register> registers = new HashMap<>();
 
+    /**
+     * Cria um novo conjunto de registradores.
+     */
     public RegisterSet() {
         registers.put("A", new Register("A"));
         registers.put("X", new Register("X"));
@@ -19,15 +22,18 @@ public class RegisterSet {
         registers.put("SW", new Register("SW"));
     }
 
+    /// ===== Métodos Getters =====
     public Register getRegister(String name) {
         return registers.get(name);
-    }
-
-    public void clearAll() {
-        registers.values().forEach(Register::clearRegister);
     }
 
     public Collection<Register> getAllRegisters() {
         return this.registers.values();
     }
+
+    /// ===== Métodos Auxiliares =====
+    public void clearAll() {
+        registers.values().forEach(Register::clearRegister);
+    }
+
 }

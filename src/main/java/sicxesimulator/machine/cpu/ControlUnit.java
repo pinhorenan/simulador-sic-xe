@@ -5,6 +5,10 @@ import sicxesimulator.models.Instruction;
 
 import java.util.logging.Logger;
 
+/**
+ * Classe responsável pelo controle do ciclo de execução do processador do simulador SIC/XE.
+ * Gerencia a decodificação e execução das instruções.
+ */
 public class ControlUnit {
     private static final Logger logger = Logger.getLogger(ControlUnit.class.getName());
 
@@ -16,6 +20,11 @@ public class ControlUnit {
     private boolean halted;
     private String lastExecutionLog;
 
+    /**
+     * Constrói uma nova instância da unidade de controle, inicializando os componentes necessários.
+     *
+     * @param memory Memória utilizada pela CPU para acessar instruções e dados.
+     */
     public ControlUnit(Memory memory) {
         this.registerSet = new RegisterSet();
         this.decoder = new InstructionDecoder(registerSet, memory);
@@ -23,53 +32,107 @@ public class ControlUnit {
         this.halted = false;
     }
 
+    /// ===== Métodos de Acesso e Modificação =====
+
+    /**
+     * Retorna o conjunto de registradores do processador.
+     * @return o RegisterSet do processador.
+     */
     public RegisterSet getRegisterSet() {
         return this.registerSet;
     }
 
+    /**
+     * Retorna o log da última execução de instrução.
+     * @return String com o log da última execução.
+     */
     public String getLastExecutionLog() {
         return lastExecutionLog;
     }
 
+    /**
+     * Retorna o valor inteiro do registrador PC.
+     * @return o valor atual do PC.
+     */
     public int getIntValuePC() {
         return registerSet.getRegister("PC").getIntValue();
     }
 
+    /**
+     * Define o valor do registrador PC.
+     * @param value valor a ser atribuído ao PC.
+     */
     public void setIntValuePC(int value) {
         registerSet.getRegister("PC").setValue(value);
     }
 
     /**
-     * Executa um ciclo completo: fetch, decode, incrementa o PC e execução da instrução.
+     * Define o status halted do processador.
+     * @param halted true se o processador deve ser interrompido.
      */
-    public void step() {
-        // Fetch
-        logger.info("Fetching instruction at PC: " + String.format("%06X", getIntValuePC()));
-        currentInstruction = decoder.decodeInstruction();
-
-        // Log dos dados decodificados
-        logger.info(String.format("Instrução decodificada: Formato %d, Opcode %s, EffectiveAddress %06X, Operandos %s, Indexed: %s",
-                currentInstruction.format(),
-                Integer.toHexString(currentInstruction.opcode()),
-                currentInstruction.effectiveAddress(),
-                java.util.Arrays.toString(currentInstruction.operands()),
-                currentInstruction.indexed()));
-
-        // Incrementa o PC (antes da execução, para manter o PC para cálculos PC-relativos)
-        incrementPC(currentInstruction.getSizeInBytes());
-        logger.info(String.format("PC incrementado para: %06X", getIntValuePC()));
-
-        // Executa a instrução
-        lastExecutionLog = executeInstruction();
-        logger.info("Log de execução: " + lastExecutionLog);
-
-        // Log do PC após execução
-        logger.info("PC após execução: " + String.format("%06X", getIntValuePC()));
+    public void setHalted(boolean halted) {
+        this.halted = halted;
     }
 
     /**
-     * Executa a instrução armazenada em currentInstruction.
-     * Inclui um switch-case para instruções de formato 2 e 3.
+     * Verifica se o processador está em estado halted.
+     * @return true se estiver halted, false caso contrário.
+     */
+    public boolean isProcessorHalted() {
+        return halted;
+    }
+
+    /// ===== Métodos de Controle do Ciclo de Execução =====
+
+    /**
+     * Realiza um passo completo do ciclo de execução: busca, decodificação e execução da instrução.
+     */
+    public void step() {
+        fetch();
+        incrementPC(currentInstruction.getSizeInBytes());
+        lastExecutionLog = executeInstruction();
+    }
+
+    /**
+     * Realiza a busca e decodificação da próxima instrução a partir do PC.
+     */
+    private void fetch() {
+        currentInstruction = decoder.decodeInstruction();
+    }
+
+    /**
+     * Incrementa o valor do PC com base no tamanho da instrução atual.
+     * @param instructionSizeInBytes o tamanho da instrução atual em bytes.
+     */
+    private void incrementPC(int instructionSizeInBytes) {
+        setIntValuePC(getIntValuePC() + instructionSizeInBytes);
+    }
+
+    /// ===== Métodos Utilitários =====
+
+    /**
+     * Limpa o conteúdo de todos os registradores.
+     */
+    public void clearAllRegisters() {
+        registerSet.clearAll();
+    }
+
+    /**
+     * Reseta a unidade de controle e todos os seus componentes associados para o estado inicial.
+     */
+    public void reset() {
+        decoder.resetProgramCounter();
+        clearAllRegisters();
+        setHalted(false);
+        currentInstruction = null;
+        lastExecutionLog = null;
+    }
+
+    /// ===== Métodos Internos Privados =====
+
+    /**
+     * Executa a instrução atual, determinando a operação correta com base no formato e opcode.
+     * @return uma string com o log da operação executada.
      */
     private String executeInstruction() {
         int format = currentInstruction.format();
@@ -162,7 +225,7 @@ public class ControlUnit {
                     case 0x4C:
                         log = executionUnit.executeRSUB();
                         if (log.contains("HALT")) {
-                            setHalted();
+                            setHalted(true);
                         }
                         break;
                     case 0xA4:
@@ -212,22 +275,5 @@ public class ControlUnit {
                 throw new IllegalStateException("Formato de instrução não implementado: " + currentInstruction.format());
         }
         return log;
-    }
-
-    private void incrementPC(int instructionSizeInBytes) {
-        setIntValuePC(getIntValuePC() + instructionSizeInBytes);
-    }
-
-    public void setHalted() {
-        halted = true;
-    }
-
-    public boolean isHalted() {
-        return halted;
-    }
-
-    public void reset() {
-        registerSet.clearAll();
-        halted = false;
     }
 }

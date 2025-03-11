@@ -9,7 +9,6 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Priority;
 
 public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
 
@@ -22,15 +21,16 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
         // Criação das colunas (removemos a coluna "Selecionado")
         TableColumn<ObjectFileTableItem, String> nameCol = new TableColumn<>("Programa");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("programName"));
-        nameCol.setPrefWidth(150);
+        nameCol.setPrefWidth(80);
+        nameCol.setMaxWidth(Double.MAX_VALUE);
 
         TableColumn<ObjectFileTableItem, String> sizeCol = new TableColumn<>("Tamanho");
         sizeCol.setCellValueFactory(new PropertyValueFactory<>("size"));
-        sizeCol.setPrefWidth(100);
+        sizeCol.setPrefWidth(80);
 
         TableColumn<ObjectFileTableItem, String> dateCol = new TableColumn<>("Data de Montagem");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("mountDate"));
-        dateCol.setPrefWidth(150);
+        dateCol.setPrefWidth(120);
 
         this.getColumns().addAll(nameCol, sizeCol, dateCol);
         this.setItems(entries);

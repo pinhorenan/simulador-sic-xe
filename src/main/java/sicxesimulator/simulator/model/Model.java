@@ -10,7 +10,7 @@ import sicxesimulator.macroprocessor.MacroProcessor;
 import sicxesimulator.machine.Machine;
 import sicxesimulator.utils.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,12 +24,19 @@ public class Model {
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
 
+    // Estados reativos
+    private final BooleanProperty codeLoaded = new SimpleBooleanProperty(false);
+    private final BooleanProperty simulationPaused = new SimpleBooleanProperty(false);
+    private final BooleanProperty simulationFinished = new SimpleBooleanProperty(false);
     // Listeners
+
     private final List<ModelListener> listeners = new ArrayList<>();
 
     // Arquivos de objeto
-    private final List<ObjectFile> objectFileList = new ArrayList<>();
-    private ObjectFile mostRecentObjectFile = null;
+    private final List<ObjectFile> objectFileList;
+
+    // Último arquivo carregado
+    private ObjectFile lastLoadedCode;
 
     // View state
     private final ViewConfig viewConfig = new ViewConfig();
@@ -38,12 +45,6 @@ public class Model {
     private int memorySize;
     private int simulationSpeed;
 
-    // Estados reativos
-    private final BooleanProperty codeLoaded = new SimpleBooleanProperty(false);
-    private final BooleanProperty simulationPaused = new SimpleBooleanProperty(false);
-    private final BooleanProperty simulationFinished = new SimpleBooleanProperty(false);
-
-
     public Model() {
         this.machine = new Machine();
         this.memorySize = machine.getMemorySize();
@@ -51,6 +52,10 @@ public class Model {
         this.macroProcessor = new MacroProcessor();
         this.assembler = new Assembler();
         this.linker = new Linker();
+
+        // Verifica a pasta apontada pela constante "SAVE_DIR" e carrega os arquivos de objeto
+        objectFileList = new ArrayList<>();
+        loadObjectFilesFromSaveDir();
     }
 
     /// Métodos de notificação
@@ -75,21 +80,12 @@ public class Model {
         return viewConfig;
     }
 
-    ///  Getters de arquivos "em cache"
-
-    public ObjectFile getMostRecentObjectFile() {
-        return mostRecentObjectFile;
-    }
-
     public List<ObjectFile> getObjectFilesList() {
         return objectFileList;
     }
 
-    public ObjectFile getObjectFileByName(String selectedFileName) {
-        return objectFileList.stream()
-                .filter(objFile -> objFile.getFilename().equals(selectedFileName))
-                .findFirst()
-                .orElse(null);
+    public ObjectFile getLastLoadedCode() {
+        return lastLoadedCode;
     }
 
     ///  Getters/Setters de atributos do modelo
@@ -140,35 +136,26 @@ public class Model {
 
     /// Controle dos módulos (montador, processador de macros, ligador, carregador)
 
-    public void assembleCode(List<String> macroProcessedWords) {
-        ObjectFile machineCode = assembler.assemble(macroProcessedWords);
-        updateObjectFileList(machineCode);
-    }
-
-    public List<String> expandMacros(List<String> sourceLines) throws IOException {
-        String tempInputFile = "temp.asm";
+    public List<String> processCodeMacros(List<String> sourceLines) throws IOException {
+        String tempInputFile = "temp.asm"; // TODO: Revisar;
         String macroOutputFile = "MASMAPRG.ASM"; // Nome definido nas especificações
         Files.write(Path.of(tempInputFile), sourceLines, StandardCharsets.UTF_8);
+
         macroProcessor.process(tempInputFile, macroOutputFile);
+
         return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
     }
 
-    public void loadObjectFile(ObjectFile selectedFile) {
-        if (selectedFile != null) {
-            loader.load(selectedFile);
-            notifyListeners();  // Notifica os listeners quando um novo arquivo é carregado
-        }
+    public ObjectFile assembleCode(List<String> preProcessedSourceCode) throws IOException {
+        ObjectFile machineCode = assembler.assemble(preProcessedSourceCode);
+        addAndSaveObjectFileToList(machineCode);
+
+        return machineCode;
     }
 
-    public void updateObjectFileList(ObjectFile objectFile) {
-        objectFileList.add(objectFile);
-        mostRecentObjectFile = objectFile;
-        notifyListeners();
-    }
-
-    public ObjectFile linkProgram(List<ObjectFile> objectFiles, int loadAddress, boolean fullRelocation) {
+    public ObjectFile linkObjectFiles(List<ObjectFile> objectFiles, int loadAddress, boolean fullRelocation) {
         ObjectFile linkedObject = linker.link(objectFiles, loadAddress, fullRelocation);
-        updateObjectFileList(linkedObject);
+        addAndSaveObjectFileToList(linkedObject);
         return linkedObject;
     }
 
@@ -178,21 +165,10 @@ public class Model {
         machine.runCycle();
     }
 
-    public void reset() {
-        machine.reset();
-        assembler.reset();
-        objectFileList.clear();
-        setCodeLoaded(false);
-        setSimulationFinished(false);
-        setSimulationPaused(false);
-    }
-
-    ///  Métodos auxiliares
-
     public void applyCycleDelay() {
         if (simulationSpeed > 0) {
             try {
-                long delay = Mapper.mapSimulationSpeedToCycleDelay(simulationSpeed);
+                long delay = Map.simulationSpeedToCycleDelay(simulationSpeed);
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
                 System.err.println("Execução interrompida: " + e.getMessage());
@@ -201,8 +177,72 @@ public class Model {
         }
     }
 
-    public void removeObjectFile(ObjectFile objectFile) {
-        objectFileList.remove(objectFile);
+    public String restartMachine() {
+        setCodeLoaded(false);
+        setSimulationFinished(false);
+        return machine.reset();
+    }
+
+    public void loadProgramToMachine(ObjectFile selectedFile) {
+        if (selectedFile != null) {
+            loader.load(selectedFile, 768); // Endereço de carga padrão: 0x300
+            setCodeLoaded(true);
+            lastLoadedCode = selectedFile;
+            notifyListeners();  // Notifica os listeners quando um novo arquivo é carregado
+        }
+    }
+
+    /// ===== Manipulação da lista de arquivos objeto =====
+
+
+    // TODO: Revisar, está dando acesso negado ao tentar salvar o arquivo
+    public void addAndSaveObjectFileToList(ObjectFile objectFile) {
+        File savedDir = new File("src/main/resources/saved");
+        if (!savedDir.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            savedDir.mkdirs();
+        }
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(savedDir))) {
+            // Escreve o ObjectFile no arquivo
+            oos.writeObject(objectFile);
+            objectFileList.add(objectFile);
+        } catch (IOException e) {
+            DialogUtil.showError("Erro ao salvar o arquivo: " + e.getMessage());
+        }
+        notifyListeners();
+    }
+
+    public void loadObjectFilesFromSaveDir() {
+        File savedDir = new File(Constants.SAVE_DIR);
+
+        // Verifica se o diretório existe
+        if (savedDir.exists() && savedDir.isDirectory()) {
+            File[] files = savedDir.listFiles((dir, name) -> name.endsWith(".obj"));  // Filtra arquivos .obj
+            if (files != null) {
+                for (File file : files) {
+                    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                        // Carrega o ObjectFile do arquivo
+                        ObjectFile objectFile = (ObjectFile) ois.readObject();
+                        // Adiciona à lista de arquivos
+                        objectFileList.add(objectFile);
+                    } catch (IOException | ClassNotFoundException e) {
+                        DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    public void removeAndDeleteObjectFileFromList(ObjectFile objectFile) {
+        File file = new File(Constants.SAVE_DIR, objectFile.getFilename() + ".obj");
+
+        // Verifica se o arquivo existe e o deleta
+        if (file.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+            objectFileList.remove(objectFile);
+        }
     }
 }
 

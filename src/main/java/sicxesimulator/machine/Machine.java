@@ -18,23 +18,23 @@ public class Machine {
      * Executa um ciclo de máquina, avançando a execução em uma instrução.
      */
     public void runCycle() {
-        if (controlUnit.isHalted()) return;
+        if (controlUnit.isProcessorHalted()) return;
 
         try {
             controlUnit.step();
         } catch (Exception e) {
             System.err.println("Erro na execução: " + e.getMessage());
-            controlUnit.reset();
+            reset();
         }
     }
 
     /**
      * Reinicia a máquina, limpando a memória e resetando a unidade de controle.
      */
-    public void reset() {
+    public String reset() {
         memory.clearMemory();
         controlUnit.reset();
-        System.out.println("Máquina reiniciada.");
+        return "Máquina reiniciada.";
     }
 
     /**

@@ -34,27 +34,24 @@ public class LinkerSecondPass {
                               boolean fullRelocation,
                               SymbolTable globalSymbolTable,
                               String programName) {
-        // Calcula o tamanho total do programa (em bytes)
         int totalProgramSize = 0;
         for (ObjectFile obj : objectFiles) {
-            totalProgramSize += obj.getObjectCode().length;
+            totalProgramSize += obj.getMachineCode().length;
         }
-
         byte[] linkedObjectCode = new byte[totalProgramSize];
         int cumulativeOffset = 0;
 
-        // Para cada módulo, aplica o offset (se fullRelocation for true) e concatena o código objeto.
+        // Se fullRelocation for true, ajusta cada instrução; caso contrário, concatena sem alteração.
         for (ObjectFile obj : objectFiles) {
             int relocationOffset = moduleRelocationOffsets.get(obj);
-            byte[] objCode = obj.getObjectCode().clone();
+            byte[] objCode = obj.getMachineCode().clone();
             if (fullRelocation) {
-                // Percorre cada palavra (3 bytes) e ajusta o valor absoluto.
+                // Aplica a relocação: para cada palavra (3 bytes) ajusta o valor
                 for (int i = 0; i < objCode.length; i += 3) {
                     int value = ((objCode[i] & 0xFF) << 16) |
                             ((objCode[i + 1] & 0xFF) << 8) |
                             (objCode[i + 2] & 0xFF);
                     value += relocationOffset;
-                    // Atualiza os 3 bytes com o valor ajustado.
                     objCode[i]     = (byte) ((value >> 16) & 0xFF);
                     objCode[i + 1] = (byte) ((value >> 8) & 0xFF);
                     objCode[i + 2] = (byte) (value & 0xFF);
@@ -64,10 +61,19 @@ public class LinkerSecondPass {
             cumulativeOffset += objCode.length;
         }
 
-        // O startAddress do ObjectFile final é armazenado em palavras.
-        // Como loadAddress está em bytes, convertemos dividindo por 3.
-        int finalStartAddress = loadAddress / 3;
+        int finalStartAddress;
+        if (fullRelocation) {
+            // Já relocacionado: startAddress em palavras será loadAddress/3.
+            finalStartAddress = loadAddress / 3;
+        } else {
+            // Se não for relocacionado, mantém o startAddress original do primeiro módulo
+            // (pressupondo que os módulos foram montados com startAddress em palavras)
+            finalStartAddress = objectFiles.get(0).getStartAddress();
+        }
 
-        return new ObjectFile(finalStartAddress, linkedObjectCode, globalSymbolTable, programName);
+        ObjectFile finalObj = new ObjectFile(finalStartAddress, linkedObjectCode, globalSymbolTable, programName);
+        finalObj.setRelocated(fullRelocation);
+        return finalObj;
     }
+
 }

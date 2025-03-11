@@ -116,4 +116,8 @@ public class InstructionDecoder {
         }
         return EA;
     }
+
+    public void resetProgramCounter() {
+        registers.getRegister("PC").getIntValue();
+    }
 }

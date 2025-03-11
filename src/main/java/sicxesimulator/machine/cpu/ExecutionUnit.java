@@ -3,16 +3,21 @@ package sicxesimulator.machine.cpu;
 import sicxesimulator.machine.Memory;
 import sicxesimulator.models.Instruction;
 import sicxesimulator.utils.Convert;
+import sicxesimulator.utils.Map;
 
 import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class ExecutionUnit {
-
-    private static final Logger logger = Logger.getLogger(ExecutionUnit.class.getName());
     private final RegisterSet registers;
     private final Memory memory;
 
+    /// Logger para mensagens de depuração
+    private static final Logger logger = Logger.getLogger(ExecutionUnit.class.getName());
+
+    /**
+     * Cria uma nova unidade de execução com os registradores e memória fornecidos.
+     */
     public ExecutionUnit(RegisterSet registers, Memory memory) {
         this.registers = registers;
         this.memory = memory;
@@ -29,10 +34,17 @@ public class ExecutionUnit {
         return effectiveAddress / 3;
     }
 
-    // ===============================================================
-    // Métodos para operações aritméticas e lógicas (inteiras)
-    // ===============================================================
+    /// ===============================================================
+    /// Métodos para operações aritméticas e lógicas (inteiras)
+    /// ===============================================================
 
+    /**
+     * Executa a operação ADD: soma o valor da memória ao acumulador.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeADD(int[] operands, boolean indexed, int effectiveAddress) {
         logger.fine(String.format("executeADD: effectiveAddress = %06X", effectiveAddress));
         Register A = registers.getRegister("A");
@@ -48,10 +60,15 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação ADDR: soma o valor de um registrador ao outro.
+     * @param operands Operandos da instrução.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeADDR(int[] operands) {
         // operands[0] = r1, operands[1] = r2
-        Register reg1 = getRegisterByNumber(operands[0]);
-        Register reg2 = getRegisterByNumber(operands[1]);
+        Register reg1 = Map.numberToRegister(operands[0], registers);
+        Register reg2 = Map.numberToRegister(operands[1], registers);
         int result = reg1.getIntValue() + reg2.getIntValue();
         reg2.setValue(result);
         updateConditionCode(result);
@@ -60,6 +77,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação AND: realiza uma operação AND bit a bit entre o acumulador e o valor da memória.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeAND(int[] operands, boolean indexed, int effectiveAddress) {
         logger.fine(String.format("executeAND: effectiveAddress = %06X", effectiveAddress));
         Register A = registers.getRegister("A");
@@ -75,6 +99,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação COMP: compara o acumulador com o valor lido da memória.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeSUB(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
@@ -87,9 +118,14 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação SUBR: subtrai o valor de um registrador do outro.
+     * @param operands Operandos da instrução.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeSUBR(int[] operands) {
-        Register r1 = getRegisterByNumber(operands[0]);
-        Register r2 = getRegisterByNumber(operands[1]);
+        Register r1 = Map.numberToRegister(operands[0], registers);
+        Register r2 = Map.numberToRegister(operands[1], registers);
         int result = r2.getIntValue() - r1.getIntValue();
         r2.setValue(result);
         updateConditionCode(result);
@@ -98,6 +134,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação DIV: divide o acumulador pelo valor lido da memória.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeDIV(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
@@ -113,9 +156,14 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação DIVR: divide o valor de um registrador pelo outro.
+     * @param operands Operandos da instrução.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeDIVR(int[] operands) {
-        Register r1 = getRegisterByNumber(operands[0]);
-        Register r2 = getRegisterByNumber(operands[1]);
+        Register r1 = Map.numberToRegister(operands[0], registers);
+        Register r2 = Map.numberToRegister(operands[1], registers);
         if (r1.getIntValue() == 0) {
             throw new ArithmeticException("Divisão por zero");
         }
@@ -127,6 +175,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação MUL: multiplica o acumulador pelo valor lido da memória.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeMUL(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
@@ -139,6 +194,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação MULR: multiplica um registrador pelo outro.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeSUBF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -156,9 +218,14 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Executa a operação MULF: multiplica o acumulador de ponto flutuante pelo valor lido da memória.
+     * @param operands Operandos da instrução.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeMULR(int[] operands) {
-        Register r1 = getRegisterByNumber(operands[0]);
-        Register r2 = getRegisterByNumber(operands[1]);
+        Register r1 = Map.numberToRegister(operands[0], registers);
+        Register r2 = Map.numberToRegister(operands[1], registers);
         int result = r1.getIntValue() * r2.getIntValue();
         r2.setValue(result);
         updateConditionCode(result);
@@ -167,10 +234,17 @@ public class ExecutionUnit {
         return log;
     }
 
-    // ===============================================================
-    // Operações de ponto flutuante (48 bits, para o registrador F)
-    // ===============================================================
+    /// ===============================================================
+    /// Operações de ponto flutuante (48 bits, para o registrador F)
+    /// ===============================================================
 
+    /**
+     * Converte um array de 6 bytes para um valor inteiro de 48 bits.
+     * @param operands Array de 6 bytes.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeADDF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -188,6 +262,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Converte um valor inteiro de 48 bits para um array de 6 bytes.
+     * @param operands Array de 6 bytes.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeCOMPF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -206,6 +287,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Converte um valor inteiro de 48 bits para um array de 6 bytes.
+     * @param operands Array de 6 bytes.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeDIVF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -226,6 +314,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Converte um valor inteiro de 48 bits para um array de 6 bytes.
+     * @param operands Array de 6 bytes.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeMULF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -243,8 +338,11 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Converte o valor de F para inteiro e armazena em A (truncamento simples)
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeFIX() {
-        // Converte o valor de F para inteiro e armazena em A (truncamento simples)
         Register F = registers.getRegister("F");
         Register A = registers.getRegister("A");
         int fixedValue = (int) F.getLongValue();
@@ -254,8 +352,11 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Converte o valor inteiro de A para ponto flutuante e armazena em F
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeFLOAT() {
-        // Converte o valor inteiro de A para ponto flutuante e armazena em F
         Register A = registers.getRegister("A");
         Register F = registers.getRegister("F");
         long floatValue = A.getIntValue(); // Conversão simples
@@ -265,16 +366,27 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * NORM: Operação de normalização não implementada.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeNORM() {
         String log = "NORM: Operação de normalização não implementada.";
         logger.info(log);
         return log;
     }
 
-    // ===============================================================
-    // Operações de controle de fluxo (saltos e sub-rotinas)
-    // ===============================================================
+    /// ===============================================================
+    /// Operações de controle de fluxo (saltos e sub-rotinas)
+    /// ===============================================================
 
+    /**
+     * Salta para o endereço indicado.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeJ(int[] operands, boolean indexed, int effectiveAddress) {
         registers.getRegister("PC").setValue(effectiveAddress);
         String log = String.format("J: PC ← %06X", effectiveAddress);
@@ -282,6 +394,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Salta para o endereço indicado se a condição for satisfeita (SW = 0).
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeJEQ(int[] operands, boolean indexed, int effectiveAddress) {
         if (registers.getRegister("SW").getIntValue() == 0) {
             registers.getRegister("PC").setValue(effectiveAddress);
@@ -295,6 +414,13 @@ public class ExecutionUnit {
         }
     }
 
+    /**
+     * Salta para o endereço indicado se a condição for satisfeita (SW = 1).
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeJGT(int[] operands, boolean indexed, int effectiveAddress) {
         if (registers.getRegister("SW").getIntValue() == 2) {
             registers.getRegister("PC").setValue(effectiveAddress);
@@ -308,6 +434,13 @@ public class ExecutionUnit {
         }
     }
 
+    /**
+     * Salta para o endereço indicado se a condição for satisfeita (SW = 2).
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeJLT(int[] operands, boolean indexed, int effectiveAddress) {
         if (registers.getRegister("SW").getIntValue() == 1) {
             registers.getRegister("PC").setValue(effectiveAddress);
@@ -321,6 +454,13 @@ public class ExecutionUnit {
         }
     }
 
+    /**
+     * Salta para o endereço indicado se a condição for satisfeita (SW = 3).
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeJSUB(int[] operands, boolean indexed, int effectiveAddress) {
         int returnAddress = registers.getRegister("PC").getIntValue();
         registers.getRegister("L").setValue(returnAddress);
@@ -330,6 +470,10 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Retorna de uma sub-rotina (endereço armazenado em L) ou encerra a execução (L = 0).
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeRSUB() {
         int returnAddress = registers.getRegister("L").getIntValue();
         if (returnAddress == 0) {
@@ -344,10 +488,17 @@ public class ExecutionUnit {
         return log;
     }
 
-    // ===============================================================
-    // Operações de carregamento (load) e armazenamento (store)
-    // ===============================================================
+    /// ===============================================================
+    /// Operações de carregamento (load) e armazenamento (store)
+    /// ===============================================================
 
+    /**
+     * Carrega o valor da memória no registrador 'A'.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeLDA(int[] operands, boolean indexed, int effectiveAddress) {
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
         int value = Convert.bytesToInt(wordBytes);
@@ -357,6 +508,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Carrega o valor da memória no registrador 'B'.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeLDB(int[] operands, boolean indexed, int effectiveAddress) {
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
         int value = Convert.bytesToInt(wordBytes);
@@ -366,6 +524,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Carrega o valor da memória no byte mais à direita do registrador 'A'.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeLDCH(int[] operands, boolean indexed, int effectiveAddress) {
         int byteValue = memory.readByte(toWordAddress(effectiveAddress));
         Register A = registers.getRegister("A");
@@ -377,6 +542,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * LDF: Implementação rascunho.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeLDF(int[] operands, boolean indexed, int effectiveAddress) {
         int wordAddr = toWordAddress(effectiveAddress);
         byte[] firstWord = memory.readWord(wordAddr);
@@ -391,6 +563,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Carrega o valor da memória no registrador 'L'.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeLDL(int[] operands, boolean indexed, int effectiveAddress) {
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
         int value = Convert.bytesToInt(wordBytes);
@@ -400,6 +579,13 @@ public class ExecutionUnit {
         return log;
     }
 
+    /**
+     * Carrega o valor da memória no registrador 'S'.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
+     */
     public String executeLDS(int[] operands, boolean indexed, int effectiveAddress) {
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
         int value = Convert.bytesToInt(wordBytes);
@@ -410,13 +596,14 @@ public class ExecutionUnit {
     }
 
     /**
-     * Executa a operação CLEAR ou LDX.
-     * Se houver apenas um operando, assume CLEAR (zera o registrador indicado).
-     * Caso contrário, trata como LDX (carrega o valor da memória no registrador X).
+     * Executa "CLEAR" ou "LDX" (carrega o valor da memória no registrador X).
+     * @param instruction Instrução a ser executada.
+     * @param operands Operandos da instrução.
+     * @return Mensagem de log com o resultado da operação.
      */
     public String executeCLEAR_LDX(Instruction instruction, int[] operands) {
         if (operands.length == 1) { // CLEAR
-            Register reg = getRegisterByNumber(operands[0]);
+            Register reg = Map.numberToRegister(operands[0], registers);
             reg.setValue(0);
             String log = String.format("CLEAR: R%d zerado", operands[0]);
             logger.info(log);
@@ -433,7 +620,11 @@ public class ExecutionUnit {
     }
 
     /**
-     * Executa a operação COMP: compara o acumulador com o valor lido da memória.
+     * Compara o valor do acumulador com o valor lido da memória.
+     * @param operands Operandos da instrução.
+     * @param indexed Indica se o endereço é indexado.
+     * @param effectiveAddress Endereço efetivo da operação.
+     * @return Mensagem de log com o resultado da operação.
      */
     public String executeCOMP(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
@@ -451,8 +642,8 @@ public class ExecutionUnit {
      * Executa a operação COMPR: compara dois registradores.
      */
     public String executeCOMPR(int[] operands) {
-        Register r1 = getRegisterByNumber(operands[0]);
-        Register r2 = getRegisterByNumber(operands[1]);
+        Register r1 = Map.numberToRegister(operands[0], registers);
+        Register r2 = Map.numberToRegister(operands[1], registers);
         int comparison = r1.getIntValue() - r2.getIntValue();
         updateConditionCode(comparison);
         String log = String.format("COMPR: R%d=%06X vs R%d=%06X => %s",
@@ -481,7 +672,7 @@ public class ExecutionUnit {
      * O primeiro operando indica o registrador, e o segundo a quantidade de bits.
      */
     public String executeSHIFTL(int[] operands) {
-        Register reg = getRegisterByNumber(operands[0]);
+        Register reg = Map.numberToRegister(operands[0], registers);
         int count = operands[1];
         int value = reg.getIntValue() << count;
         reg.setValue(value);
@@ -496,7 +687,7 @@ public class ExecutionUnit {
      * O primeiro operando indica o registrador, e o segundo a quantidade de bits.
      */
     public String executeSHIFTR(int[] operands) {
-        Register reg = getRegisterByNumber(operands[0]);
+        Register reg = Map.numberToRegister(operands[0], registers);
         int count = operands[1];
         int value = reg.getIntValue() >>> count; // Deslocamento lógico
         reg.setValue(value);
@@ -640,8 +831,8 @@ public class ExecutionUnit {
     }
 
     public String executeRMO(int[] operands) {
-        Register source = getRegisterByNumber(operands[0]);
-        Register dest = getRegisterByNumber(operands[1]);
+        Register source = Map.numberToRegister(operands[0], registers);
+        Register dest = Map.numberToRegister(operands[1], registers);
         dest.setValue(source.getIntValue());
         String log = String.format("RMO: R%d → R%d | Valor = %06X", operands[0], operands[1], source.getIntValue());
         logger.info(log);
@@ -676,7 +867,7 @@ public class ExecutionUnit {
     public String executeTIXR(int[] operands) {
         Register X = registers.getRegister("X");
         X.setValue(X.getIntValue() + 1);
-        Register r = getRegisterByNumber(operands[0]);
+        Register r = Map.numberToRegister(operands[0], registers);
         int comparison = X.getIntValue() - r.getIntValue();
         updateConditionCode(comparison);
         String log = String.format("TIXR: X=%06X vs R%d=%06X => %s",
@@ -722,21 +913,7 @@ public class ExecutionUnit {
         };
     }
 
-    /**
-     * Retorna o registrador conforme o número:
-     * 0=A, 1=X, 2=L, 3=B, 4=S, 5=T.
-     */
-    private Register getRegisterByNumber(int num) {
-        return switch (num) {
-            case 0 -> registers.getRegister("A");
-            case 1 -> registers.getRegister("X");
-            case 2 -> registers.getRegister("L");
-            case 3 -> registers.getRegister("B");
-            case 4 -> registers.getRegister("S");
-            case 5 -> registers.getRegister("T");
-            default -> throw new IllegalArgumentException("Registrador inválido: " + num);
-        };
-    }
+
 
     /**
      * Converte um array de 6 bytes em um valor long (48 bits).

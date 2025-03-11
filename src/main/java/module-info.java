@@ -19,6 +19,7 @@ module sicxesimulator {
     exports sicxesimulator.macroprocessor;
     exports sicxesimulator.utils;
     exports sicxesimulator.models;
+    exports sicxesimulator.machine.cpu;
     exports sicxesimulator.simulator.view.records;
     opens sicxesimulator.simulator.view.records to javafx.controls, javafx.fxml, javafx.media;
     exports sicxesimulator.simulator.view.components.tables;

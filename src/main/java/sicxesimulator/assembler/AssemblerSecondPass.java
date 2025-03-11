@@ -5,7 +5,7 @@ import sicxesimulator.models.IntermediateRepresentation;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.models.SymbolTable;
 import sicxesimulator.utils.Convert;
-import sicxesimulator.utils.Mapper;
+import sicxesimulator.utils.Map;
 
 import sicxesimulator.logger.SimulatorLogger;
 
@@ -113,7 +113,7 @@ public class AssemblerSecondPass {
         String operandString = indexed ? operand.replace(",X", "") : operand;
 
         // Obtém o opcode a partir do mnemônico
-        int opcode = Mapper.getOpcode(mnemonic);
+        int opcode = Map.mnemonicToOpcode(mnemonic);
 
         // Resolve o endereço do operando (retorna em bytes)
         int operandAddress = resolveOperandAddress(operandString, symbolTable);

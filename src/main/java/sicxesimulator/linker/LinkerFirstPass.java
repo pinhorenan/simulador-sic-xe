@@ -63,7 +63,7 @@ class LinkerFirstPass {
             }
 
             // Atualiza o deslocamento acumulado: soma o tamanho do código objeto do módulo (em bytes)
-            cumulativeOffset += obj.getObjectCode().length;
+            cumulativeOffset += obj.getMachineCode().length;
         }
         programName = programNameBuilder.toString();
     }

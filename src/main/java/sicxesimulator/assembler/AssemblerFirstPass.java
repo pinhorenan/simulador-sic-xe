@@ -1,9 +1,9 @@
 package sicxesimulator.assembler;
 
+import sicxesimulator.logger.SimulatorLogger;
 import sicxesimulator.models.AssemblyLine;
 import sicxesimulator.models.IntermediateRepresentation;
-import sicxesimulator.logger.SimulatorLogger;
-import sicxesimulator.utils.Mapper;
+import sicxesimulator.utils.Check;
 
 import java.util.List;
 
@@ -36,12 +36,12 @@ class AssemblerFirstPass {
             String operand = null;
 
             if (parts.length > 0) {
-                if (Mapper.isMnemonic(parts[0])) {
+                if (Check.isMnemonic(parts[0])) {
                     mnemonic = parts[0];
                     if (parts.length > 1) {
                         operand = parts[1];
                     }
-                } else if (parts.length > 1 && Mapper.isMnemonic(parts[1])) {
+                } else if (parts.length > 1 && Check.isMnemonic(parts[1])) {
                     label = parts[0];
                     mnemonic = parts[1];
                     if (parts.length > 2) {

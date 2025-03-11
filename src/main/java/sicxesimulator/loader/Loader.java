@@ -17,22 +17,48 @@ public class Loader {
         this.machine = machine;
     }
 
-    public void load(ObjectFile objectFile) {
+    /**
+     * Carrega o ObjectFile na memória, aplicando relocação final caso necessário.
+     *
+     * @param objectFile  O objeto contendo o código objeto a ser carregado.
+     * @param loadAddress O endereço de carga absoluto (em bytes). Exemplo: se os módulos foram
+     *                    montados com START 300 (palavras), use loadAddress = 900 (300 * 3).
+     */
+    public void load(ObjectFile objectFile, int loadAddress) {
         Memory memory = machine.getMemory();
-        // Agora, startAddress já está em termos de palavras
-        int startWordAddress = objectFile.getStartAddress();
-
-        byte[] objectCode = objectFile.getObjectCode();
+        byte[] objectCode = objectFile.getMachineCode();
         validateObjectCode(objectCode);
+
+        int startWordAddress;
+        if (objectFile.isRelocated()) {
+            // Se o ObjectFile já estiver relocacionado, o startAddress está em palavras.
+            startWordAddress = objectFile.getStartAddress();
+        } else {
+            // Se não estiver relocacionado, o Loader aplica a relocação final.
+            // Calcula o deslocamento final em bytes.
+            // Exemplo: se o módulo foi montado com START 300 (palavras) e loadAddress é 900 bytes,
+            // relocationOffset = 900 - (300 * 3) = 0, ou seja, não há deslocamento.
+            int relocationOffset = loadAddress - (objectFile.getStartAddress() * 3);
+            // Ajusta cada palavra (3 bytes) do código objeto com o deslocamento calculado.
+            for (int i = 0; i < objectCode.length; i += 3) {
+                int value = ((objectCode[i] & 0xFF) << 16) |
+                        ((objectCode[i + 1] & 0xFF) << 8) |
+                        (objectCode[i + 2] & 0xFF);
+                value += relocationOffset;
+                objectCode[i]     = (byte) ((value >> 16) & 0xFF);
+                objectCode[i + 1] = (byte) ((value >> 8) & 0xFF);
+                objectCode[i + 2] = (byte) (value & 0xFF);
+            }
+            // Após a relocação, configura o PC com o loadAddress convertido para palavras.
+            startWordAddress = loadAddress / 3;
+        }
+
         validateMemoryBounds(memory, startWordAddress, objectCode.length / 3);
-
         loadProgramIntoMemory(memory, startWordAddress, objectCode);
-        // Inicializa o PC usando o endereço em palavras, sem conversão
-        machine.getControlUnit().setIntValuePC(startWordAddress);
-
+        // Configura o PC com o endereço de carga (em palavras)
+        machine.getControlUnit().setIntValuePC(startWordAddress*3);
         logSuccess(startWordAddress, objectCode);
     }
-
 
     private void validateObjectCode(byte[] objectCode) {
         if (objectCode.length % 3 != 0) {

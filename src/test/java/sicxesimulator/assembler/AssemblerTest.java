@@ -27,7 +27,7 @@ public class AssemblerTest {
         assertEquals(0x1000, objectFile.getStartAddress());
 
         // Verifica que o código objeto foi gerado corretamente
-        byte[] objectCode = objectFile.getObjectCode();
+        byte[] objectCode = objectFile.getMachineCode();
         assertNotNull(objectCode);
         assertTrue(objectCode.length > 0);
 

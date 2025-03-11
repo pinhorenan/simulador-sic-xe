@@ -1,3 +1,3 @@
-package sicxesimulator.simulator.view.records;
+package sicxesimulator.simulator.model.records;
 
 public record MemoryEntry(String address, String value) {}

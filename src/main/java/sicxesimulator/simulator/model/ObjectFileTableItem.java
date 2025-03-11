@@ -1,4 +1,4 @@
-package sicxesimulator.simulator.view.components.tables;
+package sicxesimulator.simulator.model;
 
 import javafx.beans.property.*;
 import sicxesimulator.models.ObjectFile;

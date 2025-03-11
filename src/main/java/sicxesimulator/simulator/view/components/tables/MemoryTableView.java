@@ -1,7 +1,7 @@
 package sicxesimulator.simulator.view.components.tables;
 
 import javafx.scene.control.TableColumn;
-import sicxesimulator.simulator.view.records.MemoryEntry;
+import sicxesimulator.simulator.model.records.MemoryEntry;
 
 public class MemoryTableView extends BaseTableView<MemoryEntry> {
 

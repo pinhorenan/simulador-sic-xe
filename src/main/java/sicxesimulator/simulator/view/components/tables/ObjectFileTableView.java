@@ -9,6 +9,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
+import sicxesimulator.simulator.model.ObjectFileTableItem;
 
 public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
 

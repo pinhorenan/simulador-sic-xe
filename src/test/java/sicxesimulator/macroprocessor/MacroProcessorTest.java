@@ -22,7 +22,7 @@ public class MacroProcessorTest {
 
         // Exemplo de código-fonte com definição e chamada de macro.
         // A definição da macro MYMACRO deve ser removida do arquivo de saída,
-        // e a chamada "FIRST  MYMACRO" deve ser expandida para o corpo da macro.
+        // e a chamada "FIRST MYMACRO" deve ser expandida para o corpo da macro.
         String inputCode = """
             MYMACRO MACRO
             LDA   FIVE

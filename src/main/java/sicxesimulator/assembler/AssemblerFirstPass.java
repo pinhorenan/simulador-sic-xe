@@ -20,6 +20,8 @@ class AssemblerFirstPass {
     protected IntermediateRepresentation process(List<String> sourceLines) {
         boolean endFound = false;
         IntermediateRepresentation midCode = new IntermediateRepresentation();
+        midCode.setRawSourceCode(sourceLines); // 🔹 Agora armazenamos o código-fonte original.
+
         int lineNumber = 0;
 
         for (String line : sourceLines) {
@@ -51,9 +53,7 @@ class AssemblerFirstPass {
             }
 
             if (mnemonic == null) {
-                String errorMsg = "Linha inválida na linha " + lineNumber + ": " + line;
-                SimulatorLogger.logError(errorMsg, null);
-                throw new IllegalArgumentException(errorMsg);
+                throw new IllegalArgumentException("Linha inválida na linha " + lineNumber + ": " + line);
             }
 
             if (mnemonic.equalsIgnoreCase("START")) {
@@ -61,11 +61,8 @@ class AssemblerFirstPass {
                     startAddress = parseAddress(operand);
                     locationCounter = startAddress;
                     midCode.setStartAddress(startAddress);
-                    SimulatorLogger.logAssemblyCode("Iniciando programa com START na linha " + lineNumber + ": endereço " + startAddress);
                 } catch (Exception e) {
-                    String errorMsg = "Erro ao processar START na linha " + lineNumber + ": " + operand;
-                    SimulatorLogger.logError(errorMsg, e);
-                    throw new IllegalArgumentException(errorMsg, e);
+                    throw new IllegalArgumentException("Erro ao processar START na linha " + lineNumber + ": " + operand, e);
                 }
                 if (label != null) {
                     midCode.addSymbol(label, locationCounter);
@@ -76,7 +73,6 @@ class AssemblerFirstPass {
 
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
-                SimulatorLogger.logAssemblyCode("Diretiva END encontrada na linha " + lineNumber + ". Endereço final: " + locationCounter);
                 continue;
             }
 
@@ -91,9 +87,7 @@ class AssemblerFirstPass {
         }
 
         if (!endFound) {
-            String errorMsg = "Diretiva END não encontrada.";
-            SimulatorLogger.logError(errorMsg, null);
-            throw new IllegalArgumentException(errorMsg);
+            throw new IllegalArgumentException("Diretiva END não encontrada.");
         }
 
         return midCode;
@@ -136,11 +130,5 @@ class AssemblerFirstPass {
             return operand.startsWith("C'") ? (operand.length() - 3 + 2) / 3 : operand.startsWith("X'") ? (operand.length() - 3 + 1) / 2 : 1;
         }
         return 1;
-    }
-
-    public void reset() {
-        locationCounter = 0;
-        startAddress = 0;
-        SimulatorLogger.logAssemblyCode("Resetando FirstPassProcessor.");
     }
 }

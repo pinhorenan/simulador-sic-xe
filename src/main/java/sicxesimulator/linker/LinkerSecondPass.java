@@ -3,6 +3,7 @@ package sicxesimulator.linker;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.models.SymbolTable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -68,10 +69,12 @@ public class LinkerSecondPass {
         } else {
             // Se não for relocacionado, mantém o startAddress original do primeiro módulo
             // (pressupondo que os módulos foram montados com startAddress em palavras)
-            finalStartAddress = objectFiles.get(0).getStartAddress();
+            finalStartAddress = objectFiles.getFirst().getStartAddress();
         }
 
-        ObjectFile finalObj = new ObjectFile(finalStartAddress, linkedObjectCode, globalSymbolTable, programName);
+        List<String> temp = new ArrayList<>(); // TODO: Implementar
+
+        ObjectFile finalObj = new ObjectFile(finalStartAddress, linkedObjectCode, globalSymbolTable, programName, temp);
         finalObj.setRelocated(fullRelocation);
         return finalObj;
     }

@@ -20,10 +20,15 @@ public class Assembler {
      * Executa a primeira passagem (para gerar a representação intermediária)
      * e depois a segunda passagem (para gerar o código objeto).
      */
-    public ObjectFile assemble(List<String> sourceCodeWithMacrosExpanded) {
-        IntermediateRepresentation midCode = firstPass(sourceCodeWithMacrosExpanded);
+    public ObjectFile assemble(List<String> originalSource, List<String> expandedSource) {
+        // Executa a primeira passagem com o código já expandido
+        IntermediateRepresentation midCode = firstPass(expandedSource);
+        // Armazena o código fonte original na IR, para que o ObjectFile tenha o código original
+        midCode.setRawSourceCode(originalSource);
+
         return secondPass(midCode);
     }
+
 
     /**
      * Realiza a primeira passagem delegando para a classe FirstPassProcessor.
@@ -37,13 +42,5 @@ public class Assembler {
      */
     public ObjectFile secondPass(IntermediateRepresentation midCode) {
         return secondPass.generateObjectFile(midCode);
-    }
-
-    /**
-     * Reinicializa o estado do Assembler e de seus processadores.
-     */
-    public void reset() {
-        firstPass.reset();
-        secondPass.reset();
     }
 }

@@ -2,6 +2,10 @@ package sicxesimulator.application.model;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import sicxesimulator.application.model.records.MemoryEntry;
+import sicxesimulator.application.model.records.RegisterEntry;
+import sicxesimulator.application.model.records.SymbolEntry;
+import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.assembler.Assembler;
 import sicxesimulator.linker.Linker;
@@ -88,6 +92,42 @@ public class Model {
         return lastLoadedCode;
     }
 
+    public List<MemoryEntry> getMemoryEntries() {
+        List<MemoryEntry> entries = new ArrayList<>();
+        var memory = machine.getMemory();
+        for (int wordIndex = 0; wordIndex < memory.getAddressRange(); wordIndex++) {
+            byte[] word = memory.readWord(wordIndex);
+            int byteAddress = wordIndex * 3;
+            String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
+            entries.add(new MemoryEntry(formattedAddress, Convert.bytesToHex(word)));
+        }
+        return entries;
+    }
+
+    public List<RegisterEntry> getRegisterEntries() {
+        List<RegisterEntry> entries = new ArrayList<>();
+        var registers = machine.getControlUnit().getRegisterSet().getAllRegisters();
+        for (Register register : registers) {
+            String value = ValueFormatter.formatRegisterValue(register, viewConfig.getAddressFormat());
+            entries.add(new RegisterEntry(register.getName(), value));
+        }
+        return entries;
+    }
+
+    public List<SymbolEntry> getSymbolEntries() {
+        List<SymbolEntry> entries = new ArrayList<>();
+        ObjectFile objectFile = getLastLoadedCode();
+        if (objectFile != null) {
+            var symbols = objectFile.getSymbolTable().getSymbols();
+            symbols.forEach((name, wordAddress) -> {
+                int byteAddress = wordAddress * 3;
+                String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
+                entries.add(new SymbolEntry(name, formattedAddress));
+            });
+        }
+        return entries;
+    }
+
     ///  Getters/Setters de atributos do modelo
 
     public void setSimulationSpeed(int newSimulationSpeed) {
@@ -108,6 +148,14 @@ public class Model {
 
     public int getMemorySize() {
         return memorySize;
+    }
+
+    public void setAddressFormat(String newFormat) {
+        viewConfig.setAddressFormat(newFormat);
+    }
+
+    public String getAddressFormat() {
+        return viewConfig.getAddressFormat();
     }
 
     public BooleanProperty codeLoadedProperty() {
@@ -136,18 +184,18 @@ public class Model {
 
     /// Controle dos módulos (montador, processador de macros, ligador, carregador)
 
-    public List<String> processCodeMacros(List<String> sourceLines) throws IOException {
+    public List<String> processCodeMacros(List<String> rawSourceLines) throws IOException {
         String tempInputFile = "temp.asm"; // TODO: Revisar;
         String macroOutputFile = "MASMAPRG.ASM"; // Nome definido nas especificações
-        Files.write(Path.of(tempInputFile), sourceLines, StandardCharsets.UTF_8);
+        Files.write(Path.of(tempInputFile), rawSourceLines, StandardCharsets.UTF_8);
 
         macroProcessor.process(tempInputFile, macroOutputFile);
 
         return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
     }
 
-    public ObjectFile assembleCode(List<String> preProcessedSourceCode) throws IOException {
-        ObjectFile machineCode = assembler.assemble(preProcessedSourceCode);
+    public ObjectFile assembleCode(List<String> rawSourceLines, List<String> preProcessedSourceCode) throws IOException {
+        ObjectFile machineCode = assembler.assemble(rawSourceLines, preProcessedSourceCode);
         addAndSaveObjectFileToList(machineCode);
 
         return machineCode;
@@ -177,10 +225,10 @@ public class Model {
         }
     }
 
-    public String restartMachine() {
+    public void restartMachine() {
         setCodeLoaded(false);
         setSimulationFinished(false);
-        return machine.reset();
+        machine.reset();
     }
 
     public void loadProgramToMachine(ObjectFile selectedFile) {
@@ -194,24 +242,30 @@ public class Model {
 
     /// ===== Manipulação da lista de arquivos objeto =====
 
-
     // TODO: Revisar, está dando acesso negado ao tentar salvar o arquivo
     public void addAndSaveObjectFileToList(ObjectFile objectFile) {
-        File savedDir = new File("src/main/resources/saved");
+        File savedDir = new File(Constants.SAVE_DIR);
+
         if (!savedDir.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            savedDir.mkdirs();
+            // Cria o diretório se ele não existir
+            if (!savedDir.mkdirs()) {
+                DialogUtil.showError("Erro ao criar diretório para salvar arquivos.");
+                return;
+            }
         }
 
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(savedDir))) {
-            // Escreve o ObjectFile no arquivo
+        File saveFile = new File(savedDir, objectFile.getFilename() + ".obj");
+
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile))) {
             oos.writeObject(objectFile);
             objectFileList.add(objectFile);
         } catch (IOException e) {
             DialogUtil.showError("Erro ao salvar o arquivo: " + e.getMessage());
         }
+
         notifyListeners();
     }
+
 
     public void loadObjectFilesFromSaveDir() {
         File savedDir = new File(Constants.SAVE_DIR);

@@ -1,3 +1,3 @@
 package sicxesimulator.application.model.records;
 
-public record RegisterEntry(String name, String value) {}
+public record RegisterEntry(String registerName, String value) {}

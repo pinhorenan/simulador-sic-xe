@@ -7,6 +7,7 @@ public class IntermediateRepresentation {
     private final SymbolTable symbolTable;
     private final List<AssemblyLine> assemblyLines;
     private String programName;
+    private List<String> rawSourceLines;
     private int startAddress;
 
     // Construtor que permite definir o endereço de início
@@ -69,5 +70,13 @@ public class IntermediateRepresentation {
             sb.append(line).append("\n");
         }
         return sb.toString();
+    }
+
+    public void setRawSourceCode(List<String> rawSourceLines) {
+        this.rawSourceLines = rawSourceLines;
+    }
+
+    public List<String> getRawSourceLines() {
+        return rawSourceLines;
     }
 }

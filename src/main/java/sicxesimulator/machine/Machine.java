@@ -31,10 +31,9 @@ public class Machine {
     /**
      * Reinicia a máquina, limpando a memória e resetando a unidade de controle.
      */
-    public String reset() {
+    public void reset() {
         memory.clearMemory();
         controlUnit.reset();
-        return "Máquina reiniciada.";
     }
 
     /**

@@ -91,25 +91,11 @@ public final class DialogUtil {
     }
 
     /**
-     * Exibe um alerta de erro genérico com o conteúdo fornecido.
-     *
-     * @param message Mensagem de erro.
-     */
-    public static void showError(String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Erro de Simulação");
-            alert.setHeaderText("Ocorreu um erro durante a execução");
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
-    }
-
-    /**
      * Exibe um diálogo de entrada de texto e retorna o valor inserido.
-     * @param title Título do diálogo
-     * @param header Cabeçalho do diálogo
-     * @param content Texto explicativo
+     *
+     * @param title        Título do diálogo
+     * @param header       Cabeçalho do diálogo
+     * @param content      Texto explicativo
      * @param defaultValue Valor padrão
      * @return Um Optional contendo o texto inserido ou vazio se o diálogo for cancelado.
      */
@@ -121,4 +107,31 @@ public final class DialogUtil {
         return dialog.showAndWait();
     }
 
+    /**
+     * Exibe uma caixa de diálogo informativa.
+     *
+     * @param message Mensagem a ser exibida na caixa de diálogo.
+     */
+    public static void showInfo(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Informação");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+
+        alert.showAndWait();
+    }
+
+    /**
+     * Exibe uma caixa de diálogo de erro.
+     *
+     * @param message Mensagem do erro.
+     */
+    public static void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Erro");
+        alert.setHeaderText("Ocorreu um erro");
+        alert.setContentText(message);
+
+        alert.showAndWait();
+    }
 }

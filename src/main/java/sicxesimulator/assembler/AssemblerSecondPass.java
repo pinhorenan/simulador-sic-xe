@@ -9,7 +9,6 @@ import sicxesimulator.utils.Map;
 
 import sicxesimulator.utils.SimulatorLogger;
 
-
 public class AssemblerSecondPass {
     /**
      * Gera o código objeto a partir da IntermediateRepresentation.
@@ -33,7 +32,7 @@ public class AssemblerSecondPass {
 
         for (AssemblyLine line : midObject.getAssemblyLines()) {
             // Converte line.getAddress() (palavras) para bytes e subtrai startAddress (também em palavras)
-            int offset = (line.getAddress() - startAddress) * 3;
+            int offset = (line.address() - startAddress) * 3;
 
             // Verifica se offset é válido no array
             if (offset < 0 || offset >= objectCode.length) {
@@ -66,12 +65,13 @@ public class AssemblerSecondPass {
         SimulatorLogger.logMachineCode("Código objeto gerado para o programa: " + programName);
 
         // Retorna o objeto com o startAddress (em palavras) e o array de bytes
-        return new ObjectFile(startAddress, objectCode, symbolTable, programName);
+        return new ObjectFile(startAddress, objectCode, symbolTable, programName, midObject.getRawSourceLines());
     }
 
     /**
      * Retorna 3 bytes por instrução (formato 3), pode ser ajustado se suportar formato 2 ou 4.
      */
+    @SuppressWarnings("SameReturnValue")
     private int getInstructionSize(AssemblyLine line) {
         // DA PRA IMPLEMENTA O DE 4 DPS
         return 3;
@@ -81,8 +81,8 @@ public class AssemblerSecondPass {
      * Gera o código objeto para uma única linha de assembly.
      */
     public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable) {
-        String mnemonic = line.getMnemonic();
-        String operand = line.getOperand();
+        String mnemonic = line.mnemonic();
+        String operand = line.operand();
 
         // Diretivas
         if (mnemonic.equalsIgnoreCase("WORD")) {
@@ -105,8 +105,8 @@ public class AssemblerSecondPass {
      * Gera 3 bytes para instruções de formato 3.
      */
     private byte[] generateInstructionCode(AssemblyLine line, SymbolTable symbolTable) {
-        String mnemonic = line.getMnemonic();
-        String operand = line.getOperand();
+        String mnemonic = line.mnemonic();
+        String operand = line.operand();
 
         // Detecta se é indexado (verifica se termina com ",X")
         boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
@@ -167,7 +167,7 @@ public class AssemblerSecondPass {
      * PC da próxima instrução = (line.getAddress() * 3) + 3 bytes.
      */
     private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
-        int currentInstructionByteAddr = line.getAddress() * 3;
+        int currentInstructionByteAddr = line.address() * 3;
         int nextInstructionByteAddr = currentInstructionByteAddr + 3;
         int disp = operandByteAddr - nextInstructionByteAddr;
         if (disp < -2048 || disp > 2047) {
@@ -208,12 +208,5 @@ public class AssemblerSecondPass {
             return Integer.parseInt(operand, 16);
         }
         throw new IllegalArgumentException("Formato inválido de número: " + operand);
-    }
-
-    /**
-     * Reinicializa o estado, se necessário.
-     */
-    public void reset() {
-        SimulatorLogger.logMachineCode("Resetando SecondPassProcessor.");
     }
 }

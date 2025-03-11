@@ -1,4 +1,4 @@
-package sicxesimulator.application.view.components.tables;
+package sicxesimulator.application.components.tables;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,6 +10,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import sicxesimulator.application.model.ObjectFileTableItem;
+import sicxesimulator.models.ObjectFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
 
@@ -18,6 +22,17 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
     public ObjectFileTableView() {
         // Configura a seleção múltipla
         this.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        this.setRowFactory(tv -> {
+            TableRow<ObjectFileTableItem> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty() && event.getClickCount() == 2) {
+                    ObjectFileTableItem clickedItem = row.getItem();
+                    System.out.println("Item duplo clicado: " + clickedItem.getProgramName());
+                }
+            });
+            return row;
+        });
+
 
         // Criação das colunas (removemos a coluna "Selecionado")
         TableColumn<ObjectFileTableItem, String> nameCol = new TableColumn<>("Programa");
@@ -61,8 +76,17 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
         });
     }
 
+    public List<ObjectFile> getSelectedFiles() {
+       return getSelectionModel().getSelectedItems()
+                .stream()
+                .map(ObjectFileTableItem::getObjectFile)
+                .collect(Collectors.toList());
+    }
+
     public void addEntry(ObjectFileTableItem entry) {
-        entries.add(entry);
+        if (!entries.contains(entry)) {  // Evita duplicação
+            entries.add(entry);
+        }
     }
 
     public void clearEntries() {

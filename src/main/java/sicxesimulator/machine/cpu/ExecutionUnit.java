@@ -67,8 +67,8 @@ public class ExecutionUnit {
      */
     public String executeADDR(int[] operands) {
         // operands[0] = r1, operands[1] = r2
-        Register reg1 = Map.numberToRegister(operands[0], registers);
-        Register reg2 = Map.numberToRegister(operands[1], registers);
+        Register reg1 = Map.getRegisterByNumber(operands[0], registers);
+        Register reg2 = Map.getRegisterByNumber(operands[1], registers);
         int result = reg1.getIntValue() + reg2.getIntValue();
         reg2.setValue(result);
         updateConditionCode(result);
@@ -124,8 +124,8 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeSUBR(int[] operands) {
-        Register r1 = Map.numberToRegister(operands[0], registers);
-        Register r2 = Map.numberToRegister(operands[1], registers);
+        Register r1 = Map.getRegisterByNumber(operands[0], registers);
+        Register r2 = Map.getRegisterByNumber(operands[1], registers);
         int result = r2.getIntValue() - r1.getIntValue();
         r2.setValue(result);
         updateConditionCode(result);
@@ -162,8 +162,8 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeDIVR(int[] operands) {
-        Register r1 = Map.numberToRegister(operands[0], registers);
-        Register r2 = Map.numberToRegister(operands[1], registers);
+        Register r1 = Map.getRegisterByNumber(operands[0], registers);
+        Register r2 = Map.getRegisterByNumber(operands[1], registers);
         if (r1.getIntValue() == 0) {
             throw new ArithmeticException("Divisão por zero");
         }
@@ -224,8 +224,8 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeMULR(int[] operands) {
-        Register r1 = Map.numberToRegister(operands[0], registers);
-        Register r2 = Map.numberToRegister(operands[1], registers);
+        Register r1 = Map.getRegisterByNumber(operands[0], registers);
+        Register r2 = Map.getRegisterByNumber(operands[1], registers);
         int result = r1.getIntValue() * r2.getIntValue();
         r2.setValue(result);
         updateConditionCode(result);
@@ -604,7 +604,7 @@ public class ExecutionUnit {
      */
     public String executeCLEAR_LDX(Instruction instruction, int[] operands) {
         if (operands.length == 1) { // CLEAR
-            Register reg = Map.numberToRegister(operands[0], registers);
+            Register reg = Map.getRegisterByNumber(operands[0], registers);
             reg.setValue(0);
             String log = String.format("CLEAR: R%d zerado", operands[0]);
             logger.info(log);
@@ -643,8 +643,8 @@ public class ExecutionUnit {
      * Executa a operação COMPR: compara dois registradores.
      */
     public String executeCOMPR(int[] operands) {
-        Register r1 = Map.numberToRegister(operands[0], registers);
-        Register r2 = Map.numberToRegister(operands[1], registers);
+        Register r1 = Map.getRegisterByNumber(operands[0], registers);
+        Register r2 = Map.getRegisterByNumber(operands[1], registers);
         int comparison = r1.getIntValue() - r2.getIntValue();
         updateConditionCode(comparison);
         String log = String.format("COMPR: R%d=%06X vs R%d=%06X => %s",
@@ -673,7 +673,7 @@ public class ExecutionUnit {
      * O primeiro operando indica o registrador, e o segundo a quantidade de bits.
      */
     public String executeSHIFTL(int[] operands) {
-        Register reg = Map.numberToRegister(operands[0], registers);
+        Register reg = Map.getRegisterByNumber(operands[0], registers);
         int count = operands[1];
         int value = reg.getIntValue() << count;
         reg.setValue(value);
@@ -688,7 +688,7 @@ public class ExecutionUnit {
      * O primeiro operando indica o registrador, e o segundo a quantidade de bits.
      */
     public String executeSHIFTR(int[] operands) {
-        Register reg = Map.numberToRegister(operands[0], registers);
+        Register reg = Map.getRegisterByNumber(operands[0], registers);
         int count = operands[1];
         int value = reg.getIntValue() >>> count; // Deslocamento lógico
         reg.setValue(value);
@@ -833,8 +833,8 @@ public class ExecutionUnit {
     }
 
     public String executeRMO(int[] operands) {
-        Register source = Map.numberToRegister(operands[0], registers);
-        Register dest = Map.numberToRegister(operands[1], registers);
+        Register source = Map.getRegisterByNumber(operands[0], registers);
+        Register dest = Map.getRegisterByNumber(operands[1], registers);
         dest.setValue(source.getIntValue());
         String log = String.format("RMO: R%d → R%d | Valor = %06X", operands[0], operands[1], source.getIntValue());
         logger.info(log);
@@ -869,7 +869,7 @@ public class ExecutionUnit {
     public String executeTIXR(int[] operands) {
         Register X = registers.getRegister("X");
         X.setValue(X.getIntValue() + 1);
-        Register r = Map.numberToRegister(operands[0], registers);
+        Register r = Map.getRegisterByNumber(operands[0], registers);
         int comparison = X.getIntValue() - r.getIntValue();
         updateConditionCode(comparison);
         String log = String.format("TIXR: X=%06X vs R%d=%06X => %s",

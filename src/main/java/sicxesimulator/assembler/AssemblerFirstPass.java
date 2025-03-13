@@ -9,7 +9,6 @@ import java.util.List;
 
 class AssemblerFirstPass {
     private int locationCounter = 0;
-    private int startAddress = 0;
 
     /**
      * Processa as linhas de código-fonte e gera uma IntermediateRepresentation.
@@ -58,7 +57,7 @@ class AssemblerFirstPass {
 
             if (mnemonic.equalsIgnoreCase("START")) {
                 try {
-                    startAddress = parseAddress(operand);
+                    int startAddress = parseAddress(operand);
                     locationCounter = startAddress;
                     midCode.setStartAddress(startAddress);
                 } catch (Exception e) {
@@ -80,7 +79,7 @@ class AssemblerFirstPass {
                 midCode.addSymbol(label, locationCounter);
             }
 
-            int size = getInstructionSize(mnemonic, operand);
+            int size = InstructionSizeCalculator.calculateSize(mnemonic, operand);
             AssemblyLine asmLine = new AssemblyLine(label, mnemonic, operand, locationCounter);
             midCode.addAssemblyLine(asmLine);
             locationCounter += size;
@@ -107,28 +106,5 @@ class AssemblerFirstPass {
         String errorMsg = "Formato inválido de endereço: " + operand;
         SimulatorLogger.logError(errorMsg, null);
         throw new IllegalArgumentException(errorMsg);
-    }
-
-    private int getInstructionSize(String mnemonic, String operand) {
-        if (mnemonic.equalsIgnoreCase("WORD")) {
-            return 1;
-        }
-        if (mnemonic.equalsIgnoreCase("RESW") || mnemonic.equalsIgnoreCase("RESB")) {
-            if (operand == null) {
-                String errorMsg = "Operando ausente para a diretiva " + mnemonic;
-                SimulatorLogger.logError(errorMsg, null);
-                throw new IllegalArgumentException(errorMsg);
-            }
-            return mnemonic.equalsIgnoreCase("RESW") ? Integer.parseInt(operand) : (Integer.parseInt(operand) + 2) / 3;
-        }
-        if (mnemonic.equalsIgnoreCase("BYTE")) {
-            if (operand == null) {
-                String errorMsg = "Operando ausente para BYTE.";
-                SimulatorLogger.logError(errorMsg, null);
-                throw new IllegalArgumentException(errorMsg);
-            }
-            return operand.startsWith("C'") ? (operand.length() - 3 + 2) / 3 : operand.startsWith("X'") ? (operand.length() - 3 + 1) / 2 : 1;
-        }
-        return 1;
     }
 }

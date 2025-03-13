@@ -5,6 +5,8 @@ import sicxesimulator.models.ObjectFile;
 
 import java.util.List;
 
+/// NOTA: O montador espera que o código fonte use endereços em bytes para o START.
+
 public class Assembler {
     // Processadores para cada passagem
     private final AssemblerFirstPass firstPass;
@@ -28,7 +30,6 @@ public class Assembler {
 
         return secondPass(midCode);
     }
-
 
     /**
      * Realiza a primeira passagem delegando para a classe FirstPassProcessor.

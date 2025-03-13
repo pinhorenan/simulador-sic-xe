@@ -91,7 +91,7 @@ public class MainLayout {
 
     private void updateToolbar() {
         if (menuBarController != null && mainButtons != null) {
-            ToolbarPanel toolbarPanel = new ToolbarPanel(menuBarController, mainButtons);
+            ToolbarPanel toolbarPanel = new ToolbarPanel(menuBarController);
             root.setTop(toolbarPanel.getMenuBar());
             // Atualizamos o inputPanel com os MainButtons também
             this.inputPanel.setMainButtons(mainButtons);

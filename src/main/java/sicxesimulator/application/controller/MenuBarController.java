@@ -1,5 +1,6 @@
 package sicxesimulator.application.controller;
 
+import javafx.scene.control.ChoiceDialog;
 import javafx.stage.FileChooser;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.DialogUtil;
@@ -8,9 +9,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class MenuBarController {
     private final Controller controller;
+
+    // TODO: Mover isso para model
+    public enum LinkerMode {
+        ABSOLUTO, RELOCAVEL
+    }
+
+    // TODO: Mover isso para model
+    private LinkerMode currentLinkerMode = LinkerMode.RELOCAVEL;
+
+    // TODO: Mover isso para model
+    // Endereço base (apenas se estivermos no modo Absoluto).
+    private int baseAddress = 0;
+
 
     public MenuBarController(Controller controller) {
         this.controller = controller;
@@ -95,8 +110,34 @@ public class MenuBarController {
     }
 
     // Ação do menuItem "Alterar tamanho da memória"
-    public void handleChangeMemorySizeAction(int newSizeInBytes) {
+    public void handleChangeMemorySizeAction() {
+        int newSizeInBytes;
+        try {
+            newSizeInBytes = DialogUtil.askForInteger("Atualizar tamanho da memória", "Digite o novo tamanho da memória (em bytes):", "Tamanho da memória (em bytes):");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         controller.changeMemorySize(newSizeInBytes);
+    }
+
+    /// ===================== MENU LIGADOR ===================== ///
+
+    // Ação do MenuItem "Modo de Ligação"
+    public void handleSetLinkerModeAction() {
+        // Diálogo para o usuário escolher ABSOLUTO ou RELOCAVEL
+        ChoiceDialog<LinkerMode> dialog = new ChoiceDialog<>(currentLinkerMode, LinkerMode.values());
+        dialog.setTitle("Modo de Ligação");
+        dialog.setHeaderText("Selecione o modo de ligação:");
+        dialog.setContentText("Modo:");
+
+        Optional<LinkerMode> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            currentLinkerMode = result.get();
+            System.out.println("Modo de Ligação definido para: " + currentLinkerMode);
+
+            // Informa ao Controller principal qual modo foi escolhido
+            controller.setLinkerMode(currentLinkerMode);
+        }
     }
 
     /// ===================== MENU EXECUÇÃO ===================== ///

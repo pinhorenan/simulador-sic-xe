@@ -2,15 +2,13 @@ package sicxesimulator.application.components.panels;
 
 import javafx.scene.control.*;
 import sicxesimulator.application.controller.MenuBarController;
-import sicxesimulator.application.components.buttons.MainButtons;
+import sicxesimulator.utils.DialogUtil;
 
 public class ToolbarPanel {
     private final MenuBar menuBar;
-    private final MainButtons mainButtons;
 
-    public ToolbarPanel(MenuBarController menuBarController, MainButtons simulationToolbar) {
+    public ToolbarPanel(MenuBarController menuBarController) {
         this.menuBar = createMenuBar(menuBarController);
-        this.mainButtons = simulationToolbar;
     }
 
     private MenuBar createMenuBar(MenuBarController menuBarController) {
@@ -35,12 +33,43 @@ public class ToolbarPanel {
 
         fileMenu.getItems().addAll(openAsmFile, exportExpandedCode, exportObjFile);
 
+        // TODO: Menu do Processador de Macros
+        Menu macroProcessorMenu = new Menu("Processador de Macros");
+        MenuItem setMacroProcessorMode = new MenuItem("Modo de Processamento");
+        setMacroProcessorMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Processamento", "Modo de Processamento", "Nada implementado por aqui ainda."));
+
+        macroProcessorMenu.getItems().addAll(setMacroProcessorMode);
+
+        // TODO: Menu do Montador
+        Menu assemblerMenu = new Menu("Montador");
+        MenuItem setAssemblerMode = new MenuItem("Modo de Montagem");
+        setAssemblerMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Montagem", "Modo de Montagem", "Nada implementado por aqui ainda."));
+
+        assemblerMenu.getItems().addAll(setAssemblerMode);
+
+        // TODO: Menu do Ligador
+        Menu linkerMenu = new Menu("Ligador");
+        MenuItem setLinkerMode = new MenuItem("Modo de Ligação");
+        setLinkerMode.setOnAction(e -> menuBarController.handleSetLinkerModeAction());
+
+        linkerMenu.getItems().addAll(setLinkerMode);
+
+        // TODO: Menu do Carregador
+        Menu loaderMenu = new Menu("Carregador");
+        MenuItem setLoaderMode = new MenuItem("Modo de Carregamento");
+        setLoaderMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Carregamento", "Modo de Carregamento", "Nada implementado por aqui ainda."));
+
+        loaderMenu.getItems().addAll(setLoaderMode);
+
         // Menu "Memória"
         Menu memoryMenu = new Menu("Memória");
         MenuItem clearMemoryItem = new MenuItem("Limpar Memória");
         clearMemoryItem.setOnAction(e -> menuBarController.handleClearMemoryAction());
 
-        memoryMenu.getItems().add(clearMemoryItem);
+        MenuItem changeMemorySizeItem = new MenuItem("Tamanho da Memória");
+        changeMemorySizeItem.setOnAction(e -> menuBarController.handleChangeMemorySizeAction());
+
+        memoryMenu.getItems().addAll(clearMemoryItem, changeMemorySizeItem);
 
         // Menu "Execução"
         Menu executionMenu = new Menu("Execução");
@@ -54,10 +83,16 @@ public class ToolbarPanel {
         MenuItem hexView = new MenuItem("Hexadecimal");
         hexView.setOnAction(e -> menuBarController.handleSetHexViewAction());
 
+        MenuItem octView = new MenuItem("Octal");
+        octView.setOnAction(e -> menuBarController.handleSetOctalViewAction());
+
         MenuItem decView = new MenuItem("Decimal");
         decView.setOnAction(e -> menuBarController.handleSetDecimalViewAction());
 
-        viewMenu.getItems().addAll(hexView, decView);
+        MenuItem binView = new MenuItem("Binário");
+        binView.setOnAction(e -> menuBarController.handleSetBinaryViewAction());
+
+        viewMenu.getItems().addAll(hexView, octView, decView, binView);
 
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
@@ -66,15 +101,11 @@ public class ToolbarPanel {
 
         helpMenu.getItems().add(helpItem);
 
-        menuBar.getMenus().addAll(fileMenu, memoryMenu, executionMenu, viewMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, macroProcessorMenu, assemblerMenu, linkerMenu, loaderMenu,  memoryMenu, executionMenu, viewMenu, helpMenu);
         return menuBar;
     }
 
     public MenuBar getMenuBar() {
         return menuBar;
-    }
-
-    public MainButtons getMainButtons() {
-        return mainButtons;
     }
 }

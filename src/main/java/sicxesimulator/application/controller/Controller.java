@@ -23,6 +23,10 @@ public class Controller {
     private final MainLayout mainLayout;
     private final MainViewUpdater updater;
 
+    // Modo de ligação atual (recebido do MenuBarController)
+    private MenuBarController.LinkerMode currentLinkerMode = MenuBarController.LinkerMode.RELOCAVEL;
+
+
     public Controller(Model model, MainLayout mainLayout) {
         this.model = model;
         this.mainLayout = mainLayout;
@@ -94,22 +98,32 @@ public class Controller {
     public void handleLinkSelectedFilesAction() {
         List<ObjectFile> selectedFiles = mainLayout.getObjectFilePanel().getObjectFileTable().getSelectedFiles();
 
-        try {
-            int loadAddr = DialogUtil.askForInteger("Endereço de Carga", "Linkagem Absoluta", "Informe o endereço.");
-            // TODO: Adicionar opção de relocação final a partir de um menuItem no topo da janela, onde o usuário pode escolher entre Relocador e Absoluto.
-            boolean fullReloc = DialogUtil.askForBoolean("Relocação Final", "Deseja que o Linker aplique relocação final?");
+        int loadAddr = 0;
+        boolean fullReloc;
 
-            ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddr, fullReloc);
-
-            DialogUtil.showInfoDialog("Arquivos Linkados",
-                    "Arquivos linkados com sucesso!",
-                    "O arquivo " + linkedObject.getProgramName() + " foi criado.");
-
-            initializeFilesView();
-        } catch (IOException e) {
-            DialogUtil.showError("Erro na linkagem: " + e.getMessage());
+        if (currentLinkerMode == MenuBarController.LinkerMode.ABSOLUTO) {
+            try {
+                loadAddr = DialogUtil.askForInteger("Endereço de Carga", "Linkagem Absoluta", "Informe o endereço.");
+                fullReloc = DialogUtil.askForBoolean("Relocação Final", "Deseja que o Linker aplique relocação final?");
+            } catch (IOException e) {
+                DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
+                return;
+            }
+        } else {
+            // Modo RELOCAVEL
+            fullReloc = DialogUtil.askForBoolean("Relocação Final", "Deseja que o Linker aplique relocação final?");
         }
+
+        // Invoca a lógica de linkagem, passando os parâmetros coletados
+        ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddr, fullReloc);
+
+        DialogUtil.showInfoDialog("Arquivos Linkados",
+                "Arquivos linkados com sucesso!",
+                "O arquivo " + linkedObject.getProgramName() + " foi criado.");
+
+        initializeFilesView();
     }
+
 
     public void handleDeleteSelectedFilesAction() {
         var objectFileTable = mainLayout.getObjectFilePanel().getObjectFileTable();
@@ -190,20 +204,35 @@ public class Controller {
         var table = mainLayout.getObjectFilePanel().getObjectFileTable();
         List<ObjectFileTableItem> selectedItems = new ArrayList<>(table.getSelectionModel().getSelectedItems());
 
-        ObjectFile selectedFile = selectedItems.getFirst().getObjectFile();
-        int userLoadAddress;
-        try {
-            // TODO: Melhorar a forma de entrada do endereço de carga, adicionar alguma maneira de "ligar/desligar" a entrada manual.
-            // TODO: Provavelmente adicionarei um menuItem de "Ligador", setando Ligador-Relocador, Ligador-Absoluto. O carregador irá depender disso.
-            userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador Absoluto", "Digite o endereço onde carregar:");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (selectedItems.isEmpty()) {
+            DialogUtil.showError("Nenhum arquivo selecionado para carregar.");
+            return;
         }
 
-        model.loadProgramToMachine(selectedFile, userLoadAddress);
-        updateAllTables();
-        mainLayout.getOutputPanel().getOutputArea().appendText("Programa carregado com sucesso!\n" + selectedFile + "\n");
+        ObjectFile selectedFile = selectedItems.getFirst().getObjectFile();
 
+        // Se ABSOLUTO, perguntar o endereço de carga.
+        // Se RELOCAVEL, podemos assumir 0 (ou outro) e deixar a relocação para a lógica do loader.
+        int userLoadAddress = 0;
+        if (currentLinkerMode == MenuBarController.LinkerMode.ABSOLUTO) {
+            try {
+                userLoadAddress = DialogUtil.askForInteger(
+                        "Endereço de Carga",
+                        "Carregador Absoluto",
+                        "Digite o endereço onde carregar:"
+                );
+            } catch (IOException e) {
+                throw new RuntimeException("Operação cancelada ou inválida.", e);
+            }
+        }
+
+        // Agora, chamamos o método que carrega o programa na máquina
+        model.loadProgramToMachine(selectedFile, userLoadAddress);
+
+        updateAllTables();
+        mainLayout.getOutputPanel().getOutputArea().appendText(
+                "Programa carregado com sucesso!\n" + selectedFile + "\n"
+        );
     }
 
     /// ===== Métodos Getters ===== ///
@@ -305,6 +334,12 @@ public class Controller {
         if (mainLayout.getBottomBarPanel() != null) {
             mainLayout.getBottomBarPanel().updateFormatLabel();
         }
+    }
+
+    public void setLinkerMode(MenuBarController.LinkerMode mode) {
+        this.currentLinkerMode = mode;
+        // Se quiser, você pode mostrar no console ou atualizar algo na interface
+        System.out.println("Controller recebeu Modo de Ligação: " + mode);
     }
 
     public void showHelpWindow() {

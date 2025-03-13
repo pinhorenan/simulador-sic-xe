@@ -15,7 +15,7 @@ public class ObjectFileTableItem {
     // Construtor da classe que inicializa as propriedades
     public ObjectFileTableItem(ObjectFile objectFile) {
         this.objectFile = objectFile;
-        this.programName = new SimpleStringProperty(objectFile.getFilename());  // Nome do programa
+        this.programName = new SimpleStringProperty(objectFile.getProgramName());  // Nome do programa
         this.size = new SimpleStringProperty(objectFile.getProgramLength() + " bytes");  // Tamanho do programa
         this.mountDate = new SimpleStringProperty(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));  // Data atual
     }

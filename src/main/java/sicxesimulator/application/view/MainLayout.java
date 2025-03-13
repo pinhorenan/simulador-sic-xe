@@ -18,9 +18,7 @@ public class MainLayout {
     private BottomBarPanel bottomBarPanel;
     private ObjectFilePanel objectFilePanel; // Será definido depois, via setController
 
-    private HBox leftPane;
-    private VBox rightPane;
-    private HBox mainContent;
+    private final HBox leftPane;
 
     private MenuBarController menuBarController;
     private Controller mainController;
@@ -39,7 +37,7 @@ public class MainLayout {
 
         // Criamos o container rightPane (que não depende do ObjectFilePanel)
         HBox memoryAndRegisterTables = new HBox(10, memoryPanel.getPane(), registerPanel.getPane());
-        rightPane = new VBox(5, outputPanel.getPane(), executionControlsPanel.getPane(), memoryAndRegisterTables);
+        VBox rightPane = new VBox(5, outputPanel.getPane(), executionControlsPanel.getPane(), memoryAndRegisterTables);
         rightPane.setPrefWidth(400);
         VBox.setVgrow(outputPanel.getPane(), Priority.ALWAYS);
 
@@ -52,7 +50,7 @@ public class MainLayout {
         leftPane = new HBox(5, filesAndSymbols, inputContainer);
         HBox.setHgrow(leftPane, Priority.ALWAYS);
 
-        mainContent = new HBox(10, leftPane, rightPane);
+        HBox mainContent = new HBox(10, leftPane, rightPane);
         mainContent.setPadding(new Insets(10));
 
         root.setCenter(mainContent);
@@ -133,10 +131,6 @@ public class MainLayout {
 
     public InputPanel getInputPanel() {
         return inputPanel;
-    }
-
-    public ExecutionControlsPanel getExecutionControlsPanel() {
-        return executionControlsPanel;
     }
 
     public BottomBarPanel getBottomBarPanel() {

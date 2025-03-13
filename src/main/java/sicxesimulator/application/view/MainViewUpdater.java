@@ -2,16 +2,12 @@ package sicxesimulator.application.view;
 
 import javafx.application.Platform;
 import sicxesimulator.application.controller.Controller;
-import sicxesimulator.application.model.records.MemoryEntry;
-import sicxesimulator.application.model.records.RegisterEntry;
 import sicxesimulator.application.model.records.SymbolEntry;
 import sicxesimulator.application.components.tables.MemoryTableView;
 import sicxesimulator.application.components.tables.RegisterTableView;
 import sicxesimulator.application.components.tables.SymbolTableView;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.utils.ValueFormatter;
-
-import java.util.List;
 
 public class MainViewUpdater {
     private final Controller controller;

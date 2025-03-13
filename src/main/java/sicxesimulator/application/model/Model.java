@@ -254,7 +254,7 @@ public class Model {
             }
         }
 
-        File saveFile = new File(savedDir, objectFile.getFilename() + ".obj");
+        File saveFile = new File(savedDir, objectFile.getProgramName() + ".obj");
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile))) {
             oos.writeObject(objectFile);
@@ -289,7 +289,7 @@ public class Model {
     }
 
     public void removeAndDeleteObjectFileFromList(ObjectFile objectFile) {
-        File file = new File(Constants.SAVE_DIR, objectFile.getFilename() + ".obj");
+        File file = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".obj");
 
         // Verifica se o arquivo existe e o deleta
         if (file.exists()) {

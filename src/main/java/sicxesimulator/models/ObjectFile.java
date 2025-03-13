@@ -64,7 +64,7 @@ public class ObjectFile implements Serializable {
         return machineCode.length;
     }
 
-    public byte[] getMachineCode() {
+    public byte[] getObjectCode() {
         return machineCode;
     }
 
@@ -72,7 +72,7 @@ public class ObjectFile implements Serializable {
         return symbolTable;
     }
 
-    public String getFilename() {
+    public String getProgramName() {
         return fileName;
     }
 

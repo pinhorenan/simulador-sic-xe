@@ -1,6 +1,5 @@
 package sicxesimulator.application.components.panels;
 
-import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import sicxesimulator.application.components.buttons.MainButtons;

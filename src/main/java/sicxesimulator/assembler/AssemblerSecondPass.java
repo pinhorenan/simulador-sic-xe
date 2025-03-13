@@ -55,7 +55,16 @@ public class AssemblerSecondPass {
         SymbolTable symbolTable = midObject.getSymbolTable();
         String programName = midObject.getProgramName();
         SimulatorLogger.logMachineCode("Código objeto gerado para o programa: " + programName);
-        return new ObjectFile(startAddress, objectCode, symbolTable, programName, midObject.getRawSourceLines());
+        return new ObjectFile(
+                startAddress,
+                objectCode,
+                symbolTable,
+                programName,
+                midObject.getRawSourceLines(),
+                java.util.Collections.emptyMap(), // sem símbolos importados durante a montagem
+                java.util.Collections.emptyList() // sem registros de reloc durante a montagem
+                // TODO: Revisar.
+                );
     }
 
     private int getInstructionSize(AssemblyLine line) {

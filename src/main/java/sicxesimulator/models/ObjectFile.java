@@ -2,18 +2,39 @@ package sicxesimulator.models;
 
 import java.io.*;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Representa um módulo objeto gerado pelo montador,
+ * contendo o code, a tabela de símbolos local, e:
+ * - importedSymbols: símbolos externos (nome -> offset? Ou contagem?)
+ * - relocationRecords: lista de posições a corrigir
+ */
 public class ObjectFile implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
+
     private final int startAddress;
     private final byte[] machineCode;
-    private final List<String> rawSourceCode;
     private final SymbolTable symbolTable;
     private final String fileName;
+    private final List<String> rawSourceCode;
+
     private boolean isRelocated;
 
-    public ObjectFile(int startAddress, byte[] machineCode, SymbolTable symbolTable, String fileName, List<String> rawSourceCode) {
+    // Símbolos importados. Se você quiser armazenar quantas refs, ou offsets, etc., ajuste o tipo do value.
+    private final Map<String, Integer> importedSymbols;
+
+    // Lista de registros de reloc, indicando quais bytes do code precisam ser ajustados
+    private final List<RelocationRecord> relocationRecords;
+
+    public ObjectFile(int startAddress,
+                      byte[] machineCode,
+                      SymbolTable symbolTable,
+                      String fileName,
+                      List<String> rawSourceCode,
+                      Map<String,Integer> importedSymbols,
+                      List<RelocationRecord> relocationRecords) {
         if (machineCode == null || symbolTable == null || fileName == null) {
             throw new IllegalArgumentException("Nenhum parâmetro pode ser nulo.");
         }
@@ -23,45 +44,12 @@ public class ObjectFile implements Serializable {
         this.fileName = fileName;
         this.rawSourceCode = rawSourceCode;
         this.isRelocated = false;
-    }
-
-    /**
-     * Carrega um objeto "ObjectFile" de um arquivo salvo no disco.
-     *
-     * @param file O arquivo ".obj" a ser carregado.
-     * @return Um objeto "ObjectFile" correspondente ao arquivo.
-     * @throws IOException Se ocorrer um erro ao ler o arquivo.
-     */
-    public static ObjectFile loadFromFile(File file) throws IOException {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            return (ObjectFile) ois.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException("Formato do arquivo inválido: " + file.getName(), e);
-        }
-    }
-
-    /**
-     * Salva o objeto "ObjectFile" no disco em formato serializado.
-     *
-     * @param file O arquivo onde o objeto será salvo.
-     * @throws IOException Se ocorrer um erro ao salvar o arquivo.
-     */
-    public void saveToFile(File file) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
-            oos.writeObject(this);
-        }
-    }
-
-    public boolean isRelocated() {
-        return isRelocated;
+        this.importedSymbols = importedSymbols;
+        this.relocationRecords = relocationRecords;
     }
 
     public int getStartAddress() {
         return startAddress;
-    }
-
-    public int getProgramLength() {
-        return machineCode.length;
     }
 
     public byte[] getObjectCode() {
@@ -80,15 +68,43 @@ public class ObjectFile implements Serializable {
         return rawSourceCode;
     }
 
+    public boolean isRelocated() {
+        return isRelocated;
+    }
     public void setRelocated(boolean relocated) {
         isRelocated = relocated;
     }
 
+    public int getProgramLength() {
+        return machineCode.length;
+    }
+
+    public Map<String,Integer> getImportedSymbols() {
+        return importedSymbols;
+    }
+
+    public List<RelocationRecord> getRelocationRecords() {
+        return relocationRecords;
+    }
+
+    /**
+     * Lê um objeto ObjectFile serializado a partir de um arquivo .obj.
+     * @param file O arquivo .obj a ser carregado
+     * @return instância de ObjectFile
+     * @throws IOException se houver erro de E/S ou se a classe não for encontrada
+     */
+    public static ObjectFile loadFromFile(File file) throws IOException {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            return (ObjectFile) ois.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Formato do arquivo inválido ou classe não encontrada ao ler ObjectFile.", e);
+        }
+    }
+
     @Override
     public String toString() {
-        String stringBuilder = "Nome do programa: " + fileName + "\n" +
-                "Endereço inicial: " + String.format("%04X", startAddress) + "\n" +
-                "Tamanho do programa: " + getProgramLength() + " bytes\n";
-        return stringBuilder.trim();
+        return "Nome: " + fileName
+                + "\nEndereço de início = " + String.format("%04X", startAddress)
+                + "\nTamanho = " + machineCode.length + " bytes";
     }
 }

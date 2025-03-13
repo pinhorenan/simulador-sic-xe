@@ -29,7 +29,6 @@ public class ObjectFileTableItem {
         return programName;
     }
 
-    // Métodos para manipulação do tamanho do programa
     public String getSize() {
         return size.get();
     }
@@ -46,6 +45,8 @@ public class ObjectFileTableItem {
     public StringProperty mountDateProperty() {
         return mountDate;
     }
+
+    // TODO: Esses getters aparecem como sem uso mas são usados em ObjectFileTable.java
 
     // Acesso ao ObjectFile original
     public ObjectFile getObjectFile() {

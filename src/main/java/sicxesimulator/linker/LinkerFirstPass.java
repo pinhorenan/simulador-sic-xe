@@ -50,7 +50,7 @@ class LinkerFirstPass {
             moduleRelocationOffsets.put(obj, relocationOffset);
 
             // Concatena o nome do módulo para identificação.
-            programNameBuilder.append(obj.getFilename()).append("_");
+            programNameBuilder.append(obj.getProgramName()).append("_");
 
             // Atualiza a tabela de símbolos global:
             // Cada símbolo do módulo tem seu endereço (em palavras) convertido para bytes,
@@ -63,7 +63,7 @@ class LinkerFirstPass {
             }
 
             // Atualiza o deslocamento acumulado: soma o tamanho do código objeto do módulo (em bytes)
-            cumulativeOffset += obj.getMachineCode().length;
+            cumulativeOffset += obj.getObjectCode().length;
         }
         programName = programNameBuilder.toString();
     }

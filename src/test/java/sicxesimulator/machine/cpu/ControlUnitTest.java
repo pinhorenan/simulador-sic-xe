@@ -1,10 +1,9 @@
-package sicxesimulator.machine;
+package sicxesimulator.machine.cpu;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sicxesimulator.machine.cpu.ControlUnit;
-import sicxesimulator.machine.cpu.RegisterSet;
+import sicxesimulator.machine.Memory;
 
 public class ControlUnitTest {
 

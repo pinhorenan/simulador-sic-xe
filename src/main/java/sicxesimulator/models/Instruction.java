@@ -5,18 +5,33 @@ package sicxesimulator.models;
  */
 public record Instruction(int opcode, int[] operands, int format, boolean indexed, int effectiveAddress) {
 
-    // Tamanho da instrução em palavras
-    public int getSizeInWords() {
-        return switch (format) {
-            case 1 -> 1; // Formato 1: 1 byte, 1 palavra
-            case 2 -> 1; // Formato 2: 2 bytes, 1 palavra
-            case 3 -> 1; // Formato 3: 3 bytes, 1 palavras
-            case 4 -> 2; // Formato 4: 4 bytes, 2 palavras
-            default -> throw new IllegalArgumentException("Formato de instrução inválido: " + format);
-        };
+    public int getOpcode() {
+        return opcode;
     }
 
-    public int getSizeInBytes() {
-        return getSizeInWords() * 3;
+    public int[] getOperands() {
+        return operands;
+    }
+
+    public int getFormat() {
+        return format;
+    }
+
+    public boolean isIndexed() {
+        return indexed;
+    }
+
+    public int getEffectiveAddress() {
+        return effectiveAddress;
+    }
+
+    public int getSize() {
+        return switch (format) {
+            case 1 -> 1;
+            case 2 -> 2;
+            case 3 -> 3;
+            case 4 -> 4;
+            default -> throw new IllegalArgumentException("Formato de instrução inválido: " + format);
+        };
     }
 }

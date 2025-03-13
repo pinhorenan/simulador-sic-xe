@@ -37,7 +37,7 @@ public class LinkerSecondPass {
                               String programName) {
         int totalProgramSize = 0;
         for (ObjectFile obj : objectFiles) {
-            totalProgramSize += obj.getMachineCode().length;
+            totalProgramSize += obj.getObjectCode().length;
         }
         byte[] linkedObjectCode = new byte[totalProgramSize];
         int cumulativeOffset = 0;
@@ -45,7 +45,7 @@ public class LinkerSecondPass {
         // Se fullRelocation for true, ajusta cada instrução; caso contrário, concatena sem alteração.
         for (ObjectFile obj : objectFiles) {
             int relocationOffset = moduleRelocationOffsets.get(obj);
-            byte[] objCode = obj.getMachineCode().clone();
+            byte[] objCode = obj.getObjectCode().clone();
             if (fullRelocation) {
                 // Aplica a relocação: para cada palavra (3 bytes) ajusta o valor
                 for (int i = 0; i < objCode.length; i += 3) {

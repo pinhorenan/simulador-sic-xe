@@ -104,7 +104,7 @@ public class Controller {
             ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, 0x300, true);
             DialogUtil.showAlert(Alert.AlertType.CONFIRMATION, "Arquivos Linkados",
                     "Arquivos linkados com sucesso!",
-                    "O arquivo " + linkedObject.getFilename() + " foi criado com sucesso.");
+                    "O arquivo " + linkedObject.getProgramName() + " foi criado com sucesso.");
             initializeFilesView();
         } catch (Exception e) {
             DialogUtil.showError("Erro na linkagem: " + e.getMessage());
@@ -200,7 +200,7 @@ public class Controller {
 
         model.loadProgramToMachine(selectedFile);
         mainLayout.getInputPanel().setInputText(String.join("\n", selectedFile.getRawSourceCode()));
-        mainLayout.getOutputPanel().getOutputArea().appendText("Programa carregado: " + selectedFile.getFilename() + "\n");
+        mainLayout.getOutputPanel().getOutputArea().appendText("Programa carregado: " + selectedFile.getProgramName() + "\n");
     }
 
     /// ===== Controles de Entrada/Saída ===== ///
@@ -264,12 +264,12 @@ public class Controller {
 
     public byte[] getObjectFileBytes() {
         ObjectFile selectedFile = model.getLastLoadedCode();
-        return (selectedFile != null) ? selectedFile.getMachineCode() : null;
+        return (selectedFile != null) ? selectedFile.getObjectCode() : null;
     }
 
     public String getSuggestedFileName(String extension) {
         ObjectFile lastLoaded = model.getLastLoadedCode();
-        return (lastLoaded != null) ? lastLoaded.getFilename() + extension : "Programa" + extension;
+        return (lastLoaded != null) ? lastLoaded.getProgramName() + extension : "Programa" + extension;
     }
 
     public void clearMemory() {

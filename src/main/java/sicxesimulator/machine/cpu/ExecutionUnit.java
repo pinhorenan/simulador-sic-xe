@@ -532,7 +532,8 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeLDCH(int[] operands, boolean indexed, int effectiveAddress) {
-        int byteValue = memory.readByte(toWordAddress(effectiveAddress));
+        // Para acesso de byte, usamos o endereço diretamente.
+        int byteValue = memory.readByte(effectiveAddress);
         Register A = registers.getRegister("A");
         int currentA = A.getIntValue();
         int newA = (currentA & 0xFFFF00) | (byteValue & 0xFF);
@@ -740,7 +741,8 @@ public class ExecutionUnit {
 
     public String executeSTCH(int[] operands, boolean indexed, int effectiveAddress) {
         int byteValue = registers.getRegister("A").getIntValue() & 0xFF;
-        memory.writeByte(toWordAddress(effectiveAddress),  byteValue);
+        // Para acesso de byte, escrevemos diretamente no endereço em bytes.
+        memory.writeByte(effectiveAddress, byteValue);
         String log = String.format("STCH: Mem[%06X] ← %02X", effectiveAddress, byteValue);
         logger.info(log);
         return log;

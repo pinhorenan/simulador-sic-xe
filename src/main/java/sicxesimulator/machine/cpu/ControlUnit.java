@@ -89,7 +89,7 @@ public class ControlUnit {
      */
     public void step() {
         fetch();
-        incrementPC(currentInstruction.getSizeInBytes());
+        incrementPC(currentInstruction.getSize());
         lastExecutionLog = executeInstruction();
     }
 

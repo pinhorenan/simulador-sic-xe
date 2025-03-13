@@ -26,7 +26,7 @@ public class Loader {
      */
     public void load(ObjectFile objectFile, int loadAddress) {
         Memory memory = machine.getMemory();
-        byte[] objectCode = objectFile.getMachineCode();
+        byte[] objectCode = objectFile.getObjectCode();
         validateObjectCode(objectCode);
 
         int startWordAddress;

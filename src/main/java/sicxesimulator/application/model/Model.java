@@ -36,9 +36,6 @@ public class Model {
 
     private final List<ModelListener> listeners = new ArrayList<>();
 
-    // Arquivos de objeto
-    private final List<ObjectFile> objectFileList;
-
     // Último arquivo carregado
     private ObjectFile lastLoadedCode;
 
@@ -52,13 +49,12 @@ public class Model {
     public Model() {
         this.machine = new Machine();
         this.memorySize = machine.getMemorySize();
-        this.loader = new Loader(machine);
+        this.loader = new Loader();
         this.macroProcessor = new MacroProcessor();
         this.assembler = new Assembler();
         this.linker = new Linker();
 
         // Verifica a pasta apontada pela constante "SAVE_DIR" e carrega os arquivos de objeto
-        objectFileList = new ArrayList<>();
         loadObjectFilesFromSaveDir();
     }
 
@@ -82,10 +78,6 @@ public class Model {
 
     public ViewConfig getViewConfig() {
         return viewConfig;
-    }
-
-    public List<ObjectFile> getObjectFilesList() {
-        return objectFileList;
     }
 
     public ObjectFile getLastLoadedCode() {
@@ -118,15 +110,18 @@ public class Model {
         List<SymbolEntry> entries = new ArrayList<>();
         ObjectFile objectFile = getLastLoadedCode();
         if (objectFile != null) {
-            var symbols = objectFile.getSymbolTable().getSymbols();
-            symbols.forEach((name, wordAddress) -> {
-                int byteAddress = wordAddress * 3;
+            // Usa getAllSymbols(), que retorna Map<String, SymbolInfo>
+            var symbolsMap = objectFile.getSymbolTable().getAllSymbols();
+            symbolsMap.forEach((name, info) -> {
+                // Agora info.address já é em bytes
+                int byteAddress = info.address;
                 String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
                 entries.add(new SymbolEntry(name, formattedAddress));
             });
         }
         return entries;
     }
+
 
     ///  Getters/Setters de atributos do modelo
 
@@ -148,14 +143,6 @@ public class Model {
 
     public int getMemorySize() {
         return memorySize;
-    }
-
-    public void setAddressFormat(String newFormat) {
-        viewConfig.setAddressFormat(newFormat);
-    }
-
-    public String getAddressFormat() {
-        return viewConfig.getAddressFormat();
     }
 
     public BooleanProperty codeLoadedProperty() {
@@ -201,11 +188,12 @@ public class Model {
         return machineCode;
     }
 
-    public ObjectFile linkObjectFiles(List<ObjectFile> objectFiles, int loadAddress, boolean fullRelocation) {
-        ObjectFile linkedObject = linker.link(objectFiles, loadAddress, fullRelocation);
-        addAndSaveObjectFileToList(linkedObject);
-        return linkedObject;
+    public ObjectFile linkObjectFiles(List<ObjectFile> files, int loadAddress, boolean fullRelocation) {
+        ObjectFile linkedObj = linker.linkModules(files, fullRelocation, loadAddress, "LinkedProgram");
+        addAndSaveObjectFileToList(linkedObj);
+        return linkedObj;
     }
+
 
     /// Controle de execução do programa
 
@@ -231,14 +219,31 @@ public class Model {
         machine.reset();
     }
 
+    // Carrega um arquivo objeto na memória do simulador.
+    @Deprecated
     public void loadProgramToMachine(ObjectFile selectedFile) {
         if (selectedFile != null) {
-            loader.load(selectedFile, 768); // Endereço de carga padrão: 0x300
+            // Carregaremos em 0x300 (ou 768 em decimal) na memória do simulador. ISSO É PROVISÓRIO!
+            loader.loadObjectFile(
+                    selectedFile,
+                    machine.getMemory(),
+                    0x300       // TODO: Revisar, carregar em 0x300 (768 em decimal) é provisório
+            );
             setCodeLoaded(true);
             lastLoadedCode = selectedFile;
             notifyListeners();  // Notifica os listeners quando um novo arquivo é carregado
         }
     }
+
+    public void loadProgramToMachine(ObjectFile selectedFile, int baseAddress) {
+        if (selectedFile != null) {
+            loader.loadObjectFile(selectedFile, machine.getMemory(), baseAddress);
+            setCodeLoaded(true);
+            lastLoadedCode = selectedFile;
+            notifyListeners();
+        }
+    }
+
 
     /// ===== Manipulação da lista de arquivos objeto =====
 
@@ -258,7 +263,6 @@ public class Model {
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile))) {
             oos.writeObject(objectFile);
-            objectFileList.add(objectFile);
         } catch (IOException e) {
             DialogUtil.showError("Erro ao salvar o arquivo: " + e.getMessage());
         }
@@ -277,9 +281,7 @@ public class Model {
                 for (File file : files) {
                     try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
                         // Carrega o ObjectFile do arquivo
-                        ObjectFile objectFile = (ObjectFile) ois.readObject();
-                        // Adiciona à lista de arquivos
-                        objectFileList.add(objectFile);
+                        ois.readObject();
                     } catch (IOException | ClassNotFoundException e) {
                         DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());
                     }
@@ -295,7 +297,6 @@ public class Model {
         if (file.exists()) {
             //noinspection ResultOfMethodCallIgnored
             file.delete();
-            objectFileList.remove(objectFile);
         }
     }
 }

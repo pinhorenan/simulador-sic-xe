@@ -19,20 +19,24 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
 
     private final ObservableList<ObjectFileTableItem> entries = FXCollections.observableArrayList();
 
+    @SuppressWarnings("unchecked")
     public ObjectFileTableView() {
         // Configura a seleção múltipla
         this.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        // Configura o comportamento de duplo clique nas linhas
         this.setRowFactory(tv -> {
             TableRow<ObjectFileTableItem> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (!row.isEmpty() && event.getClickCount() == 2) {
                     ObjectFileTableItem clickedItem = row.getItem();
-                    System.out.println("Item duplo clicado: " + clickedItem.getProgramName());
+                    System.out.println("Duplo clique em " + clickedItem.getProgramName());
+                    // TODO: Não é aqui, mas preciso lidar com a exibição do conteúdo de arquivos gerados pela ligação de vários módulos.
+                    // TODO: Atualmente, quando dou duplo clique em um arquivo linkado, ele exibe dialog informando que o arquivo não possui código fonte.
                 }
             });
             return row;
         });
-
 
         // Criação das colunas (removemos a coluna "Selecionado")
         TableColumn<ObjectFileTableItem, String> nameCol = new TableColumn<>("Programa");
@@ -58,7 +62,7 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
             while (target != null && !(target instanceof TableRow)) {
                 target = target.getParent();
             }
-            if (target instanceof TableRow) {
+            if (target != null) {
                 @SuppressWarnings("unchecked")
                 TableRow<ObjectFileTableItem> row = (TableRow<ObjectFileTableItem>) target;
                 int index = row.getIndex();
@@ -87,13 +91,5 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
         if (!entries.contains(entry)) {  // Evita duplicação
             entries.add(entry);
         }
-    }
-
-    public void clearEntries() {
-        entries.clear();
-    }
-
-    public ObservableList<ObjectFileTableItem> getEntries() {
-        return entries;
     }
 }

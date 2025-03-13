@@ -50,8 +50,9 @@ public class MainViewUpdater {
         SymbolTableView symbolTable = mainLayout.getSymbolPanel().getSymbolTable();
         symbolTable.getItems().clear();
 
-        objectFile.getSymbolTable().getSymbols().forEach((name, address) -> {
-            int byteAddress = address * 3;
+        var symbolsMap = objectFile.getSymbolTable().getAllSymbols();
+        symbolsMap.forEach((name, info) -> {
+            int byteAddress = info.address;
             String formattedAddress = ValueFormatter.formatAddress(byteAddress, controller.getModel().getViewConfig().getAddressFormat());
             symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
         });

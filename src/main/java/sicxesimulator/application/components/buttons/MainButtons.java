@@ -21,9 +21,8 @@ public class MainButtons {
     private final Button linkButton;
     private final Button deleteButton;
     private final Button assembleButton;
-    private final Button clearOutputButton;
 
-       /**
+    /**
      * Construtor da classe. Recebe o controlador e a visão principal como parâmetros.
      * @param controller O controlador da aplicação
      * @param mainLayout O layout principal, para configuração de bindings
@@ -40,7 +39,6 @@ public class MainButtons {
         this.linkButton = ButtonFactory.createButton("Linkar", controller::handleLinkSelectedFilesAction);
         this.deleteButton = ButtonFactory.createButton("Deletar", controller::handleDeleteSelectedFilesAction);
         this.assembleButton = ButtonFactory.createButton("Montar", controller::handleAssembleAction);
-        this.clearOutputButton = ButtonFactory.createButton("Limpar", controller::handleClearOutputAction);
     }
 
     /// ===== Métodos de configuração de bindings =====
@@ -108,5 +106,4 @@ public class MainButtons {
 
     public Button getAssembleButton() { return assembleButton; }
 
-    public Button getClearOutputButton() { return clearOutputButton; }
 }

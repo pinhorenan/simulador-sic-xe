@@ -2,7 +2,6 @@ package sicxesimulator.application.controller;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
-import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 import sicxesimulator.application.view.MainLayout;
 import sicxesimulator.application.view.MainViewUpdater;
@@ -95,18 +94,19 @@ public class Controller {
     public void handleLinkSelectedFilesAction() {
         List<ObjectFile> selectedFiles = mainLayout.getObjectFilePanel().getObjectFileTable().getSelectedFiles();
 
-        if (selectedFiles.isEmpty()) {
-            DialogUtil.showError("Selecione ao menos um programa para linkar!");
-            return;
-        }
-
         try {
-            ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, 0x300, true);
-            DialogUtil.showAlert(Alert.AlertType.CONFIRMATION, "Arquivos Linkados",
+            int loadAddr = DialogUtil.askForInteger("Endereço de Carga", "Linkagem Absoluta", "Informe o endereço.");
+            // TODO: Adicionar opção de relocação final a partir de um menuItem no topo da janela, onde o usuário pode escolher entre Relocador e Absoluto.
+            boolean fullReloc = DialogUtil.askForBoolean("Relocação Final", "Deseja que o Linker aplique relocação final?");
+
+            ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddr, fullReloc);
+
+            DialogUtil.showInfoDialog("Arquivos Linkados",
                     "Arquivos linkados com sucesso!",
-                    "O arquivo " + linkedObject.getProgramName() + " foi criado com sucesso.");
+                    "O arquivo " + linkedObject.getProgramName() + " foi criado.");
+
             initializeFilesView();
-        } catch (Exception e) {
+        } catch (IOException e) {
             DialogUtil.showError("Erro na linkagem: " + e.getMessage());
         }
     }
@@ -114,11 +114,6 @@ public class Controller {
     public void handleDeleteSelectedFilesAction() {
         var objectFileTable = mainLayout.getObjectFilePanel().getObjectFileTable();
         List<ObjectFileTableItem> selectedItems = new ArrayList<>(objectFileTable.getSelectionModel().getSelectedItems());
-
-        if (selectedItems.isEmpty()) {
-            DialogUtil.showError("Nenhum arquivo selecionado para exclusão.");
-            return;
-        }
 
         for (ObjectFileTableItem item : selectedItems) {
             ObjectFile objectFile = item.getObjectFile();
@@ -192,21 +187,23 @@ public class Controller {
     }
 
     public void handleLoadObjectFileAction() {
-        List<ObjectFileTableItem> selectedItems = mainLayout.getObjectFilePanel().getObjectFileTable().getSelectionModel().getSelectedItems();
-
-        // Não há checagem de arquivos selecionados, pois o botão só é habilitado se houver exatamente 1 arquivo selecionado
+        var table = mainLayout.getObjectFilePanel().getObjectFileTable();
+        List<ObjectFileTableItem> selectedItems = new ArrayList<>(table.getSelectionModel().getSelectedItems());
 
         ObjectFile selectedFile = selectedItems.getFirst().getObjectFile();
+        int userLoadAddress;
+        try {
+            // TODO: Melhorar a forma de entrada do endereço de carga, adicionar alguma maneira de "ligar/desligar" a entrada manual.
+            // TODO: Provavelmente adicionarei um menuItem de "Ligador", setando Ligador-Relocador, Ligador-Absoluto. O carregador irá depender disso.
+            userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador Absoluto", "Digite o endereço onde carregar:");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        model.loadProgramToMachine(selectedFile);
-        mainLayout.getInputPanel().setInputText(String.join("\n", selectedFile.getRawSourceCode()));
-        mainLayout.getOutputPanel().getOutputArea().appendText("Programa carregado: " + selectedFile.getProgramName() + "\n");
-    }
+        model.loadProgramToMachine(selectedFile, userLoadAddress);
+        updateAllTables();
+        mainLayout.getOutputPanel().getOutputArea().appendText("Programa carregado com sucesso!\n" + selectedFile + "\n");
 
-    /// ===== Controles de Entrada/Saída ===== ///
-
-    public void handleClearOutputAction() {
-        mainLayout.getOutputPanel().clearOutput();
     }
 
     /// ===== Métodos Getters ===== ///
@@ -311,7 +308,7 @@ public class Controller {
     }
 
     public void showHelpWindow() {
-        DialogUtil.showInfo("Aqui está a ajuda do simulador SIC/XE. (nenhuma)");
+        DialogUtil.showInfo("Aqui está a ajuda do simulador SIC/XE. (nenhuma, por enquanto, eu acho.)");
     }
 
     public void updateAllTables() {

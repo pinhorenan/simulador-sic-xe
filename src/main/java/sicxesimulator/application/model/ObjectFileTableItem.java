@@ -2,27 +2,44 @@ package sicxesimulator.application.model;
 
 import javafx.beans.property.*;
 import sicxesimulator.models.ObjectFile;
+import sicxesimulator.models.ObjectFileOrigin;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class ObjectFileTableItem {
-    private final StringProperty programName;  // Nome do programa
-    private final StringProperty size;  // Tamanho do arquivo
-    private final StringProperty mountDate;  // Data de montagem
-    private final ObjectFile objectFile;  // O próprio arquivo ObjectFile
+    private final StringProperty programName;   // Nome do programa
+    private final StringProperty size;          // Tamanho do arquivo
+    private final StringProperty origin;        // Indica se o arquivo é simples ou foi gerado pela ligação de diversos módulos
+
+    private final ObjectFile objectFile;        // O próprio arquivo ObjectFile
 
     // Construtor da classe que inicializa as propriedades
     public ObjectFileTableItem(ObjectFile objectFile) {
         this.objectFile = objectFile;
         this.programName = new SimpleStringProperty(objectFile.getProgramName());  // Nome do programa
         this.size = new SimpleStringProperty(objectFile.getProgramLength() + " bytes");  // Tamanho do programa
-        this.mountDate = new SimpleStringProperty(new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));  // Data atual
+
+        // Define a origem do arquivo objeto
+
+        if (objectFile.getOrigin() == ObjectFileOrigin.SINGLE_MODULE) {
+            this.origin = new SimpleStringProperty("Módulo Simples");
+        } else {
+            this.origin = new SimpleStringProperty("Módulo Composto");
+        }
     }
 
     // Métodos para manipulação do nome do programa
     public String getProgramName() {
         return programName.get();
+    }
+
+    public String getOrigin() {
+        return origin.get();
+    }
+
+    public StringProperty originProperty() {
+        return origin;
     }
 
     public StringProperty programNameProperty() {
@@ -36,17 +53,6 @@ public class ObjectFileTableItem {
     public StringProperty sizeProperty() {
         return size;
     }
-
-    // Métodos para manipulação da data de montagem
-    public String getMountDate() {
-        return mountDate.get();
-    }
-
-    public StringProperty mountDateProperty() {
-        return mountDate;
-    }
-
-    // TODO: Esses getters aparecem como sem uso mas são usados em ObjectFileTable.java
 
     // Acesso ao ObjectFile original
     public ObjectFile getObjectFile() {

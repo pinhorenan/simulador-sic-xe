@@ -2,8 +2,11 @@ package sicxesimulator.assembler;
 
 import sicxesimulator.models.IntermediateRepresentation;
 import sicxesimulator.models.ObjectFile;
+import sicxesimulator.utils.Constants;
+import sicxesimulator.utils.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /// NOTA: O montador espera que o código fonte use endereços em bytes para o START.
@@ -24,13 +27,17 @@ public class Assembler {
      * e depois a segunda passagem (para gerar o código objeto).
      */
     public ObjectFile assemble(List<String> originalSource, List<String> expandedSource) {
-        // Executa a primeira passagem com o código já expandido
+        // 1ª passagem
         IntermediateRepresentation midCode = firstPass(expandedSource);
         midCode.setRawSourceCode(originalSource);
 
+        // 2ª passagem
         ObjectFile meta = secondPass(midCode);
 
-        meta.saveToFile(new File(midCode.getProgramName() + ".meta"));
+        // Em vez de "writeFileInDir(..., meta.toString())", use a serialização real:
+        String metaFileName = midCode.getProgramName() + ".meta";
+        File metaFile = new File(Constants.SAVE_DIR, metaFileName);
+        meta.saveToFile(metaFile);  // <- serialização binária
 
         return meta;
     }

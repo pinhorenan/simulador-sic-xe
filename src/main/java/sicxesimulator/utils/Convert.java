@@ -1,9 +1,6 @@
 package sicxesimulator.utils;
 
-public final class Convert {
-    // Impede a instanciação
-    private Convert() { }
-
+public abstract class Convert {
     /**
      * Converte um inteiro para um array de 3 bytes (24 bits) em ordem big-endian.
      * Se o valor ultrapassar o intervalo de 24 bits, ele será truncado.
@@ -13,11 +10,12 @@ public final class Convert {
      */
     public static byte[] intTo3Bytes(int value) {
         byte[] bytes = new byte[3];
-        bytes[0] = (byte) ((value >> 16) & 0xFF);
-        bytes[1] = (byte) ((value >> 8) & 0xFF);
-        bytes[2] = (byte) (value & 0xFF);
+        bytes[0] = (byte)((value >> 16) & 0xFF);
+        bytes[1] = (byte)((value >> 8) & 0xFF);
+        bytes[2] = (byte)(value & 0xFF);
         return bytes;
     }
+
 
     /**
      * Converte um valor inteiro para uma string binária de 24 bits,

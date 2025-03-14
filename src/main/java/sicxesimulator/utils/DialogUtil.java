@@ -8,20 +8,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-// Ajuste a importação de ObjectFile conforme seu projeto:
-
-
 /**
  * DialogUtil centraliza a criação e configuração de diálogos customizados.
  * Todos os métodos são estáticos e a classe é final com construtor privado,
  * seguindo o padrão de classes utilitárias em Java.
  */
-public final class DialogUtil {
-
-    // Construtor privado para evitar instância
-    private DialogUtil() {
-        throw new UnsupportedOperationException("Esta classe não pode ser instanciada.");
-    }
+public abstract class DialogUtil {
 
     /**
      * Exibe um alerta de erro com título, cabeçalho e mensagem.

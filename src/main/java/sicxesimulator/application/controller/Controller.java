@@ -53,20 +53,22 @@ public class Controller {
         File savedDir = new File(Constants.SAVE_DIR);
 
         if (savedDir.exists() && savedDir.isDirectory()) {
-            File[] objFiles = savedDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".obj"));
-            if (objFiles != null) {
-                for (File file : objFiles) {
+            // Carrega arquivos .meta (serializados)
+            File[] metaFiles = savedDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".meta"));
+            if (metaFiles != null) {
+                for (File file : metaFiles) {
                     try {
-                        ObjectFile objectFile = ObjectFile.loadFromFile(file);
+                        ObjectFile objectFile = ObjectFile.loadFromFile(file); // desserializa
                         objectFiles.add(objectFile);
                     } catch (IOException e) {
-                        DialogUtil.showError("Erro ao carregar arquivo salvo: " + file.getName());
+                        DialogUtil.showError("Erro ao carregar arquivo meta: " + file.getName());
                     }
                 }
             }
         }
         return objectFiles;
     }
+
 
     /// ===== Controles de Montagem ===== ///
 
@@ -98,21 +100,28 @@ public class Controller {
     public void handleLinkSelectedFilesAction() {
         List<ObjectFile> selectedFiles = mainLayout.getObjectFilePanel().getObjectFileTable().getSelectedFiles();
 
+        if (selectedFiles.size() <= 2) {
+            DialogUtil.showError("Selecione pelo menos 2 módulos para ligar.");
+            return;
+        } // Essa checagem é "inútil", já que o botão é desabilitado caso não tenha pelo menos 2 módulos selecionados
+        // Vou deixar aqui só por precaução/registro
+
         int loadAddr = 0;
         boolean fullReloc;
 
         if (currentLinkerMode == MenuBarController.LinkerMode.ABSOLUTO) {
             try {
                 loadAddr = DialogUtil.askForInteger("Endereço de Carga", "Linkagem Absoluta", "Informe o endereço.");
-                fullReloc = DialogUtil.askForBoolean("Relocação Final", "Deseja que o Linker aplique relocação final?");
+                fullReloc = DialogUtil.askForBoolean("Relocação Final", "Aplicar relocação agora?");
             } catch (IOException e) {
                 DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
                 return;
             }
         } else {
-            // Modo RELOCAVEL
-            fullReloc = DialogUtil.askForBoolean("Relocação Final", "Deseja que o Linker aplique relocação final?");
+            // Modo RELOCAVEL -> por padrão loadAddress = 0
+            fullReloc = DialogUtil.askForBoolean("Relocação Final", "Aplicar relocação agora?");
         }
+
 
         // Invoca a lógica de linkagem, passando os parâmetros coletados
         ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddr, fullReloc);
@@ -214,7 +223,7 @@ public class Controller {
         // Se ABSOLUTO, perguntar o endereço de carga.
         // Se RELOCAVEL, podemos assumir 0 (ou outro) e deixar a relocação para a lógica do loader.
         int userLoadAddress = 0;
-        if (currentLinkerMode == MenuBarController.LinkerMode.ABSOLUTO) {
+        if (!selectedFile.isFullyRelocated()) {
             try {
                 userLoadAddress = DialogUtil.askForInteger(
                         "Endereço de Carga",
@@ -226,7 +235,6 @@ public class Controller {
             }
         }
 
-        // Agora, chamamos o método que carrega o programa na máquina
         model.loadProgramToMachine(selectedFile, userLoadAddress);
 
         updateAllTables();

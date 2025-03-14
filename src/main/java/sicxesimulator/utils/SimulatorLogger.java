@@ -3,7 +3,7 @@ package sicxesimulator.utils;
 import java.io.IOException;
 import java.util.logging.*;
 
-public class SimulatorLogger {
+public abstract class SimulatorLogger {
     // Configurações para rotação: limite de 10MB por arquivo e 10 arquivos rotacionados
     private static final int LIMIT = 10 * 1024 * 1024; // 10MB
     private static final int COUNT = 10;

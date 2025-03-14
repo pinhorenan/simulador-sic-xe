@@ -73,18 +73,30 @@ public class IntermediateRepresentation {
     }
 
     public void addLocalSymbol(String symbol, int address) {
-        symbolTable.addSymbol(symbol, address);
+        if (symbolTable.contains(symbol)) {
+            SymbolTable.SymbolInfo info = symbolTable.getSymbolInfo(symbol);
+            // Atualiza o endereço para o valor correto, vindo da definição local.
+            info.address = address;
+            // Garante que o símbolo permaneça exportado.
+            info.isPublic = true;
+        } else {
+            // Se não existir, insere normalmente (supondo que a definição local não é exportada por padrão).
+            symbolTable.addSymbol(symbol, address, false);
+        }
     }
 
+
     public void addExportedSymbol(String symbol) {
-        // Se esse símbolo já existe na symbolTable, set isPublic = true.
-        // Caso contrário, registra address = 0 e isPublic = true, e depois na hora que ver a definição real (label), atualiza o address.
+        // 1) Verifica se já existe no symbolTable
         if (symbolTable.contains(symbol)) {
-            symbolTable.getSymbolInfo(symbol).isPublic = true;
+            SymbolTable.SymbolInfo info = symbolTable.getSymbolInfo(symbol);
+            info.isPublic = true;
         } else {
+            // insere com address 0, isPublic=true
             symbolTable.addSymbol(symbol, 0, true);
         }
     }
+
 
     public void addImportedSymbol(String symbol) {
         importedSymbols.add(symbol);

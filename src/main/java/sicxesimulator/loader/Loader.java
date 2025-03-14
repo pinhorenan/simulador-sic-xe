@@ -24,7 +24,7 @@ public class Loader {
         }
 
         // Se já está relocado, nada a fazer
-        if (finalObj.getIsRelocated()) {
+        if (finalObj.isFullyRelocated()) {
             return;
         }
 
@@ -42,7 +42,7 @@ public class Loader {
             info.address += baseAddress;
         }
 
-        finalObj.setRelocated(true);
+        finalObj.setFullyRelocated(true);
     }
 
     // Aplica a soma baseAddress ao campo de `length` bytes no offset rec.offset()

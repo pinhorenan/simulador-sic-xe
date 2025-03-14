@@ -2,7 +2,7 @@ package sicxesimulator.models;
 
 import java.io.*;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Representa um módulo objeto gerado pelo montador,
@@ -16,16 +16,16 @@ public class ObjectFile implements Serializable {
 
     private final int startAddress;
     private final byte[] machineCode;
-    private final SymbolTable symbolTable;
     private final String fileName;
     private final List<String> rawSourceCode;
+    private final SymbolTable symbolTable;
 
     private boolean isRelocated;
 
-    // Símbolos importados. Se você quiser armazenar quantas refs, ou offsets, etc., ajuste o tipo do value.
-    private final Map<String, Integer> importedSymbols;
+    // Símbolos importados. Por definição eles não têm endereço, apenas nome, logo fica mais fácil armazenar como um conjunto de String.
+    private final Set<String> importedSymbols;
 
-    // Lista de registros de reloc, indicando quais bytes do code precisam ser ajustados
+    // Lista de registros de reloc, indicando quais bytes do machineCode precisam ser ajustados
     private final List<RelocationRecord> relocationRecords;
 
     public ObjectFile(int startAddress,
@@ -33,7 +33,7 @@ public class ObjectFile implements Serializable {
                       SymbolTable symbolTable,
                       String fileName,
                       List<String> rawSourceCode,
-                      Map<String,Integer> importedSymbols,
+                      Set<String> importedSymbols,
                       List<RelocationRecord> relocationRecords) {
         if (machineCode == null || symbolTable == null || fileName == null) {
             throw new IllegalArgumentException("Nenhum parâmetro pode ser nulo.");
@@ -48,12 +48,22 @@ public class ObjectFile implements Serializable {
         this.relocationRecords = relocationRecords;
     }
 
+    /// ===== Métodos Getters ===== ///
+
     public int getStartAddress() {
         return startAddress;
     }
 
+    public int getProgramLength() {
+        return machineCode.length;
+    }
+
     public byte[] getObjectCode() {
         return machineCode;
+    }
+
+    public boolean getIsRelocated() {
+        return isRelocated;
     }
 
     public SymbolTable getSymbolTable() {
@@ -64,31 +74,29 @@ public class ObjectFile implements Serializable {
         return fileName;
     }
 
+    public Set<String> getImportedSymbols() {
+        return importedSymbols;
+    }
+
     public List<String> getRawSourceCode() {
         return rawSourceCode;
-    }
-
-    public boolean isRelocated() {
-        return isRelocated;
-    }
-    public void setRelocated(boolean relocated) {
-        isRelocated = relocated;
-    }
-
-    public int getProgramLength() {
-        return machineCode.length;
-    }
-
-    public Map<String,Integer> getImportedSymbols() {
-        return importedSymbols;
     }
 
     public List<RelocationRecord> getRelocationRecords() {
         return relocationRecords;
     }
 
+    /// ===== Métodos Setter ===== ///
+
+    public void setRelocated(boolean relocated) {
+        isRelocated = relocated;
+    }
+
+    /// ===== Métodos de Serialização ===== ///
+
     /**
      * Lê um objeto ObjectFile serializado a partir de um arquivo .obj.
+     *
      * @param file O arquivo .obj a ser carregado
      * @return instância de ObjectFile
      * @throws IOException se houver erro de E/S ou se a classe não for encontrada
@@ -98,6 +106,22 @@ public class ObjectFile implements Serializable {
             return (ObjectFile) ois.readObject();
         } catch (ClassNotFoundException e) {
             throw new IOException("Formato do arquivo inválido ou classe não encontrada ao ler ObjectFile.", e);
+        }
+    }
+
+    /**
+     * Salva o objeto ObjectFile serializado em um arquivo .obj.
+     *
+     * @param file O arquivo .obj a ser salvo
+     */
+    public void saveToFile(File file) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
+            // TODO: SALVAR em resources/saved
+            oos.writeObject(this);
+        } catch (IOException e) {
+            // TODO: Implementar um logging mais robusto.
+            //noinspection CallToPrintStackTrace
+            e.printStackTrace();
         }
     }
 

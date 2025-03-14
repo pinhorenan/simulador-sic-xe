@@ -7,11 +7,6 @@ import sicxesimulator.application.components.buttons.MainButtons;
 
 public class ExecutionControlsPanel {
     private final HBox pane;
-    private Button runButton;
-    private Button pauseButton;
-    private Button nextButton;
-    private Button loadButton;
-    private Button restartButton;
 
     public ExecutionControlsPanel() {
         // Criamos um painel vazio inicialmente, os botões serão adicionados depois
@@ -22,11 +17,11 @@ public class ExecutionControlsPanel {
 
     public void setMainButtons(MainButtons mainButtons) {
         // Agora usamos diretamente os botões de MainButtons para manter os bindings
-        this.runButton = mainButtons.getRunButton();
-        this.pauseButton = mainButtons.getPauseButton();
-        this.nextButton = mainButtons.getNextButton();
-        this.loadButton = mainButtons.getLoadButton();
-        this.restartButton = mainButtons.getRestartButton();
+        Button runButton = mainButtons.getRunButton();
+        Button pauseButton = mainButtons.getPauseButton();
+        Button nextButton = mainButtons.getNextButton();
+        Button loadButton = mainButtons.getLoadButton();
+        Button restartButton = mainButtons.getRestartButton();
 
         // Atualizamos o painel com os botões reais, mantendo os bindings
         pane.getChildren().setAll(runButton, pauseButton, nextButton, loadButton, restartButton);

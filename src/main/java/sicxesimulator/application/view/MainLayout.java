@@ -41,16 +41,18 @@ public class MainLayout {
         rightPane.setPrefWidth(400);
         VBox.setVgrow(outputPanel.getPane(), Priority.ALWAYS);
 
+        // Criar um centerPane para o inputPanel
+        VBox inputContainer = new VBox(inputPanel.getPane());
+        HBox centerPane = new HBox(inputContainer);
+
         // Criamos o leftPane inicialmente sem o ObjectFilePanel
         // Usamos um VBox para agrupar (temporariamente) o symbolPanel; depois, quando o Controller for definido,
         // substituiremos esse grupo por um VBox contendo o ObjectFilePanel e o symbolPanel.
-        VBox filesAndSymbols = new VBox(5, symbolPanel.getPane());
-        VBox inputContainer = new VBox(inputPanel.getPane());
+        VBox filesAndSymbols = new VBox(symbolPanel.getPane());
+        leftPane = new HBox(filesAndSymbols);
 
-        leftPane = new HBox(5, filesAndSymbols, inputContainer);
-        HBox.setHgrow(leftPane, Priority.ALWAYS);
 
-        HBox mainContent = new HBox(10, leftPane, rightPane);
+        HBox mainContent = new HBox(5, leftPane, centerPane, rightPane);
         mainContent.setPadding(new Insets(10));
 
         root.setCenter(mainContent);
@@ -67,11 +69,10 @@ public class MainLayout {
 
         // Atualiza o container que agrupa o ObjectFilePanel e o SymbolPanel
         VBox filesAndSymbols = new VBox(5, objectFilePanel.getPane(), symbolPanel.getPane());
-        VBox inputContainer = new VBox(inputPanel.getPane());
         VBox.setVgrow(inputPanel.getPane(), Priority.ALWAYS);
 
         // Atualiza o leftPane com os novos componentes, mantendo o padding original
-        leftPane.getChildren().setAll(filesAndSymbols, inputContainer);
+        leftPane.getChildren().setAll(filesAndSymbols);
     }
 
     public void setMenuBarController(MenuBarController menuBarController) {

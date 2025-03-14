@@ -1,5 +1,6 @@
 package sicxesimulator.application.components.panels;
 
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import sicxesimulator.application.components.buttons.MainButtons;
@@ -26,18 +27,26 @@ public class InputPanel {
         VBox.setVgrow(inputArea, Priority.ALWAYS);
         VBox.setVgrow(expandedCodeArea, Priority.ALWAYS);
 
-        // Criando o cabeçalho do painel com título e botões alinhados
+        // Defino um rótulo para o título
         Label titleLabel = new Label("Código");
 
+        // Defino um espaçador para empurrar os botões para a direita
         Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS); // Espaçador que empurra os botões para a direita
-
-        HBox buttonBox = new HBox(5, spacer); // O botão Montar será adicionado depois
+        spacer.setPrefWidth(200);
         spacer.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        // Defino um HBox para os botões de controle dos arquivos
+        HBox buttonBox = new HBox(); // O botão Montar será adicionado depois
+
+        // Defino um HBox para o cabeçalho
+        HBox headerHBox = new HBox();
+        headerHBox.getChildren().addAll(titleLabel, spacer, buttonBox);
+        headerHBox.setAlignment(Pos.CENTER);
+
+        // Defino um BorderPane para o cabeçalho
         BorderPane headerPane = new BorderPane();
-        headerPane.setLeft(titleLabel);
-        headerPane.setRight(buttonBox);
+        headerPane.setLeft(headerHBox);
 
         // Criando um VBox para empilhar os TextArea com um rótulo para o código expandido
         Label expandedLabel = new Label("Código Expandido");
@@ -67,8 +76,9 @@ public class InputPanel {
 
         // Atualiza o cabeçalho para incluir o botão Montar corretamente
         BorderPane headerPane = (BorderPane) inputPane.getGraphic();
-        HBox buttonBox = (HBox) headerPane.getRight();
-        buttonBox.getChildren().add(assembleButton);
+        HBox headerHBox = (HBox) headerPane.getLeft();
+        HBox buttonHBox = (HBox) headerHBox.getChildren().getLast();
+        buttonHBox.getChildren().add(assembleButton);
     }
 
     public TitledPane getPane() {

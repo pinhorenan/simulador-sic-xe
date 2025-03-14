@@ -1,18 +1,22 @@
 package sicxesimulator.models;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class IntermediateRepresentation {
-    private final SymbolTable symbolTable;
     private final List<AssemblyLine> assemblyLines;
+    private List<String> rawSourceLines; // TODO: Seria bom setar na hora da montagem e botar como final, ou não?
+    private final SymbolTable symbolTable;
+    private final Set<String> importedSymbols;
     private String programName;
-    private List<String> rawSourceLines;
     private int startAddress;
 
     // Construtor que permite definir o endereço de início
     public IntermediateRepresentation(int startAddress) {
         this.symbolTable = new SymbolTable();
+        this.importedSymbols = new HashSet<>();
         this.assemblyLines = new ArrayList<>();
         this.startAddress = startAddress;
     }
@@ -22,42 +26,68 @@ public class IntermediateRepresentation {
         this(0);
     }
 
-    public SymbolTable getSymbolTable() {
-        return symbolTable;
-    }
+    /// ===== Métodos Getters ===== ///
 
-    public List<AssemblyLine> getAssemblyLines() {
-        return assemblyLines;
+    public String getProgramName() {
+        return programName;
     }
 
     public int getStartAddress() {
         return startAddress;
     }
 
-    public void setStartAddress(int startAddress) {
-        this.startAddress = startAddress;
+    public SymbolTable getSymbolTable() {
+        return symbolTable;
     }
 
-    public String getProgramName() {
-        return programName;
+    public Set<String> getImportedSymbols() {
+        return importedSymbols;
+    }
+
+    public List<AssemblyLine> getAssemblyLines() {
+        return assemblyLines;
+    }
+
+    public List<String> getRawSourceLines() {
+        return rawSourceLines;
+    }
+
+    /// ===== Métodos Setters ===== ///
+
+    public void setStartAddress(int startAddress) {
+        this.startAddress = startAddress;
     }
 
     public void setProgramName(String programName) {
         this.programName = programName;
     }
 
-    /**
-     * Adiciona uma nova linha de assembly à representação.
-     */
+    public void setRawSourceCode(List<String> rawSourceLines) {
+        this.rawSourceLines = rawSourceLines;
+    }
+
+    /// ===== Métodos de adição de objetos ===== ///
+
     public void addAssemblyLine(AssemblyLine line) {
         assemblyLines.add(line);
     }
 
-    /**
-     * Registra um símbolo na tabela com seu endereço.
-     */
-    public void addSymbol(String symbol, int address) {
+    public void addLocalSymbol(String symbol, int address) {
         symbolTable.addSymbol(symbol, address);
+    }
+
+    public void addExportedSymbol(String symbol) {
+        // Se esse símbolo já existe na symbolTable, set isPublic = true.
+        // Caso contrário, registra address = 0 e isPublic = true, e depois na hora que ver a definição real (label), atualiza o address.
+        if (symbolTable.contains(symbol)) {
+            symbolTable.getSymbolInfo(symbol).isPublic = true;
+        } else {
+            symbolTable.addSymbol(symbol, 0, true);
+        }
+    }
+
+    public void addImportedSymbol(String symbol) {
+        importedSymbols.add(symbol);
     }
 
     @Override
@@ -70,13 +100,5 @@ public class IntermediateRepresentation {
             sb.append(line).append("\n");
         }
         return sb.toString();
-    }
-
-    public void setRawSourceCode(List<String> rawSourceLines) {
-        this.rawSourceLines = rawSourceLines;
-    }
-
-    public List<String> getRawSourceLines() {
-        return rawSourceLines;
     }
 }

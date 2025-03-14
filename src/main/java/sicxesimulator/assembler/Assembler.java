@@ -3,6 +3,7 @@ package sicxesimulator.assembler;
 import sicxesimulator.models.IntermediateRepresentation;
 import sicxesimulator.models.ObjectFile;
 
+import java.io.File;
 import java.util.List;
 
 /// NOTA: O montador espera que o código fonte use endereços em bytes para o START.
@@ -25,10 +26,13 @@ public class Assembler {
     public ObjectFile assemble(List<String> originalSource, List<String> expandedSource) {
         // Executa a primeira passagem com o código já expandido
         IntermediateRepresentation midCode = firstPass(expandedSource);
-        // Armazena o código fonte original na IR, para que o ObjectFile tenha o código original
         midCode.setRawSourceCode(originalSource);
 
-        return secondPass(midCode);
+        ObjectFile meta = secondPass(midCode);
+
+        meta.saveToFile(new File(midCode.getProgramName() + ".meta"));
+
+        return meta;
     }
 
     /**

@@ -9,7 +9,7 @@ public class SymbolPanel {
 
     public SymbolPanel() {
         this.symbolTable = new SymbolTableView();
-        this.symbolPane = new TitledPane("Símbolos", symbolTable);
+        this.symbolPane = new TitledPane("Tabela de Símbolos", symbolTable);
         symbolPane.setCollapsible(false);
     }
 

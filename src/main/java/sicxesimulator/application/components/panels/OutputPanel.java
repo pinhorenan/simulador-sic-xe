@@ -1,11 +1,9 @@
 package sicxesimulator.application.components.panels;
 
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.BorderPane;
-import sicxesimulator.application.components.buttons.MainButtons;
 
 public class OutputPanel {
     private final TitledPane outputPane;

@@ -1,0 +1,6 @@
+MODULE3  START   3000
+         EXTREF  GAMMA
+         LDA     GAMMA
+         STA     DELTA
+DELTA    BYTE    C'HELLO'
+         END     MODULE3

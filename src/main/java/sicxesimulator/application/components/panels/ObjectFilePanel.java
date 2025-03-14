@@ -1,10 +1,13 @@
 package sicxesimulator.application.components.panels;
 
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import sicxesimulator.application.components.tables.ObjectFileTableView;
 import sicxesimulator.application.components.buttons.MainButtons;
 import sicxesimulator.application.model.ObjectFileTableItem;
@@ -27,11 +30,26 @@ public class ObjectFilePanel {
         objectFileTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         objectFileTable.setMaxWidth(Double.MAX_VALUE);
 
-        fileControlButtons = new HBox();
+        // Defino uma label para o título do painel
+        Label titleLabel = new Label("Arquivos");
 
+        // Defino um espaçador para empurrar os botões para a direita
+        Region spacer = new Region();
+        spacer.setPrefWidth(50);
+        spacer.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        // Defino um HBox para os botões de controle dos arquivos
+        fileControlButtons = new HBox(5);
+
+        // Defino um HBox para o cabeçalho
+        HBox headerHBox = new HBox();
+        headerHBox.getChildren().addAll(titleLabel, spacer, fileControlButtons);
+        headerHBox.setAlignment(Pos.CENTER);
+
+        // Defino um BorderPane para o cabeçalho
         BorderPane headerPane = new BorderPane();
-        headerPane.setLeft(new Label("Arquivos Montados"));
-        headerPane.setRight(fileControlButtons);
+        headerPane.setLeft(headerHBox);
 
         this.objectFilePane = new TitledPane();
         objectFilePane.setText(null);

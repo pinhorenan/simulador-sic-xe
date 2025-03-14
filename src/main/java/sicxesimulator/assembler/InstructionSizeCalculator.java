@@ -2,6 +2,12 @@ package sicxesimulator.assembler;
 
 public class InstructionSizeCalculator {
 
+    /**
+     * Calcula o tamanho da instrução baseado no mnemônico e operando.
+      * @param mnemonic Mnemônico da instrução
+     * @param operand   Operando da instrução
+     * @return          Tamanho da instrução em bytes
+     */
     public static int calculateSize(String mnemonic, String operand) {
         if (mnemonic.equalsIgnoreCase("WORD")) {
             return 3; // WORD ocupa 3 bytes
@@ -28,10 +34,16 @@ public class InstructionSizeCalculator {
                 return (operand.length() - 3) / 2;
             }
         }
-        // Para instruções, determine o formato:
-        return determineInstructionFormat(mnemonic); // Formato 1 = 1, 2 = 2, 3 = 3, 4 = 4 bytes.
+
+        // Para instruções, o formato é determinado pelo mnemônico, e o tamanho em bytes é igual ao formato.
+        return determineInstructionFormat(mnemonic);
     }
 
+    /**
+     * Determina o formato da instrução baseado no mnemônico.
+     * @param mnemonic Mnemônico da instrução
+     * @return         O formato da instrução, podendo ser 1, 2, 3 ou 4.
+     */
     private static int determineInstructionFormat(String mnemonic) {
         if (mnemonic.startsWith("+")) {
             return 4;

@@ -1,0 +1,7 @@
+MODULE2  START   2000
+         EXTREF  BETA
+         EXTDEF  GAMMA
+         LDA     BETA
+         STA     GAMMA
+GAMMA    WORD    10
+         END     MODULE2

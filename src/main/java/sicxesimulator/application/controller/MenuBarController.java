@@ -24,7 +24,7 @@ public class MenuBarController {
 
     // TODO: Mover isso para model
     // Endereço base (apenas se estivermos no modo Absoluto).
-    private int baseAddress = 0;
+    private final int baseAddress = 0;
 
 
     public MenuBarController(Controller controller) {

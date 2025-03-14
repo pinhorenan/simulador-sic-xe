@@ -32,16 +32,16 @@ public class BottomBarPanel {
 
     public void updateMemoryLabel() {
         int memorySize = controller.getMemorySize();
-        memoryLabel.setText("Memória: " + memorySize + " bytes");
+        memoryLabel.setText("Tamanho da memória: " + memorySize + " bytes");
     }
 
     public void updateFormatLabel() {
         String addressFormat = controller.getAddressFormat();
-        formatLabel.setText("Formato: " + addressFormat);
+        formatLabel.setText("Formato de exibição de endereços: " + addressFormat);
     }
 
     public void updateSpeedLabel() {
         String cycleDelay = controller.getCycleDelay();
-        speedLabel.setText("Velocidade: " + cycleDelay);
+        speedLabel.setText("Atraso de Ciclo: " + cycleDelay);
     }
 }

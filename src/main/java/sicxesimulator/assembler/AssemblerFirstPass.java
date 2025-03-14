@@ -36,6 +36,7 @@ class AssemblerFirstPass {
             String mnemonic = null;
             String operand = null;
 
+            // Se a linha contém um mnemônico, ele é o primeiro elemento.
             if (parts.length > 0) {
                 if (Check.isMnemonic(parts[0])) {
                     mnemonic = parts[0];
@@ -51,10 +52,12 @@ class AssemblerFirstPass {
                 }
             }
 
+            // Se não encontrou um mnemônico, a linha é inválida.
             if (mnemonic == null) {
                 throw new IllegalArgumentException("Linha inválida na linha " + lineNumber + ": " + line);
             }
 
+            // Se a diretiva START for encontrada, o endereço de início é definido.
             if (mnemonic.equalsIgnoreCase("START")) {
                 try {
                     int startAddress = parseAddress(operand);
@@ -64,19 +67,52 @@ class AssemblerFirstPass {
                     throw new IllegalArgumentException("Erro ao processar START na linha " + lineNumber + ": " + operand, e);
                 }
                 if (label != null) {
-                    midCode.addSymbol(label, locationCounter);
+                    midCode.addLocalSymbol(label, locationCounter);
                     midCode.setProgramName(label);
                 }
                 continue;
             }
 
+            // TODO: Verificar se um símbolo marcado em EXTDEF realmente existe como label, caso contrário, gerar aviso.
+            // Se a diretiva EXTDEF for encontrada, os símbolos são exportados.
+            if (mnemonic.equalsIgnoreCase("EXTDEF")) {
+                // Se houver operand, cada símbolo está separado por vírgula
+                if (operand != null && !operand.isEmpty()) {
+                    String[] symbols = operand.split(",");
+                    for (String symbol : symbols) {
+                        symbol = symbol.trim();
+
+                        // Adicionamos o símbolo à tabela de símbolos com o atributo isPublic=true.
+                        midCode.addExportedSymbol(symbol);
+                    }
+                }
+                // Não soma locationCounter, e continua para a próxima linha
+                continue;
+            }
+
+            // TODO: Impedir rótulos em linhas de EXTDEF/EXTREF (ajuste "opcional")
+            // Se a diretiva EXTREF for encontrada, os símbolos são importados.
+            if (mnemonic.equalsIgnoreCase("EXTREF")) {
+                if (operand != null && !operand.isEmpty()) {
+                    String[] symbols = operand.split(",");
+                    for (String symbol : symbols) {
+                        symbol = symbol.trim();
+                        midCode.addImportedSymbol(symbol);
+                    }
+                }
+                // Não soma locationCounter, e continua para a próxima linha
+                continue;
+            }
+
+            // Se a diretiva END for encontrada, a montagem é encerrada.
             if (mnemonic.equalsIgnoreCase("END")) {
                 endFound = true;
                 continue;
             }
 
+            // Se a linha contém um label, ele é adicionado à tabela de símbolos.
             if (label != null) {
-                midCode.addSymbol(label, locationCounter);
+                midCode.addLocalSymbol(label, locationCounter);
             }
 
             int size = InstructionSizeCalculator.calculateSize(mnemonic, operand);

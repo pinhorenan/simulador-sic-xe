@@ -1,0 +1,7 @@
+MODULE1  START   1000
+         EXTDEF  BETA
+         LDA     ALPHA
+         STA     BETA
+ALPHA    WORD    5
+BETA     RESW    1
+         END     MODULE1

@@ -1,11 +1,5 @@
 package sicxesimulator.utils;
 
-import sicxesimulator.models.ObjectFile;
-import sicxesimulator.application.model.ObjectFileTableItem;
-
-import java.util.ArrayList;
-import java.util.List;
-
 public final class Convert {
     // Impede a instanciação
     private Convert() { }
@@ -23,6 +17,28 @@ public final class Convert {
         bytes[1] = (byte) ((value >> 8) & 0xFF);
         bytes[2] = (byte) (value & 0xFF);
         return bytes;
+    }
+
+    /**
+     * Converte um valor inteiro para uma string binária de 24 bits,
+     * preenchendo com zeros à esquerda se necessário.
+     *
+     * @param value O valor a converter.
+     * @return String binária com 24 dígitos.
+     */
+    public static String intToBinaryString24(int value) {
+        int masked = value & 0xFFFFFF; // Considera apenas 24 bits
+        return String.format("%24s", Integer.toBinaryString(masked)).replace(' ', '0');
+    }
+
+    /**
+     * Converte um valor inteiro para uma string binária de 48 bits, preenchendo com zeros à esquerda se necessário.
+     * @param value O valor a converter.
+     * @return String binária com 48 dígitos.
+     */
+    public static String longToBinaryString48(long value) {
+        long masked = value & 0xFFFFFFFFFFFFL; // Considera somente 48 bits
+        return String.format("%48s", Long.toBinaryString(masked)).replace(' ', '0');
     }
 
     /**
@@ -89,31 +105,4 @@ public final class Convert {
         }
         return hex.toString();
     }
-
-    /**
-     * Converte um valor inteiro para uma string binária de 24 bits,
-     * preenchendo com zeros à esquerda se necessário.
-     *
-     * @param value O valor a converter.
-     * @return String binária com 24 dígitos.
-     */
-    public static String intToBinaryString24(int value) {
-        int masked = value & 0xFFFFFF; // Considera apenas 24 bits
-        return String.format("%24s", Integer.toBinaryString(masked)).replace(' ', '0');
-    }
-
-    public static String longToBinaryString48(long value) {
-        long masked = value & 0xFFFFFFFFFFFFL; // Considera somente 48 bits
-        return String.format("%48s", Long.toBinaryString(masked)).replace(' ', '0');
-    }
-
-    public static List<ObjectFileTableItem> objectFileToObjectFileTableItem(List<ObjectFile> savedFiles) {
-        List<ObjectFileTableItem> tableItems = new ArrayList<>();
-        for (ObjectFile objectFile : savedFiles) {
-            // Converte cada ObjectFile para ObjectFileTableItem
-            tableItems.add(new ObjectFileTableItem(objectFile));
-        }
-        return tableItems;
-    }
-
 }

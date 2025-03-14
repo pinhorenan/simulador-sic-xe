@@ -34,6 +34,25 @@ public class ExecutionUnit {
         return effectiveAddress / 3;
     }
 
+    // ===============================
+    // Rotina auxiliar para ler 24-bit da memória,
+    // a menos que seja modo imediato (n=0,i=1).
+    // Retorna o valor (int)
+    // ===============================
+    private int getValueOrImmediate(int[] operands, int effectiveAddress) {
+        // n=operands[5], i=operands[6]
+        int n = operands[5];
+        int i = operands[6];
+        // Modo imediato => retorna EA diretamente
+        if (n == 0 && i == 1) {
+            return effectiveAddress;
+        } else {
+            // Modo direto => lê da memória
+            byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
+            return Convert.bytesToInt(wordBytes);
+        }
+    }
+
     /// ===============================================================
     /// Métodos para operações aritméticas e lógicas (inteiras)
     /// ===============================================================
@@ -46,16 +65,12 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeADD(int[] operands, boolean indexed, int effectiveAddress) {
-        logger.fine(String.format("executeADD: effectiveAddress = %06X", effectiveAddress));
         Register A = registers.getRegister("A");
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int operandValue = Convert.bytesToInt(wordBytes);
-        logger.fine(String.format("executeADD: Valor lido da memória = %06X", operandValue));
-
+        int operandValue = getValueOrImmediate(operands, effectiveAddress);
         int result = A.getIntValue() + operandValue;
         A.setValue(result);
         updateConditionCode(result);
-        String log = String.format("ADD: Resultado = %06X", result);
+        String log = String.format("ADD: A=%06X + %06X => %06X", (A.getIntValue() - operandValue), operandValue, result);
         logger.info(log);
         return log;
     }
@@ -85,16 +100,12 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeAND(int[] operands, boolean indexed, int effectiveAddress) {
-        logger.fine(String.format("executeAND: effectiveAddress = %06X", effectiveAddress));
         Register A = registers.getRegister("A");
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int operandValue = Convert.bytesToInt(wordBytes);
-        logger.fine(String.format("executeAND: Valor lido da memória = %06X", operandValue));
-
+        int operandValue = getValueOrImmediate(operands, effectiveAddress);
         int result = A.getIntValue() & operandValue;
         A.setValue(result);
         updateConditionCode(result);
-        String log = String.format("AND: Resultado = %06X", result);
+        String log = String.format("AND: A & %06X => %06X", operandValue, result);
         logger.info(log);
         return log;
     }
@@ -108,12 +119,12 @@ public class ExecutionUnit {
      */
     public String executeSUB(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int operandValue = Convert.bytesToInt(wordBytes);
+        int operandValue = getValueOrImmediate(operands, effectiveAddress);
         int result = A.getIntValue() - operandValue;
         A.setValue(result);
         updateConditionCode(result);
-        String log = String.format("SUB: Resultado = %06X", result);
+        String log = String.format("SUB: A=%06X - %06X => %06X",
+                (A.getIntValue() + operandValue), operandValue, result);
         logger.info(log);
         return log;
     }
@@ -500,25 +511,17 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeLDA(int[] operands, boolean indexed, int effectiveAddress) {
-        // DICA: bits n e i estão em operands[5] e operands[6], ou consulte a Instruction se preferir
-        int n = operands[5];
-        int i = operands[6];
-
-        if (n==0 && i==1) {
-            // modo imediato => A ← effectiveAddress
-            registers.getRegister("A").setValue(effectiveAddress);
-            String log = String.format("LDA (imediato): A ← #%d", effectiveAddress);
-            logger.info(log);
-            return log;
+        int value = getValueOrImmediate(operands, effectiveAddress);
+        registers.getRegister("A").setValue(value);
+        String log;
+        // Se era imediato, apenas imprimir "LDA #value"
+        if (operands[5] == 0 && operands[6] == 1) {
+            log = String.format("LDA (imediato): A ← #%d", value);
         } else {
-            // modo direto => memory
-            byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-            int value = Convert.bytesToInt(wordBytes);
-            registers.getRegister("A").setValue(value);
-            String log = String.format("LDA: A ← %06X", value);
-            logger.info(log);
-            return log;
+            log = String.format("LDA: A ← %06X", value);
         }
+        logger.info(log);
+        return log;
     }
 
 
@@ -529,11 +532,13 @@ public class ExecutionUnit {
      * @param effectiveAddress Endereço efetivo da operação.
      * @return Mensagem de log com o resultado da operação.
      */
+    // LDB
     public String executeLDB(int[] operands, boolean indexed, int effectiveAddress) {
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int value = Convert.bytesToInt(wordBytes);
+        int value = getValueOrImmediate(operands, effectiveAddress);
         registers.getRegister("B").setValue(value);
-        String log = String.format("LDB: B ← %06X", value);
+        String log = (operands[5] == 0 && operands[6] == 1)
+                ? String.format("LDB (imediato): B ← #%d", value)
+                : String.format("LDB: B ← %06X", value);
         logger.info(log);
         return log;
     }
@@ -545,14 +550,27 @@ public class ExecutionUnit {
      * @param effectiveAddress Endereço efetivo da operação.
      * @return Mensagem de log com o resultado da operação.
      */
+    // LDCH (carrega apenas 1 byte no A)
+    // Se for imediato, "LDCH #5"? Normalmente não existe, mas se quiser suportar,
+    // poderia fazer "A's rightmost byte ← EA & 0xFF".
     public String executeLDCH(int[] operands, boolean indexed, int effectiveAddress) {
-        // Para acesso de byte, usamos o endereço diretamente.
-        int byteValue = memory.readByte(effectiveAddress);
+        // Modo normal: memory.readByte(effectiveAddress)
+        // Se imediato: "rightmost byte ← effectiveAddress & 0xFF"
+        int n = operands[5], i = operands[6];
+        int byteValue;
+        if (n == 0 && i == 1) {
+            // imediato
+            byteValue = effectiveAddress & 0xFF;
+        } else {
+            byteValue = memory.readByte(effectiveAddress);
+        }
         Register A = registers.getRegister("A");
         int currentA = A.getIntValue();
         int newA = (currentA & 0xFFFF00) | (byteValue & 0xFF);
         A.setValue(newA);
-        String log = String.format("LDCH: A[byte] ← %02X", byteValue);
+        String log = (n == 0 && i == 1)
+                ? String.format("LDCH (imediato): A[byte] ← #%02X", byteValue)
+                : String.format("LDCH: A[byte] ← %02X (mem[%06X])", byteValue, effectiveAddress);
         logger.info(log);
         return log;
     }
@@ -601,11 +619,13 @@ public class ExecutionUnit {
      * @param effectiveAddress Endereço efetivo da operação.
      * @return Mensagem de log com o resultado da operação.
      */
+    // LDS
     public String executeLDS(int[] operands, boolean indexed, int effectiveAddress) {
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int value = Convert.bytesToInt(wordBytes);
+        int value = getValueOrImmediate(operands, effectiveAddress);
         registers.getRegister("S").setValue(value);
-        String log = String.format("LDS: S ← %06X", value);
+        String log = (operands[5] == 0 && operands[6] == 1)
+                ? String.format("LDS (imediato): S ← #%d", value)
+                : String.format("LDS: S ← %06X", value);
         logger.info(log);
         return log;
     }
@@ -634,6 +654,7 @@ public class ExecutionUnit {
         }
     }
 
+
     /**
      * Compara o valor do acumulador com o valor lido da memória.
      * @param operands Operandos da instrução.
@@ -643,12 +664,11 @@ public class ExecutionUnit {
      */
     public String executeCOMP(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int memValue = Convert.bytesToInt(wordBytes);
-        int comparison = A.getIntValue() - memValue;
+        int operandValue = getValueOrImmediate(operands, effectiveAddress);
+        int comparison = A.getIntValue() - operandValue;
         updateConditionCode(comparison);
-        String log = String.format("COMP: A=%06X vs Mem[%06X]=%06X => %s",
-                A.getIntValue(), effectiveAddress, memValue, getConditionCodeDescription());
+        String log = String.format("COMP: A=%06X vs %06X => %s",
+                A.getIntValue(), operandValue, getConditionCodeDescription());
         logger.info(log);
         return log;
     }
@@ -672,12 +692,11 @@ public class ExecutionUnit {
      */
     public String executeOR(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int operandValue = Convert.bytesToInt(wordBytes);
+        int operandValue = getValueOrImmediate(operands, effectiveAddress);
         int result = A.getIntValue() | operandValue;
         A.setValue(result);
         updateConditionCode(result);
-        String log = String.format("OR: Resultado = %06X", result);
+        String log = String.format("OR: A | %06X => %06X", operandValue, result);
         logger.info(log);
         return log;
     }
@@ -712,12 +731,13 @@ public class ExecutionUnit {
         return log;
     }
 
-
+    // LDT
     public String executeLDT(int[] operands, boolean indexed, int effectiveAddress) {
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int value = Convert.bytesToInt(wordBytes);
+        int value = getValueOrImmediate(operands, effectiveAddress);
         registers.getRegister("T").setValue(value);
-        String log = String.format("LDT: T ← %06X", value);
+        String log = (operands[5] == 0 && operands[6] == 1)
+                ? String.format("LDT (imediato): T ← #%d", value)
+                : String.format("LDT: T ← %06X", value);
         logger.info(log);
         return log;
     }
@@ -928,8 +948,6 @@ public class ExecutionUnit {
             default -> "Desconhecido";
         };
     }
-
-
 
     /**
      * Converte um array de 6 bytes em um valor long (48 bits).

@@ -20,13 +20,15 @@ public class ObjectFile implements Serializable {
     private final List<String> rawSourceCode;
     private final SymbolTable symbolTable;
 
-    private boolean isRelocated;
+    private boolean fullyRelocated;
 
     // Símbolos importados. Por definição eles não têm endereço, apenas nome, logo fica mais fácil armazenar como um conjunto de String.
     private final Set<String> importedSymbols;
 
     // Lista de registros de reloc, indicando quais bytes do machineCode precisam ser ajustados
     private final List<RelocationRecord> relocationRecords;
+
+    private ObjectFileOrigin origin;
 
     public ObjectFile(int startAddress,
                       byte[] machineCode,
@@ -43,7 +45,7 @@ public class ObjectFile implements Serializable {
         this.symbolTable = symbolTable;
         this.fileName = fileName;
         this.rawSourceCode = rawSourceCode;
-        this.isRelocated = false;
+        this.fullyRelocated = false;
         this.importedSymbols = importedSymbols;
         this.relocationRecords = relocationRecords;
     }
@@ -62,8 +64,13 @@ public class ObjectFile implements Serializable {
         return machineCode;
     }
 
-    public boolean getIsRelocated() {
-        return isRelocated;
+    // TODO: Fazer uma implementação de verdade pqp
+    public String getObjectCodeAsString() {
+        return new String(machineCode);
+    }
+
+    public boolean isFullyRelocated() {
+        return fullyRelocated;
     }
 
     public SymbolTable getSymbolTable() {
@@ -86,10 +93,18 @@ public class ObjectFile implements Serializable {
         return relocationRecords;
     }
 
+    public ObjectFileOrigin getOrigin() {
+        return origin;
+    }
+
     /// ===== Métodos Setter ===== ///
 
-    public void setRelocated(boolean relocated) {
-        isRelocated = relocated;
+    public void setFullyRelocated(boolean relocated) {
+        fullyRelocated = relocated;
+    }
+
+    public void setOrigin(ObjectFileOrigin origin) {
+        this.origin = origin;
     }
 
     /// ===== Métodos de Serialização ===== ///

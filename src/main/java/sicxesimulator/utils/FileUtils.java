@@ -10,6 +10,15 @@ import java.nio.file.Path;
 public abstract class FileUtils {
 
     /**
+     * Garante que o diretório especificado existe, criando-o se necessário.
+     * @param directoryPath O caminho do diretório.
+     * @throws IOException  Se ocorrer erro na criação.
+     */
+    public static void ensureDirectoryExists(String directoryPath) throws IOException {
+        Files.createDirectories(Path.of(directoryPath));
+    }
+
+    /**
      * Lê o conteúdo inteiro de um arquivo como uma única string.
      *
      * @param filePath O caminho do arquivo.
@@ -30,5 +39,18 @@ public abstract class FileUtils {
      */
     public static void writeFile(String filePath, String content) throws IOException {
         Files.writeString(Path.of(filePath), content, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Escreve o conteúdo em um arquivo dentro do diretório especificado.
+     *
+     * @param directoryPath O caminho do diretório.
+     * @param fileName      O nome do arquivo.
+     * @param content       O conteúdo a ser escrito.
+     * @throws IOException Se ocorrer erro de I/O.
+     */
+    public static void writeFileInDir(String directoryPath, String fileName, String content) throws IOException {
+        ensureDirectoryExists(directoryPath);
+        writeFile(directoryPath + "/" + fileName, content);
     }
 }

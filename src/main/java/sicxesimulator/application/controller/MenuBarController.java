@@ -2,6 +2,7 @@ package sicxesimulator.application.controller;
 
 import javafx.scene.control.ChoiceDialog;
 import javafx.stage.FileChooser;
+import sicxesimulator.models.ObjectFile;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.DialogUtil;
 import sicxesimulator.utils.FileUtils;
@@ -13,6 +14,20 @@ import java.util.Optional;
 
 public class MenuBarController {
     private final Controller controller;
+
+    public void handleShowObjectCode() {
+        var table = controller.getMainLayout().getObjectFilePanel().getObjectFileTable();
+        var sel = table.getSelectionModel().getSelectedItems();
+        if (sel.size() != 1) {
+            DialogUtil.showError("Selecione um único arquivo .obj");
+            return;
+        }
+        ObjectFile obj = sel.get(0).getObjectFile();
+        // TODO: Não é pra mostrar no OutputPanel, mas por enquanto vai ser.
+        String textual = obj.getObjectCodeAsString();  // Implementar no ObjectFile
+        controller.getMainLayout().getOutputPanel().getOutputArea().appendText("=== OBJ TEXT ===\n" + textual + "\n");
+    }
+
 
     // TODO: Mover isso para model
     public enum LinkerMode {
@@ -78,7 +93,7 @@ public class MenuBarController {
     }
 
 
-    // Ação do menuItem "Exportar Arquivo Objeto"
+    // Ação do menuItem "Exportar arquivo .obj"
     public void handleExportOBJ() {
         try {
             byte[] objFileContent = controller.getObjectFileBytes();
@@ -100,6 +115,18 @@ public class MenuBarController {
         } catch (IOException e) {
             DialogUtil.showError("Erro ao exportar arquivo OBJ: " + e.getMessage());
         }
+    }
+
+    // Ação do menuItem "Limpar arquivos salvos"
+    public void handleClearObjectDirectory() {
+        File savedDir = new File(Constants.SAVE_DIR);
+        if (!savedDir.exists()) return;
+        File[] files = savedDir.listFiles((d,name)-> (name.endsWith(".obj") || name.endsWith(".meta")));
+        for (File f : files) {
+            f.delete();
+        }
+        DialogUtil.showInfo("Diretório de arquivos salvos limpo.");
+        controller.initializeFilesView();
     }
 
     /// ===================== MENU MEMÓRIA ===================== ///

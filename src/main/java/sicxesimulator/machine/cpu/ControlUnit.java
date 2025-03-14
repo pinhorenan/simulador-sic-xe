@@ -143,7 +143,7 @@ public class ControlUnit {
         String log;
 
         // Log antes da execução
-        logger.info(String.format("Executando instrução: Opcode %s, Operandos %s, EffectiveAddress %06X, Indexed: %s",
+        logger.info(String.format("Executando instrucao: Opcode %s, Operandos %s, EffectiveAddress %06X, Indexed: %s",
                 Integer.toHexString(opcode), java.util.Arrays.toString(operands), effectiveAddress, indexed));
 
         switch (format) {
@@ -153,7 +153,7 @@ public class ControlUnit {
                     case 0x04 -> executionUnit.executeCLEAR_LDX(currentInstruction, operands);
                     case 0x90 -> executionUnit.executeADDR(operands);
                     default ->
-                            throw new IllegalStateException("Instrução de formato 2 não implementada: " + Integer.toHexString(opcode));
+                            throw new IllegalStateException("Instrucao de formato 2 nao implementada: " + Integer.toHexString(opcode));
                 };
                 break;
             case 3:
@@ -268,11 +268,11 @@ public class ControlUnit {
                         log = executionUnit.executeTIXR(operands);
                         break;
                     default:
-                        throw new IllegalStateException("Instrução de formato 3 não implementada: " + Integer.toHexString(opcode));
+                        throw new IllegalStateException("Instrucao de formato 3 nao implementada: " + Integer.toHexString(opcode));
                 }
                 break;
             default:
-                throw new IllegalStateException("Formato de instrução não implementado: " + currentInstruction.format());
+                throw new IllegalStateException("Formato de instrucao nao implementado: " + currentInstruction.format());
         }
         return log;
     }

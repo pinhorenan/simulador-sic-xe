@@ -27,6 +27,13 @@ class AssemblerFirstPass {
             lineNumber++;
             line = line.trim();
 
+            line = line.trim();
+            // Remover comentários inline (delimitador ';')
+            int commentIndex = line.indexOf(";");
+            if (commentIndex != -1) {
+                line = line.substring(0, commentIndex).trim();
+            }
+            // Ignora linhas vazias ou linhas que são apenas comentários (iniciadas por ".")
             if (line.isEmpty() || line.startsWith(".")) {
                 continue;
             }
@@ -54,7 +61,7 @@ class AssemblerFirstPass {
 
             // Se não encontrou um mnemônico, a linha é inválida.
             if (mnemonic == null) {
-                throw new IllegalArgumentException("Linha inválida na linha " + lineNumber + ": " + line);
+                throw new IllegalArgumentException("Linha invalida na linha " + lineNumber + ": " + line);
             }
 
             // Se a diretiva START for encontrada, o endereço de início é definido.
@@ -73,34 +80,36 @@ class AssemblerFirstPass {
                 continue;
             }
 
-            // TODO: Verificar se um símbolo marcado em EXTDEF realmente existe como label, caso contrário, gerar aviso.
             // Se a diretiva EXTDEF for encontrada, os símbolos são exportados.
             if (mnemonic.equalsIgnoreCase("EXTDEF")) {
-                // Se houver operand, cada símbolo está separado por vírgula
-                if (operand != null && !operand.isEmpty()) {
-                    String[] symbols = operand.split(",");
+                // Extrai totalmente o texto após o mnemônico, para suportar múltiplos símbolos separados por vírgula.
+                String operandFull = line.substring(mnemonic.length()).trim();
+                if (!operandFull.isEmpty()) {
+                    String[] symbols = operandFull.split(",");
                     for (String symbol : symbols) {
-                        symbol = symbol.trim();
-
-                        // Adicionamos o símbolo à tabela de símbolos com o atributo isPublic=true.
+                        symbol = symbol.trim().toUpperCase(); // Força para maiúsculas para consistência.
                         midCode.addExportedSymbol(symbol);
+                        // Adiciona na symbolTable com endereço (a ser resolvido posteriormente) e atributo isPublic=true.
+                        midCode.getSymbolTable().addSymbol(symbol, locationCounter, true);
                     }
                 }
-                // Não soma locationCounter, e continua para a próxima linha
                 continue;
             }
 
-            // TODO: Impedir rótulos em linhas de EXTDEF/EXTREF (ajuste "opcional")
+
             // Se a diretiva EXTREF for encontrada, os símbolos são importados.
             if (mnemonic.equalsIgnoreCase("EXTREF")) {
-                if (operand != null && !operand.isEmpty()) {
-                    String[] symbols = operand.split(",");
+                // Em vez de usar o 'operand' (limitado pelo split com limite 3), extrai totalmente o texto após o mnemônico.
+                String operandFull = line.substring(mnemonic.length()).trim();
+                if (!operandFull.isEmpty()) {
+                    String[] symbols = operandFull.split(",");
                     for (String symbol : symbols) {
-                        symbol = symbol.trim();
+                        symbol = symbol.trim().toUpperCase();
                         midCode.addImportedSymbol(symbol);
+                        // Adiciona na symbolTable com endereço 0, "isPublic = false"
+                        midCode.getSymbolTable().addSymbol(symbol, 0, false);
                     }
                 }
-                // Não soma locationCounter, e continua para a próxima linha
                 continue;
             }
 

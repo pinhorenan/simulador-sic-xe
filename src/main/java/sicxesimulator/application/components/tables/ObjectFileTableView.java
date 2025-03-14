@@ -38,6 +38,7 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
             return row;
         });
 
+        // TODO: Verificar a necessidade dessas colunas.
         // Criação das colunas (removemos a coluna "Selecionado")
         TableColumn<ObjectFileTableItem, String> nameCol = new TableColumn<>("Programa");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("programName"));
@@ -48,11 +49,11 @@ public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
         sizeCol.setCellValueFactory(new PropertyValueFactory<>("size"));
         sizeCol.setPrefWidth(80);
 
-        TableColumn<ObjectFileTableItem, String> dateCol = new TableColumn<>("Data de Montagem");
-        dateCol.setCellValueFactory(new PropertyValueFactory<>("mountDate"));
-        dateCol.setPrefWidth(120);
+        TableColumn<ObjectFileTableItem, String> originCol = new TableColumn<>("Origem");
+        originCol.setCellValueFactory(new PropertyValueFactory<>("origin"));
+        originCol.setPrefWidth(120);
 
-        this.getColumns().addAll(nameCol, sizeCol, dateCol);
+        this.getColumns().addAll(nameCol, sizeCol, originCol);
         this.setItems(entries);
 
         // Adiciona um Event Filter na TableView para interceptar o mouse antes do comportamento padrão

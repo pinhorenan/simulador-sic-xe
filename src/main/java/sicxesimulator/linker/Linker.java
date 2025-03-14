@@ -1,9 +1,10 @@
 package sicxesimulator.linker;
 
 import sicxesimulator.models.*;
+import sicxesimulator.utils.Constants;
+import sicxesimulator.utils.FileUtils;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -37,7 +38,6 @@ public class Linker {
         // Coleção para checar duplicatas: se algum símbolo for exportado por > 1 módulos
         Set<String> alreadyExported = new HashSet<>();
 
-
         // A) Monta a tabela globalSymbols a partir de cada módulo
         int totalSize = 0;
         for (ObjectFile module : modules) {
@@ -60,6 +60,7 @@ public class Linker {
                     alreadyExported.add(symbolName);
 
                     // Insere no map
+                    // TODO: Será que está inserindo adequadamente?
                     globalSymbols.put(symbolName, globalAddress);
                 }
             }
@@ -73,6 +74,7 @@ public class Linker {
             for (String symbol : module.getImportedSymbols()) {
                 // Se não existe em globalSymbols, significa que esse símbolo não foi exportado por nenhum módulo
                 if (!globalSymbols.containsKey(symbol)) {
+                    // TODO: PROBLEMA AQUI.
                     throw new IllegalArgumentException("Símbolo importado [" + symbol + "] não foi definido em nenhum módulo.");
                 }
             }
@@ -152,18 +154,24 @@ public class Linker {
                 Collections.emptySet(),     // Sem símbolos importados no finalObject
                 finalRelocation ? Collections.emptyList() : finalRelocs
         );
-        finalObject.setRelocated(finalRelocation);
+        // TODO: Provavelmente não é o ideal que essa definição seja feita aqui
+        finalObject.setOrigin(ObjectFileOrigin.LINKED_MODULES);
+        finalObject.setFullyRelocated(finalRelocation);
 
-        // Passo 3.1) Gerar um .obj textual final (unido) com H/D/R/T/M/E
+        /// Passo 3.1) Gerar .obj textual
+        String objFileName = outputFileName + ".obj";
         try {
-            writeLinkedHTME(finalObject, globalSymbols, outputFileName + ".obj");
+            // aqui ajusta para finalRelocation ou nao
+            writeLinkedHTME(finalObject, objFileName, finalRelocation);
         } catch (IOException e) {
-            // Se der erro, apenas exibe/LOG
             System.err.println("Falha ao gravar .obj final textual: " + e.getMessage());
         }
 
+
         // Passo 3.2) Gerar também um .meta binário final para a interface gráfica
-        finalObject.saveToFile(new File(outputFileName + ".meta"));
+        File metaFile = new File(Constants.SAVE_DIR, outputFileName + ".meta");
+        finalObject.saveToFile(metaFile);
+
 
         return finalObject;
     }
@@ -235,88 +243,96 @@ public class Linker {
      * - E record
      * Para simplificar, iremos gerar algo estilo "SIC normal", mas sem R se já resolvemos tudo.
      */
-    private void writeLinkedHTME(ObjectFile finalObj,
-                                 Map<String,Integer> globalSymbols,
-                                 String outFileName) throws IOException
+    private void writeLinkedHTME(
+            ObjectFile finalObj,
+            String outputFileName,        // "LinkedProgram.obj"
+            boolean finalRelocation       // se true, não geramos M nem R ...
+    ) throws IOException
     {
-        // Extrai do finalObj
+        // 1) Extrair campos básicos
         int startAddr = finalObj.getStartAddress();
         byte[] code = finalObj.getObjectCode();
         int programLength = code.length;
         String progName = finalObj.getProgramName();
         SymbolTable finalSymTab = finalObj.getSymbolTable();
 
-        // Vamos dividir o code em blocos T de ~30 bytes
-        List<TBlock> tblocks = buildTextRecords(startAddr, code);
+        // 2) Montar o conteúdo do arquivo (StringBuilder)
+        StringBuilder content = new StringBuilder();
 
-        // Abre .obj textual
-        try (FileWriter fw = new FileWriter(outFileName)) {
+        // === H record (Header)
+        content.append(
+                String.format("H^%-6s^%06X^%06X\n",
+                        fitProgramName(progName),
+                        startAddr,
+                        programLength
+                )
+        );
 
-            // 1) H
-            String header = String.format("H^%-6s^%06X^%06X",
-                    fitProgramName(progName),
-                    startAddr,
-                    programLength
-            );
-            fw.write(header + "\n");
-
-            // 2) D record (apenas para símbolos public do finalSymTab?)
-            List<SymbolTable.SymbolInfo> exported = new ArrayList<>();
-            for (SymbolTable.SymbolInfo sinfo : finalSymTab.getAllSymbols().values()) {
-                if (sinfo.isPublic) {
-                    exported.add(sinfo);
-                }
+        // === D record (EXTDEF) – listar símbolos públicos
+        List<SymbolTable.SymbolInfo> exported = new ArrayList<>();
+        for (SymbolTable.SymbolInfo sinfo : finalSymTab.getAllSymbols().values()) {
+            if (sinfo.isPublic) {
+                exported.add(sinfo);
             }
-            if (!exported.isEmpty()) {
-                StringBuilder dRec = new StringBuilder("D");
-                for (SymbolTable.SymbolInfo sinfo : exported) {
-                    dRec.append("^").append(sinfo.name)
-                            .append("^").append(String.format("%06X", sinfo.address));
-                }
-                fw.write(dRec + "\n");
-            }
-
-            // 3) R record?
-            // Se neste design finalRelocation==true, tudo resolvido => R record não tem muito uso
-            // Mas se fosse multifase, poderíamos inserir. Vamos deixar de fora ou apenas demarcar:
-            // fw.write("R\n");
-            // TODO: Revisar a necessidade
-
-            // 4) T records
-            for (TBlock block : tblocks) {
-                StringBuilder hex = new StringBuilder();
-                for (byte b : block.data) {
-                    hex.append(String.format("%02X", b & 0xFF));
-                }
-                int length = block.data.size();
-                String textRec = String.format("T^%06X^%02X^%s",
-                        block.startAddr, length, hex);
-                fw.write(textRec + "\n");
-            }
-
-            // 5) M records?
-            // Se finalRelocation==true e já resolvemos tudo, não faz sentido M no final.
-            // Se finalRelocation==false, poderíamos unificar M records do finalObj. Depende do design.
-            // Exemplo: se finalObj tiver relocationRecords e isRelocated=false, podemos escrever
-            // TODO: Revisar a necessidade
-            List<RelocationRecord> finalRecs = finalObj.getRelocationRecords();
-            if (!finalRecs.isEmpty()) {
-                for (RelocationRecord rec : finalRecs) {
-                    int address = startAddr + rec.offset();
-                    // length em half-bytes = rec.length()*2
-                    int halfBytes = rec.length() * 2;
-                    // notamos: rec.symbol() => ex: +FOO
-                    String mLine = String.format("M^%06X^%02X^+%s",
-                            address, halfBytes, rec.symbol());
-                    fw.write(mLine + "\n");
-                }
-            }
-
-            // 6) E record
-            String endRec = String.format("E^%06X", startAddr);
-            fw.write(endRec + "\n");
         }
+        if (!exported.isEmpty()) {
+            StringBuilder dRec = new StringBuilder("D");
+            for (SymbolTable.SymbolInfo sinfo : exported) {
+                dRec.append("^").append(sinfo.name)
+                        .append("^")
+                        .append(String.format("%06X", sinfo.address));
+            }
+            content.append(dRec).append("\n");
+        }
+
+        // === R record (EXTREF)?
+
+        //nÃO TEM NÉ PQ JÁ É UM ARQUIVO LGIADO E N TEMOS LIGADOR MULTIFASE TO DE SACO CHEIO DESSA MERDA DE LIGADOR
+
+        // === T records (até 30 bytes cada)
+        // Parecido com buildTextRecords no Assembler
+        List<TBlock> tblocks = buildTextRecords(startAddr, code);
+        for (TBlock block : tblocks) {
+            StringBuilder hex = new StringBuilder();
+            for (byte b : block.data) {
+                hex.append(String.format("%02X", b & 0xFF));
+            }
+            int length = block.data.size();
+            String textRec = String.format("T^%06X^%02X^%s",
+                    block.startAddr,
+                    length,
+                    hex
+            );
+            content.append(textRec).append("\n");
+        }
+
+        // === M records (só se finalRelocation==false)
+        if (!finalRelocation) {
+            // Pega relocationRecords do finalObj
+            List<RelocationRecord> finalRecs = finalObj.getRelocationRecords();
+            for (RelocationRecord rec : finalRecs) {
+                int address = startAddr + rec.offset();
+                // length em half-bytes:
+                int halfBytes = rec.length() * 2;
+                // Símbolo + ou - ?
+                // O AssemblerSecondPass faz sempre +SYM. Se pcRelative, às vezes poderia ser -SYM.
+                // Mas siga igual ao assembler: M^addr^len^+SIMBOLO
+                String mLine = String.format("M^%06X^%02X^+%s",
+                        address,
+                        halfBytes,
+                        rec.symbol()
+                );
+                content.append(mLine).append("\n");
+            }
+        }
+
+        // === E record
+        content.append(String.format("E^%06X\n", startAddr));
+
+        // 3) Escrever em disco no Constants.SAVE_DIR
+        FileUtils.writeFileInDir(Constants.SAVE_DIR, outputFileName, content.toString());
     }
+
 
     // Construtor de TBlock
     static class TBlock {
@@ -327,6 +343,7 @@ public class Linker {
             this.startAddr = start;
         }
     }
+
     private List<TBlock> buildTextRecords(int start, byte[] code) {
         List<TBlock> blocks = new ArrayList<>();
         final int MAX_BYTES = 0x1E;

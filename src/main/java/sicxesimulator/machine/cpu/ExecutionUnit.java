@@ -500,13 +500,27 @@ public class ExecutionUnit {
      * @return Mensagem de log com o resultado da operação.
      */
     public String executeLDA(int[] operands, boolean indexed, int effectiveAddress) {
-        byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int value = Convert.bytesToInt(wordBytes);
-        registers.getRegister("A").setValue(value);
-        String log = String.format("LDA: A ← %06X", value);
-        logger.info(log);
-        return log;
+        // DICA: bits n e i estão em operands[5] e operands[6], ou consulte a Instruction se preferir
+        int n = operands[5];
+        int i = operands[6];
+
+        if (n==0 && i==1) {
+            // modo imediato => A ← effectiveAddress
+            registers.getRegister("A").setValue(effectiveAddress);
+            String log = String.format("LDA (imediato): A ← #%d", effectiveAddress);
+            logger.info(log);
+            return log;
+        } else {
+            // modo direto => memory
+            byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
+            int value = Convert.bytesToInt(wordBytes);
+            registers.getRegister("A").setValue(value);
+            String log = String.format("LDA: A ← %06X", value);
+            logger.info(log);
+            return log;
+        }
     }
+
 
     /**
      * Carrega o valor da memória no registrador 'B'.

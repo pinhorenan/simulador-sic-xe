@@ -13,7 +13,7 @@ public abstract class Constants {
     public static final String[] VALID_REGISTERS = {"A", "X", "L", "B", "S", "T", "F", "PC", "SW"};
 
     public static final Set<String> VALID_MNEMONICS = new HashSet<>(Arrays.asList(
-            "START", "END", "BYTE", "WORD", "RESB", "RESW", "BASE", "NOBASE", "EQU", "LTORG",
+            "START", "END", "BYTE", "WORD", "RESB", "RESW", "BASE", "NOBASE", "EQU", "LTORG", "EXTREF", "EXTDEF",
             "ADD", "ADDR", "AND", "CLEAR", "COMP", "COMPR", "DIV", "DIVR",
             "J", "JEQ", "JGT", "JLT", "JSUB", "LDA", "LDB", "LDCH", "LDL", "LDS",
             "LDT", "LDX", "MUL", "MULR", "OR", "RMO", "RSUB", "SHIFTL", "SHIFTR",

@@ -250,16 +250,15 @@ public class Model {
     // TODO: Revisar, está dando acesso negado ao tentar salvar o arquivo
     public void addAndSaveObjectFileToList(ObjectFile objectFile) {
         File savedDir = new File(Constants.SAVE_DIR);
-
         if (!savedDir.exists()) {
-            // Cria o diretório se ele não existir
             if (!savedDir.mkdirs()) {
                 DialogUtil.showError("Erro ao criar diretório para salvar arquivos.");
                 return;
             }
         }
 
-        File saveFile = new File(savedDir, objectFile.getProgramName() + ".obj");
+        // Use .meta em vez de .obj
+        File saveFile = new File(savedDir, objectFile.getProgramName() + ".meta");
 
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(saveFile))) {
             oos.writeObject(objectFile);

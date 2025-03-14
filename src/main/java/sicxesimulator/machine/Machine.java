@@ -23,8 +23,7 @@ public class Machine {
         try {
             controlUnit.step();
         } catch (Exception e) {
-            System.err.println("Erro na execução: " + e.getMessage());
-            reset();
+            System.err.println("Erro na execucao: " + e.getMessage() + "PC: " + controlUnit.getIntValuePC());
         }
     }
 

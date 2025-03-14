@@ -6,4 +6,4 @@ BEGIN   LDA     ALPHA
 ALPHA   WORD    10
 BETA    WORD    3
 GAMMA   RESW    1
-END     BEGIN
+        END     BEGIN

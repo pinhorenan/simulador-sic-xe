@@ -16,9 +16,12 @@ public class ToolbarPanel {
 
         // Menu "Arquivo"
         Menu fileMenu = new Menu("Arquivo");
+
+        // Esse é essencial.
         MenuItem openAsmFile = new MenuItem("Abrir Arquivo .ASM");
         openAsmFile.setOnAction(e -> menuBarController.handleImportASM());
 
+        // TODO: Revisar a necessidade desse menu
         MenuItem exportExpandedCode = new MenuItem("Exportar .ASM Expandido");
         exportExpandedCode.setOnAction(e -> {
             try {
@@ -28,10 +31,14 @@ public class ToolbarPanel {
             }
         });
 
+        // TODO: Revisar a necessidade desse menu
         MenuItem exportObjFile = new MenuItem("Exportar Arquivo .OBJ");
         exportObjFile.setOnAction(e -> menuBarController.handleExportOBJ());
 
-        fileMenu.getItems().addAll(openAsmFile, exportExpandedCode, exportObjFile);
+        MenuItem clearObjectDirectory = new MenuItem("Limpar arquivos salvos");
+        clearObjectDirectory.setOnAction(e -> menuBarController.handleClearObjectDirectory());
+
+        fileMenu.getItems().addAll(openAsmFile, exportExpandedCode, exportObjFile, clearObjectDirectory);
 
         // TODO: Menu do Processador de Macros
         Menu macroProcessorMenu = new Menu("Processador de Macros");
@@ -45,7 +52,13 @@ public class ToolbarPanel {
         MenuItem setAssemblerMode = new MenuItem("Modo de Montagem");
         setAssemblerMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Montagem", "Modo de Montagem", "Nada implementado por aqui ainda."));
 
-        assemblerMenu.getItems().addAll(setAssemblerMode);
+        MenuItem showSymbolTable = new MenuItem("Mostrar tabela de símbolos");
+        showSymbolTable.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Montagem", "Modo de Montagem", "Nada implementado por aqui ainda."));
+
+        MenuItem showObjectCode = new MenuItem("Mostrar código objeto");
+        showObjectCode.setOnAction(e -> menuBarController.handleShowObjectCode());
+
+        assemblerMenu.getItems().addAll(setAssemblerMode, showSymbolTable, showObjectCode);
 
         // TODO: Menu do Ligador
         Menu linkerMenu = new Menu("Ligador");

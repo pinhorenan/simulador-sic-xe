@@ -69,7 +69,6 @@ public class Controller {
         return objectFiles;
     }
 
-
     /// ===== Controles de Montagem ===== ///
 
     public void handleAssembleAction() {
@@ -206,7 +205,9 @@ public class Controller {
 
     public void handleRestartAction() {
         model.restartMachine();
+        mainLayout.getOutputPanel().getOutputArea().clear();
         mainLayout.getOutputPanel().getOutputArea().appendText("Máquina reiniciada!\n");
+        updateAllTables();
     }
 
     public void handleLoadObjectFileAction() {
@@ -238,6 +239,7 @@ public class Controller {
         model.loadProgramToMachine(selectedFile, userLoadAddress);
 
         updateAllTables();
+        mainLayout.getOutputPanel().getOutputArea().clear();
         mainLayout.getOutputPanel().getOutputArea().appendText(
                 "Programa carregado com sucesso!\n" + selectedFile + "\n"
         );

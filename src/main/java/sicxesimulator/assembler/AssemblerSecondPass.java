@@ -360,16 +360,19 @@ public class AssemblerSecondPass {
         // - caso contrário => n=1, i=1 (endereçamento direto)
         int nBit = isImmediate ? 0 : 1;
         int iBit = 1;
-        // opcode (6 bits altos) + nBit e iBit
         byte firstByte = (byte)((opcode & 0xFC) | (nBit << 1) | iBit);
 
         byte secondByte = 0;
         if (indexed) {
             secondByte |= 0x80; // x=1
         }
-        secondByte |= 0x20;    // p=1 (PC-relativo)
-        // e=0 no formato 3
-        // guardamos os 4 bits altos do disp
+
+        // Se NÃO é imediato, p=1 (PC-rel), assumindo que você sempre use PC-rel no SIC/XE.
+        // Se for imediato, p=0
+        if (!isImmediate) {
+            secondByte |= 0x20; // p=1
+        }
+        // e=0
         secondByte |= ((disp >> 8) & 0x0F);
 
         byte[] code = new byte[3];

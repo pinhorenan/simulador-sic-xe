@@ -244,7 +244,6 @@ public class Model {
         }
     }
 
-
     /// ===== Manipulação da lista de arquivos objeto =====
 
     // TODO: Revisar, está dando acesso negado ao tentar salvar o arquivo
@@ -269,20 +268,26 @@ public class Model {
         notifyListeners();
     }
 
-
     public void loadObjectFilesFromSaveDir() {
         File savedDir = new File(Constants.SAVE_DIR);
 
         // Verifica se o diretório existe
         if (savedDir.exists() && savedDir.isDirectory()) {
-            File[] files = savedDir.listFiles((dir, name) -> name.endsWith(".obj"));  // Filtra arquivos .obj
+            File[] files = savedDir.listFiles((dir, name) -> name.endsWith(".meta"));
             if (files != null) {
                 for (File file : files) {
                     try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
                         // Carrega o ObjectFile do arquivo
                         ois.readObject();
                     } catch (IOException | ClassNotFoundException e) {
-                        DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());
+                        // Agendar a exibição do erro na thread do JavaFX, se necessário
+                        if (javafx.application.Platform.isFxApplicationThread()) {
+                            DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());
+                        } else {
+                            javafx.application.Platform.runLater(() ->
+                                    DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage())
+                            );
+                        }
                     }
                 }
             }
@@ -299,4 +304,3 @@ public class Model {
         }
     }
 }
-

@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static sicxesimulator.models.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
+
 public class AssemblerSecondPass {
     /**
      * Gera o código objeto a partir da IntermediateRepresentation.
@@ -70,7 +72,7 @@ public class AssemblerSecondPass {
                 imported,
                 Collections.emptyList()
         );
-        metaFile.setOrigin(ObjectFileOrigin.SINGLE_MODULE);
+        metaFile.setOrigin(SINGLE_MODULE);
 
         try {
             writeTextualObjectFile(programName + ".obj", programName, startAddress, machineCode, modificationList, exportedList, imported);

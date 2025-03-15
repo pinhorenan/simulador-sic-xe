@@ -1,6 +1,10 @@
 package sicxesimulator.models;
 
+import sicxesimulator.models.records.RelocationRecord;
+import sicxesimulator.utils.Constants;
+
 import java.io.*;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Set;
 
@@ -64,10 +68,18 @@ public class ObjectFile implements Serializable {
         return machineCode;
     }
 
-    // TODO: Fazer uma implementação de verdade pqp
     public String getObjectCodeAsString() {
-        return new String(machineCode);
+        File objFile = new File(Constants.SAVE_DIR, this.getProgramName() + ".obj");
+        if (!objFile.exists()) {
+            return "Arquivo .obj não encontrado.";
+        }
+        try {
+            return Files.readString(objFile.toPath());
+        } catch (IOException e) {
+            return "Erro ao ler o arquivo .obj: " + e.getMessage();
+        }
     }
+
 
     public boolean isFullyRelocated() {
         return fullyRelocated;
@@ -145,5 +157,13 @@ public class ObjectFile implements Serializable {
         return "Nome: " + fileName
                 + "\nEndereço de início = " + String.format("%04X", startAddress)
                 + "\nTamanho = " + machineCode.length + " bytes";
+    }
+
+    /**
+     * Enumeração para indicar a origem de um arquivo-objeto.
+     */
+    public enum ObjectFileOrigin {
+        SINGLE_MODULE,
+        LINKED_MODULES
     }
 }

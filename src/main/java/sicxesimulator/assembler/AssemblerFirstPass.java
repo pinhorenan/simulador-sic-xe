@@ -27,12 +27,12 @@ class AssemblerFirstPass {
             lineNumber++;
             line = line.trim();
 
-            line = line.trim();
             // Remover comentários inline (delimitador ';')
             int commentIndex = line.indexOf(";");
             if (commentIndex != -1) {
                 line = line.substring(0, commentIndex).trim();
             }
+
             // Ignora linhas vazias ou linhas que são apenas comentários (iniciadas por ".")
             if (line.isEmpty() || line.startsWith(".")) {
                 continue;
@@ -137,6 +137,11 @@ class AssemblerFirstPass {
         return midCode;
     }
 
+    /**
+     * Converte um operando em um endereço numérico.
+     * @param operand O operando a ser convertido.
+     * @return O endereço numérico.
+     */
     private int parseAddress(String operand) {
         if (operand == null) {
             String errorMsg = "Operando ausente para endereço.";

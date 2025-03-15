@@ -139,14 +139,6 @@ public class AssemblerSecondPass {
         return s.matches("\\d+");
     }
 
-    // TODO: Mover esse record para fora daqui.
-    /**
-     * @param offset    offset no array de bytes
-     * @param reference ex: "+FOO" ou "-FOO"
-     */ // Classe auxiliar para armazenar informações de reloc
-        record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {
-    }
-
     /**
      * Gera um .obj textual no estilo SIC/XE:
      *  - Header (H)
@@ -245,15 +237,6 @@ public class AssemblerSecondPass {
             index += blockLen;
         }
         return blocks;
-    }
-
-    static class TBlock {
-        int startAddr;
-        List<Byte> data = new ArrayList<>();
-
-        TBlock(int start) {
-            this.startAddr = start;
-        }
     }
 
     // Ajusta o nome do programa para caber em 6 chars
@@ -360,16 +343,19 @@ public class AssemblerSecondPass {
         // - caso contrário => n=1, i=1 (endereçamento direto)
         int nBit = isImmediate ? 0 : 1;
         int iBit = 1;
-        // opcode (6 bits altos) + nBit e iBit
         byte firstByte = (byte)((opcode & 0xFC) | (nBit << 1) | iBit);
 
         byte secondByte = 0;
         if (indexed) {
             secondByte |= 0x80; // x=1
         }
-        secondByte |= 0x20;    // p=1 (PC-relativo)
-        // e=0 no formato 3
-        // guardamos os 4 bits altos do disp
+
+        // Se NÃO é imediato, p=1 (PC-rel), assumindo que você sempre use PC-rel no SIC/XE.
+        // Se for imediato, p=0
+        if (!isImmediate) {
+            secondByte |= 0x20; // p=1
+        }
+        // e=0
         secondByte |= ((disp >> 8) & 0x0F);
 
         byte[] code = new byte[3];
@@ -380,7 +366,13 @@ public class AssemblerSecondPass {
         return code;
     }
 
-
+    /**
+     * Gera o código objeto para instruções de formato 4.
+     * @param mnemonic Mnemônico da instrução
+     * @param operand Operando da instrução
+     * @param symbolTable Tabela de símbolos
+     * @return
+     */
     private byte[] generateInstructionCodeFormat4(String mnemonic, String operand, SymbolTable symbolTable) {
         mnemonic = mnemonic.replace("+", "");
         int opcode = Map.mnemonicToOpcode(mnemonic);
@@ -421,8 +413,6 @@ public class AssemblerSecondPass {
         return parseNumber(operand);
     }
 
-
-
     private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
         int currentInstructionByteAddr = line.address();
         int nextInstructionByteAddr = currentInstructionByteAddr + getInstructionSize(line);
@@ -459,5 +449,26 @@ public class AssemblerSecondPass {
             return Integer.parseInt(operand, 16);
         }
         throw new IllegalArgumentException("Formato inválido de número: " + operand);
+    }
+
+    /**
+     * Classe auxiliar para armazenar blocos de texto (T records).
+     */
+    static class TBlock {
+        int startAddr;
+        List<Byte> data = new ArrayList<>();
+
+        TBlock(int start) {
+            this.startAddr = start;
+        }
+    }
+
+    // TODO: Mover esse record para fora daqui.
+    /**
+     * @param offset    offset no array de bytes
+     * @param reference ex: "+FOO" ou "-FOO"
+     */
+    // Classe auxiliar para armazenar informações de reloc
+    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {
     }
 }

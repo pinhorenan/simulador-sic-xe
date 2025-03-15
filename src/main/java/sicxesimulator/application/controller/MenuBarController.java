@@ -22,13 +22,13 @@ public class MenuBarController {
             DialogUtil.showError("Selecione um único arquivo .obj");
             return;
         }
+        //noinspection SequencedCollectionMethodCanBeUsed
         ObjectFile obj = sel.get(0).getObjectFile();
         // TODO: Não é pra mostrar no OutputPanel, mas por enquanto vai ser.
         String textual = obj.getObjectCodeAsString();  // Implementar no ObjectFile
         controller.getMainLayout().getOutputPanel().getOutputArea().appendText("=== OBJ TEXT ===\n" + textual + "\n");
     }
-
-
+    
     // TODO: Mover isso para model
     public enum LinkerMode {
         ABSOLUTO, RELOCAVEL
@@ -39,6 +39,7 @@ public class MenuBarController {
 
     // TODO: Mover isso para model
     // Endereço base (apenas se estivermos no modo Absoluto).
+    @SuppressWarnings("unused")
     private final int baseAddress = 0;
 
 
@@ -122,7 +123,9 @@ public class MenuBarController {
         File savedDir = new File(Constants.SAVE_DIR);
         if (!savedDir.exists()) return;
         File[] files = savedDir.listFiles((d,name)-> (name.endsWith(".obj") || name.endsWith(".meta")));
+        assert files != null;
         for (File f : files) {
+            //noinspection ResultOfMethodCallIgnored
             f.delete();
         }
         DialogUtil.showInfo("Diretório de arquivos salvos limpo.");

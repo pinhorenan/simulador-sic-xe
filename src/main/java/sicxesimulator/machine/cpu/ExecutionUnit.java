@@ -513,17 +513,12 @@ public class ExecutionUnit {
     public String executeLDA(int[] operands, boolean indexed, int effectiveAddress) {
         int value = getValueOrImmediate(operands, effectiveAddress);
         registers.getRegister("A").setValue(value);
-        String log;
-        // Se era imediato, apenas imprimir "LDA #value"
-        if (operands[5] == 0 && operands[6] == 1) {
-            log = String.format("LDA (imediato): A ← #%d", value);
-        } else {
-            log = String.format("LDA: A ← %06X", value);
-        }
+        String log = (operands[5] == 0 && operands[6] == 1)
+                ? String.format("LDA (imediato): A ← #%d", value)
+                : String.format("LDA: A ← %06X", value);
         logger.info(log);
         return log;
     }
-
 
     /**
      * Carrega o valor da memória no registrador 'B'.

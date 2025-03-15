@@ -69,7 +69,6 @@ public class Controller {
         return objectFiles;
     }
 
-
     /// ===== Controles de Montagem ===== ///
 
     public void handleAssembleAction() {
@@ -206,7 +205,9 @@ public class Controller {
 
     public void handleRestartAction() {
         model.restartMachine();
+        mainLayout.getOutputPanel().getOutputArea().clear();
         mainLayout.getOutputPanel().getOutputArea().appendText("Máquina reiniciada!\n");
+        updateAllTables();
     }
 
     public void handleLoadObjectFileAction() {
@@ -222,8 +223,9 @@ public class Controller {
 
         // Se ABSOLUTO, perguntar o endereço de carga.
         // Se RELOCAVEL, podemos assumir 0 (ou outro) e deixar a relocação para a lógica do loader.
+        //noinspection UnusedAssignment
         int userLoadAddress = 0;
-        if (!selectedFile.isFullyRelocated()) {
+        if (!selectedFile.isFullyRelocated() && selectedFile.getStartAddress() != 0) {
             try {
                 userLoadAddress = DialogUtil.askForInteger(
                         "Endereço de Carga",
@@ -233,11 +235,16 @@ public class Controller {
             } catch (IOException e) {
                 throw new RuntimeException("Operação cancelada ou inválida.", e);
             }
+        } else {
+            // Se já for relocado ou o startAddress for 0, usamos o próprio startAddress.
+            userLoadAddress = selectedFile.getStartAddress();
         }
+
 
         model.loadProgramToMachine(selectedFile, userLoadAddress);
 
         updateAllTables();
+        mainLayout.getOutputPanel().getOutputArea().clear();
         mainLayout.getOutputPanel().getOutputArea().appendText(
                 "Programa carregado com sucesso!\n" + selectedFile + "\n"
         );

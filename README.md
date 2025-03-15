@@ -57,12 +57,16 @@ java -jar build/libs/sicxesimulator.jar
 
 ## Funcionalidades Suportadas
 
+- Processador de Macros:
+  - Realiza um pre-processamento do código antes da montagem, expandindo qualquer macro definida
+  - Suporte à macros aninhadas
 - Montador SIC/XE completo:
   - Suporte às diretivas padrão: `START`, `END`, `WORD`, `BYTE`, `RESB`, `RESW`, `EXTDEF`, `EXTREF`
-  - Geração de arquivos objeto estilo SIC/XE com registros `H/T/M/E/D/R`
+  - Geração de arquivos objeto (`.obj`) estilo SIC/XE com registros `H/T/M/E/D/R`
+  - Geração de arquivo binário serializado (`.meta`) para retenção de metadados
 - Ligador (Linker) multi-módulo:
   - Realiza linkagem absoluta ou relocável entre múltiplos módulos
-  - Geração de arquivo objeto final (`.obj`) e arquivo binário serializado (`.meta`)
+  - Geração de arquivo objeto e binário na mesma estrutura do montador
 - Carregador com relocação final opcional:
   - Carrega programas objeto para memória virtual
   - Aplica realocação pendente (quando necessária)
@@ -70,12 +74,13 @@ java -jar build/libs/sicxesimulator.jar
 ## Conjunto de Instruções
 
 ### Instruções Suportadas
+Em geral, não foram implementadas instruções que lidam com input/output e instruções de ponto flutuante.
 
-- **Formato 1**: No suportado
-- **Formato 2**: ADDR, CLEAR, COMPR, DIVR, MULR, SUBR, TIXR, RMO
-- **Formato 3/4**: ADD, AND, COMP, DIV, J, JEQ, JGT, JLT, JSUB, LDA, LDB, LDCH, LDL, LDS, LDT, LDX, MUL, OR, SUB, DIV, DIVF, J, JEQ, JGT, JLT, RSUB, SHIFTL, SHIFTR, STA, STB, STCH, STL, STS, STSW, STT, STX, SUB, TIX.
+- **Formato 1**: Não há suporte à instruções de formato 1.
+- **Formato 2**: ADDR, CLEAR, COMPR, DIVR, MULR, RMO, SHIFTL, SHIFRT, SUBR, TIXR.
+- **Formato 3/4**: ADD, AND, COMP, DIV, J, JEQ, JGT, JLT, JSUB, LDA, LDB, LDCH, LDL, LDS, LDT, LDX, MUL, OR, RSUB, STA, STB, STCH, STL, STS, STT, STX, SUB, TIX.
 
-**Instruções Não implementadas:** Todas que não aparecem na listagem acima.
+- **Instruções Não implementadas:** ADDF, COMPF, DIVF, FIX, FLOAT, HIO, LPS, MULF, NORM, RD, SIO, SSK, STF, STI, STSW, SUBF, SVC, TD, TIO, WD.
 
 ## Licença
 

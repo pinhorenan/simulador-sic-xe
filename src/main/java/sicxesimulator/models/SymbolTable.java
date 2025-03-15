@@ -12,57 +12,48 @@ import java.util.Map;
 public class SymbolTable implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
-
-    private final Map<String, SymbolInfo> symbols;
+    private final Map<String, Symbol> symbols;
 
     public SymbolTable() {
         symbols = new HashMap<>();
     }
 
-    public void addSymbol(String name, int address, boolean isPublic) {
-        symbols.put(name, new SymbolInfo(name, address, isPublic));
-    }
+    /// ===== Métodos Getters =====
 
-    public void addSymbol(String name, int address) {
-        addSymbol(name, address, false);
-    }
-
-    public SymbolInfo getSymbolInfo(String name) {
+    public Symbol getSymbolInfo(String name) {
         return symbols.get(name);
     }
 
-    public Integer getAddress(String name) {
-        SymbolInfo info = symbols.get(name);
-        return (info != null) ? info.address : null;
+    public Integer getSymbolAddress(String symbolName) {
+        Symbol symbol = symbols.get(symbolName);
+        return (symbol != null) ? symbol.address : null;
     }
 
+    public Map<String, Symbol> getAllSymbols() {
+        return symbols;
+    }
+
+    /**
+     * Adiciona um símbolo à tabela de símbolos.
+     * @param name Nome do símbolo.
+     * @param address Endereço do símbolo.
+     * @param isPublic Verdadeiro se o símbolo é público (exportado).
+     */
+    public void addSymbol(String name, int address, boolean isPublic) {
+        symbols.put(name, new Symbol(name, address, isPublic));
+    }
+
+    /**
+     * Verifica se a tabela de símbolos contém um símbolo com o nome especificado.
+     * @param name Nome do símbolo a ser verificado.
+     * @return Verdadeiro se o símbolo estiver presente na tabela.
+     */
     public boolean contains(String name) {
         return symbols.containsKey(name);
-    }
-
-    public Map<String, SymbolInfo> getAllSymbols() {
-        return symbols;
     }
 
     @Override
     public String toString() {
         return symbols.toString();
-    }
-
-    public static class SymbolInfo implements Serializable {
-        public final String name;
-        public int address;
-        public boolean isPublic;
-
-        public SymbolInfo(String name, int address, boolean isPublic) {
-            this.name = name;
-            this.address = address;
-            this.isPublic = isPublic;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s@%04X%s", name, address, isPublic ? "(public)" : "");
-        }
     }
 }

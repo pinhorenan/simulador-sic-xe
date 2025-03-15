@@ -1,14 +1,18 @@
 package sicxesimulator.assembler;
 
-import sicxesimulator.utils.SimulatorLogger;
-import sicxesimulator.models.AssemblyLine;
-import sicxesimulator.models.IntermediateRepresentation;
+import sicxesimulator.assembler.records.AssemblyLine;
+import sicxesimulator.assembler.records.IntermediateRepresentation;
+import sicxesimulator.assembler.util.Parser;
+import sicxesimulator.assembler.util.InstructionSizeCalculator;
+import sicxesimulator.models.SymbolTable;
 import sicxesimulator.utils.Check;
 
-import java.util.List;
+import java.util.*;
 
+/**
+ * Classe que realiza a primeira passagem do montador, gerando uma representação intermediária.
+ */
 class AssemblerFirstPass {
-    private int locationCounter = 0;
 
     /**
      * Processa as linhas de código-fonte e gera uma IntermediateRepresentation.
@@ -16,34 +20,34 @@ class AssemblerFirstPass {
      * @param sourceLines Lista de linhas de código assembly.
      * @return Representação intermediária contendo linhas de assembly, símbolos e endereços.
      */
-    protected IntermediateRepresentation process(List<String> sourceLines) {
+    protected IntermediateRepresentation process(List<String> originalSourceLines, List<String> sourceLines) {
+        int locationCounter = 0;
         boolean endFound = false;
-        IntermediateRepresentation midCode = new IntermediateRepresentation();
-        midCode.setRawSourceCode(sourceLines); // 🔹 Agora armazenamos o código-fonte original.
+        String programName = null;
+        int startAddress = 0;
 
-        int lineNumber = 0;
+        // Coleções para acumular os dados
+        List<AssemblyLine> assemblyLines = new ArrayList<>();
+        var symbolTable = new SymbolTable();
+        Set<String> importedSymbols = new HashSet<>();
 
-        for (String line : sourceLines) {
-            lineNumber++;
-            line = line.trim();
+        // Percorre cada linha do código-fonte
+        for (int i = 0; i < sourceLines.size(); i++) {
+            String originalLine = sourceLines.get(i);
+            String line = removeInlineComments(originalLine).trim();
 
-            // Remover comentários inline (delimitador ';')
-            int commentIndex = line.indexOf(";");
-            if (commentIndex != -1) {
-                line = line.substring(0, commentIndex).trim();
-            }
-
-            // Ignora linhas vazias ou linhas que são apenas comentários (iniciadas por ".")
-            if (line.isEmpty() || line.startsWith(".")) {
+            // Ignorar linhas vazias ou comentadas
+            if (line.isEmpty() || line.startsWith(";")) {
                 continue;
             }
 
+            // Dividir a linha em partes
             String[] parts = line.split("\\s+", 3);
             String label = null;
             String mnemonic = null;
             String operand = null;
 
-            // Se a linha contém um mnemônico, ele é o primeiro elemento.
+            // Detecta o mnemônico e, possivelmente, o rótulo
             if (parts.length > 0) {
                 if (Check.isMnemonic(parts[0])) {
                     mnemonic = parts[0];
@@ -59,102 +63,111 @@ class AssemblerFirstPass {
                 }
             }
 
-            // Se não encontrou um mnemônico, a linha é inválida.
             if (mnemonic == null) {
-                throw new IllegalArgumentException("Linha invalida na linha " + lineNumber + ": " + line);
+                throw new IllegalArgumentException("Linha invalida na linha " + (i + 1) + ": " + originalLine);
             }
 
-            // Se a diretiva START for encontrada, o endereço de início é definido.
-            if (mnemonic.equalsIgnoreCase("START")) {
-                try {
-                    int startAddress = parseAddress(operand);
-                    locationCounter = startAddress;
-                    midCode.setStartAddress(startAddress);
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Erro ao processar START na linha " + lineNumber + ": " + operand, e);
-                }
-                if (label != null) {
-                    midCode.addLocalSymbol(label, locationCounter);
-                    midCode.setProgramName(label);
-                }
-                continue;
-            }
-
-            // Se a diretiva EXTDEF for encontrada, os símbolos são exportados.
-            if (mnemonic.equalsIgnoreCase("EXTDEF")) {
-                // Extrai totalmente o texto após o mnemônico, para suportar múltiplos símbolos separados por vírgula.
-                String operandFull = line.substring(mnemonic.length()).trim();
-                if (!operandFull.isEmpty()) {
-                    String[] symbols = operandFull.split(",");
-                    for (String symbol : symbols) {
-                        symbol = symbol.trim().toUpperCase(); // Força para maiúsculas para consistência.
-                        midCode.addExportedSymbol(symbol);
-                        // Adiciona na symbolTable com endereço (a ser resolvido posteriormente) e atributo isPublic=true.
-                        midCode.getSymbolTable().addSymbol(symbol, locationCounter, true);
+            // Processa diretivas especiais
+            if(processDirectives(mnemonic, line, symbolTable, importedSymbols)) {
+                // Diretivas processadas (START, EXTDEF, EXTREF, END) não geram AssemblyLine
+                if (mnemonic.equalsIgnoreCase("START")) {
+                    try {
+                        startAddress = Parser.parseAddress(operand);
+                        locationCounter = startAddress;
+                    } catch (Exception e) {
+                        throw new IllegalArgumentException("Erro ao processar START na linha " + (i + 1) + ": " + operand, e);
                     }
-                }
-                continue;
-            }
-
-
-            // Se a diretiva EXTREF for encontrada, os símbolos são importados.
-            if (mnemonic.equalsIgnoreCase("EXTREF")) {
-                // Em vez de usar o 'operand' (limitado pelo split com limite 3), extrai totalmente o texto após o mnemônico.
-                String operandFull = line.substring(mnemonic.length()).trim();
-                if (!operandFull.isEmpty()) {
-                    String[] symbols = operandFull.split(",");
-                    for (String symbol : symbols) {
-                        symbol = symbol.trim().toUpperCase();
-                        midCode.addImportedSymbol(symbol);
-                        // Adiciona na symbolTable com endereço 0, "isPublic = false"
-                        midCode.getSymbolTable().addSymbol(symbol, 0, false);
+                    if (label != null) {
+                        // Registra o símbolo local e define o nome do programa
+                        symbolTable.addSymbol(label, locationCounter, true);
+                        programName = label;
                     }
+                    continue;
+                }
+                if (mnemonic.equalsIgnoreCase("END")) {
+                    endFound = true;
                 }
                 continue;
             }
 
-            // Se a diretiva END for encontrada, a montagem é encerrada.
-            if (mnemonic.equalsIgnoreCase("END")) {
-                endFound = true;
-                continue;
-            }
-
-            // Se a linha contém um label, ele é adicionado à tabela de símbolos.
+            // Registra o rótulo (se houver) na tabela de símbolos
             if (label != null) {
-                midCode.addLocalSymbol(label, locationCounter);
+                if (symbolTable.contains(label)) {
+                    var symbol = symbolTable.getSymbolInfo(label);
+                    symbol.address = locationCounter;
+                    symbol.isPublic = true;
+                } else {
+                    symbolTable.addSymbol(label, locationCounter, false);
+                }
             }
 
+            // Calcula o tamanho da instrução e registra a AssemblyLine
             int size = InstructionSizeCalculator.calculateSize(mnemonic, operand);
             AssemblyLine asmLine = new AssemblyLine(label, mnemonic, operand, locationCounter);
-            midCode.addAssemblyLine(asmLine);
+            assemblyLines.add(asmLine);
             locationCounter += size;
         }
 
         if (!endFound) {
-            throw new IllegalArgumentException("Diretiva END não encontrada.");
+            throw new IllegalArgumentException("Diretiva END nao encontrada.");
         }
 
-        return midCode;
+        // Cria a IntermediateRepresentation utilizando coleções imutáveis
+        return new IntermediateRepresentation(
+                Collections.unmodifiableList(assemblyLines),
+                Collections.unmodifiableList(originalSourceLines),
+                symbolTable,
+                Collections.unmodifiableSet(importedSymbols),
+                programName,
+                startAddress
+        );
     }
 
     /**
-     * Converte um operando em um endereço numérico.
-     * @param operand O operando a ser convertido.
-     * @return O endereço numérico.
+     * Remove comentários inline delimitados por ";".
+     * @param line Linha original.
+     * @return Linha sem o conteúdo de comentário.
      */
-    private int parseAddress(String operand) {
-        if (operand == null) {
-            String errorMsg = "Operando ausente para endereço.";
-            SimulatorLogger.logError(errorMsg, null);
-            throw new IllegalArgumentException(errorMsg);
+    private String removeInlineComments(String line) {
+        int commentIndex = line.indexOf(";");
+        return (commentIndex != -1) ? line.substring(0, commentIndex) : line;
+    }
+
+    /**
+     * Processa diretivas especiais (START, EXTDEF, EXTREF).
+     *
+     * @param mnemonic       Mnemônico da linha.
+     * @param line           Linha completa.
+     * @param symbolTable    Tabela de símbolos a ser atualizada.
+     * @param importedSymbols Conjunto de símbolos importados.
+     * @return true se a diretiva foi processada; false caso contrário.
+     */
+    private boolean processDirectives(String mnemonic, String line, SymbolTable symbolTable, Set<String> importedSymbols) {
+        String operandFull = line.substring(mnemonic.length()).trim();
+
+        if (mnemonic.equalsIgnoreCase("EXTDEF")) {
+            if (!operandFull.isEmpty()) {
+                String[] symbols = operandFull.split(",");
+                for (String symbol : symbols) {
+                    symbolTable.addSymbol(symbol.trim().toUpperCase(), 0, true);
+                }
+            }
+            return true;
         }
-        if (operand.matches("\\d+")) {
-            return Integer.parseInt(operand);
-        } else if (operand.matches("[0-9A-Fa-f]+")) {
-            return Integer.parseInt(operand, 16);
+
+        if (mnemonic.equalsIgnoreCase("EXTREF")) {
+            if (!operandFull.isEmpty()) {
+                String[] symbols = operandFull.split(",");
+                for (String symbol : symbols) {
+                    String sym = symbol.trim().toUpperCase();
+                    importedSymbols.add(sym);
+                    symbolTable.addSymbol(sym, 0, false);
+                }
+            }
+            return true;
         }
-        String errorMsg = "Formato inválido de endereço: " + operand;
-        SimulatorLogger.logError(errorMsg, null);
-        throw new IllegalArgumentException(errorMsg);
+
+        // START e END são tratados separadamente em process()
+        return mnemonic.equalsIgnoreCase("START") || mnemonic.equalsIgnoreCase("END");
     }
 }

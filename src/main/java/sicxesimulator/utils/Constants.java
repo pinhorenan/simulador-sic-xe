@@ -67,6 +67,8 @@ public abstract class Constants {
 
     public static final String SAVE_DIR = "src/main/resources/saved";
 
+    public static final String TEMP_DIR = "src/main/resources/temp";
+
     public static final String SAMPLES_DIR = "src/main/resources/examples";
 
 }

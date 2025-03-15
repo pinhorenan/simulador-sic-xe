@@ -13,7 +13,7 @@ import sicxesimulator.application.components.buttons.MainButtons;
 import sicxesimulator.application.model.ObjectFileTableItem;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.application.controller.Controller;
-import sicxesimulator.utils.DialogUtil;
+import sicxesimulator.application.util.DialogUtil;
 
 import java.io.IOException;
 import java.util.List;

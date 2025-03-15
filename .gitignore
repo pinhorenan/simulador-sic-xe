@@ -15,3 +15,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Arquivos gerados pelo programa
+*.obj
+*.meta
+*.txt

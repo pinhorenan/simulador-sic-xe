@@ -5,6 +5,8 @@ import javafx.beans.property.SimpleBooleanProperty;
 import sicxesimulator.application.model.records.MemoryEntry;
 import sicxesimulator.application.model.records.RegisterEntry;
 import sicxesimulator.application.model.records.SymbolEntry;
+import sicxesimulator.application.util.DialogUtil;
+import sicxesimulator.application.view.ViewConfig;
 import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.assembler.Assembler;
@@ -18,7 +20,9 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Model {
@@ -172,13 +176,23 @@ public class Model {
     /// Controle dos módulos (montador, processador de macros, ligador, carregador)
 
     public List<String> processCodeMacros(List<String> rawSourceLines) throws IOException {
-        String tempInputFile = "temp.asm"; // TODO: Revisar;
-        String macroOutputFile = "MASMAPRG.ASM"; // Nome definido nas especificações
-        Files.write(Path.of(tempInputFile), rawSourceLines, StandardCharsets.UTF_8);
+        // Usa a constante TEMP_DIR definida em Constants
+        FileUtils.ensureDirectoryExists(Constants.TEMP_DIR);
 
-        macroProcessor.process(tempInputFile, macroOutputFile);
+        // Define os caminhos completos para os arquivos temporários
+        String tempInputFile = Constants.TEMP_DIR + "/temp.asm";
 
-        return Files.readAllLines(Path.of(macroOutputFile), StandardCharsets.UTF_8);
+        // Escreve o código fonte original no arquivo de entrada usando FileUtils
+        FileUtils.writeFile(tempInputFile, String.join("\n", rawSourceLines));
+
+        // Processa as macros: o MacroProcessor lê o arquivo de entrada e gera o arquivo expandido
+        macroProcessor.process(tempInputFile, "MASMAPRG.ASM");
+
+        // Lê o conteúdo do arquivo expandido usando FileUtils
+        String expandedContent = FileUtils.readFile(Constants.TEMP_DIR + "/" + "MASMAPRG.ASM");
+        List<String> expanded = Arrays.asList(expandedContent.split("\\r?\\n"));
+        System.out.println("Linhas expandidas (" + expanded.size() + "): " + expanded);
+        return expanded;
     }
 
     public ObjectFile assembleCode(List<String> rawSourceLines, List<String> preProcessedSourceCode) throws IOException {
@@ -193,7 +207,6 @@ public class Model {
         addAndSaveObjectFileToList(linkedObj);
         return linkedObj;
     }
-
 
     /// Controle de execução do programa
 
@@ -219,22 +232,6 @@ public class Model {
         machine.reset();
     }
 
-    // Carrega um arquivo objeto na memória do simulador.
-    @Deprecated
-    public void loadProgramToMachine(ObjectFile selectedFile) {
-        if (selectedFile != null) {
-            // Carregaremos em 0x300 (ou 768 em decimal) na memória do simulador. ISSO É PROVISÓRIO!
-            loader.loadObjectFile(
-                    selectedFile,
-                    machine.getMemory(),
-                    0x300       // TODO: Revisar, carregar em 0x300 (768 em decimal) é provisório
-            );
-            setCodeLoaded(true);
-            lastLoadedCode = selectedFile;
-            notifyListeners();  // Notifica os listeners quando um novo arquivo é carregado
-        }
-    }
-
     public void loadProgramToMachine(ObjectFile selectedFile, int baseAddress) {
         if (selectedFile != null) {
             loader.loadObjectFile(selectedFile, machine.getMemory(), baseAddress);
@@ -246,7 +243,6 @@ public class Model {
 
     /// ===== Manipulação da lista de arquivos objeto =====
 
-    // TODO: Revisar, está dando acesso negado ao tentar salvar o arquivo
     public void addAndSaveObjectFileToList(ObjectFile objectFile) {
         File savedDir = new File(Constants.SAVE_DIR);
         if (!savedDir.exists()) {

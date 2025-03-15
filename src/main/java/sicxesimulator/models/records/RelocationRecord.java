@@ -1,4 +1,4 @@
-package sicxesimulator.models;
+package sicxesimulator.models.records;
 
 import java.io.Serializable;
 

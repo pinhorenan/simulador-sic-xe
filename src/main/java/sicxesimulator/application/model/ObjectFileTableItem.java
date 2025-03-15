@@ -2,11 +2,10 @@ package sicxesimulator.application.model;
 
 import javafx.beans.property.*;
 import sicxesimulator.models.ObjectFile;
-import sicxesimulator.models.ObjectFileOrigin;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import static sicxesimulator.models.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
 
+@SuppressWarnings("ALL")
 public class ObjectFileTableItem {
     private final StringProperty programName;   // Nome do programa
     private final StringProperty size;          // Tamanho do arquivo
@@ -22,7 +21,7 @@ public class ObjectFileTableItem {
 
         // Define a origem do arquivo objeto
 
-        if (objectFile.getOrigin() == ObjectFileOrigin.SINGLE_MODULE) {
+        if (objectFile.getOrigin() == SINGLE_MODULE) {
             this.origin = new SimpleStringProperty("Módulo Simples");
         } else {
             this.origin = new SimpleStringProperty("Módulo Composto");

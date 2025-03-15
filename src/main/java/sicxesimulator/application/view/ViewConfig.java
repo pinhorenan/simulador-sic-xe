@@ -1,18 +1,15 @@
-package sicxesimulator.utils;
+package sicxesimulator.application.view;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ViewConfig {
     private String addressFormat = "HEX";
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private final List<FormatChangeListener> listeners = new ArrayList<>();
 
     public interface FormatChangeListener {
         void onFormatChanged(String newFormat);
-    }
-
-    public void addFormatChangeListener(FormatChangeListener listener) {
-        listeners.add(listener);
     }
 
     public void setAddressFormat(String format) {

@@ -1,5 +1,9 @@
 package sicxesimulator.assembler;
 
+import sicxesimulator.assembler.records.AssemblyLine;
+import sicxesimulator.assembler.records.IntermediateRepresentation;
+import sicxesimulator.assembler.util.InstructionSizeCalculator;
+import sicxesimulator.assembler.util.Parser;
 import sicxesimulator.models.*;
 import sicxesimulator.utils.*;
 
@@ -9,76 +13,56 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static sicxesimulator.models.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
+
 public class AssemblerSecondPass {
     /**
      * Gera o código objeto a partir da IntermediateRepresentation.
      * Considera que o LC na IR está em bytes.
-     *
      * @param midObject Representação intermediária gerada pela primeira passagem.
-     * @return ObjectFile contendo o endereço inicial e o código objeto (.meta),
-     *         além de gerar o arquivo textual .obj com H/T/M/E.
+     * @return ObjectFile contendo o endereço inicial, o código objeto (.meta) e o arquivo textual .obj com H/T/M/E.
      */
     protected ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
-        // 1) Calcula o array de bytes (machineCode) normal
-        int startAddress = midObject.getStartAddress();
-        int programSize = midObject.getAssemblyLines()
-                .stream()
-                .mapToInt(this::getInstructionSize)
-                .sum();
-
+        int startAddress = midObject.startAddress();
+        int programSize = midObject.assemblyLines().stream().mapToInt(this::getInstructionSize).sum();
         byte[] machineCode = new byte[programSize];
-
-        // Salva também os offsets e símbolos para gerar M records
         List<ModificationInfo> modificationList = new ArrayList<>();
 
-        SymbolTable symbolTable = midObject.getSymbolTable();
-        String programName = midObject.getProgramName();
-        List<String> rawSource = midObject.getRawSourceLines();
+        SymbolTable symbolTable = midObject.symbolTable();
+        String programName = midObject.programName();
+        List<String> rawSource = midObject.rawSourceLines();
 
-        // Preenche machineCode
-        for (AssemblyLine line : midObject.getAssemblyLines()) {
+        // Preenche o array de bytes com o código objeto e gera os M records quando necessário
+        for (AssemblyLine line : midObject.assemblyLines()) {
             int lineOffset = line.address() - startAddress;
             if (lineOffset < 0 || lineOffset >= machineCode.length) {
                 SimulatorLogger.logError("Offset inválido: " + lineOffset, null);
                 continue;
             }
 
-            // Gera os bytes da instrução/diretiva
             byte[] code = generateObjectCode(line, symbolTable);
             if (lineOffset + code.length <= machineCode.length) {
                 System.arraycopy(code, 0, machineCode, lineOffset, code.length);
             }
 
-            // Verifica se precisamos de M record
             if (shouldGenerateMRecord(line, symbolTable)) {
-                // form3 => 3 nibbles; form4 => 5 nibbles
-                int format = determineInstructionFormat(line.mnemonic());
+                int format = Parser.determineInstructionFormat(line.mnemonic());
                 int nibbleLen = (format == 3) ? 3 : 5;
-
-                // offset local do campo de endereço (geralmente +1 do opcode)
-                int mOffset = lineOffset + 1; // Corrigido: era "offset + 1" antes
-
-                // remove ",X" se houver
+                int mOffset = lineOffset + 1; // O campo de endereço geralmente inicia após o opcode
                 String operand = line.operand();
                 String sym = operand.replaceAll("(?i),x", "");
-
-                // Gera o ModificationInfo => assumimos +SYM
                 modificationList.add(new ModificationInfo(mOffset, nibbleLen, "+" + sym));
             }
         }
 
-        // Recupera as imports
-        Set<String> imported = midObject.getImportedSymbols();
-
-        // Também gera a lista de símbolos “públicos” a partir do symbolTable
-        List<SymbolTable.SymbolInfo> exportedList = new ArrayList<>();
-        for (SymbolTable.SymbolInfo sinfo : symbolTable.getAllSymbols().values()) {
-            if (sinfo.isPublic) {
-                exportedList.add(sinfo);
+        Set<String> imported = midObject.importedSymbols();
+        List<Symbol> exportedList = new ArrayList<>();
+        for (Symbol symbol : symbolTable.getAllSymbols().values()) {
+            if (symbol.isPublic) {
+                exportedList.add(symbol);
             }
         }
 
-        // 2) Cria um ObjectFile binário (".meta") com informações úteis para a interface
         ObjectFile metaFile = new ObjectFile(
                 startAddress,
                 machineCode,
@@ -88,93 +72,49 @@ public class AssemblerSecondPass {
                 imported,
                 Collections.emptyList()
         );
+        metaFile.setOrigin(SINGLE_MODULE);
 
-        // TODO: Realocar isso aqui
-        metaFile.setOrigin(ObjectFileOrigin.SINGLE_MODULE);
-
-        // 3) Gera .obj textual (com T Records fragmentados em 30 bytes cada, M records, etc.)
         try {
-            writeTextualHTME(programName + ".obj", programName, startAddress, machineCode, modificationList, exportedList, imported);
+            writeTextualObjectFile(programName + ".obj", programName, startAddress, machineCode, modificationList, exportedList, imported);
         } catch (Exception e) {
             SimulatorLogger.logError("Falha ao gravar arquivo .obj textual: " + e.getMessage(), null);
         }
-
-        // 4) Retorna o metaFile binário
         return metaFile;
     }
 
     /**
-     * Decide se deve gerar M record para a instrução (Formato 3/4 e não-imediato, e operand é símbolo).
+     * Gera o arquivo .obj textual com os registros H/D/R/T/M/E.
+     * @param outFileName      Nome do arquivo .obj.
+     * @param programName      Nome do programa.
+     * @param startAddress     Endereço inicial do programa.
+     * @param code             Código objeto.
+     * @param modificationList Lista de registros de modificação (M records).
+     * @param exportedList     Lista de símbolos exportados (D records).
+     * @param imported         Conjunto de símbolos importados (R records).
+     * @throws IOException Em caso de erro ao gravar o arquivo.
      */
-    private boolean shouldGenerateMRecord(AssemblyLine line, SymbolTable symtab) {
-        // 1) Se não for formato 3 ou 4 => return false
-        int format = determineInstructionFormat(line.mnemonic());
-        if (format != 3 && format != 4) {
-            return false;
-        }
-
-        // 2) Se operand for nulo ou imediato (#), return false
-        String op = line.operand();
-        if (op == null || op.startsWith("#")) {
-            return false;
-        }
-
-        // 3) Remover sufixo ,X
-        String cleaned = op.replaceAll("(?i),x", "").trim();
-
-        // 4) Se cleaned for literal numérico => return false
-        if (isNumericLiteral(cleaned)) {
-            return false;
-        }
-
-        // 5) Se SymbolTable contém cleaned => true, caso contrário false
-        return symtab.contains(cleaned);
-    }
-
-    // Verifica se s é um literal numérico (hexa ou decimal)
-    private boolean isNumericLiteral(String s) {
-        if (s.matches("[0-9A-Fa-f]+")) {
-            return true; // interpretamos como hexa/decimal
-        }
-        return s.matches("\\d+");
-    }
-
-    /**
-     * Gera um .obj textual no estilo SIC/XE:
-     *  - Header (H)
-     *  - T (blocos de até 30 bytes)
-     *  - M (para cada reloc)
-     *  - E (fim)
-     */
-    private void writeTextualHTME(String outFileName, String programName, int startAddress, byte[] code, List<ModificationInfo> modificationList, List<SymbolTable.SymbolInfo> exportedList, Set<String> imported) throws IOException {
-        // 1) Dividir em blocos de ~30 bytes (0x1E)
+    private void writeTextualObjectFile(String outFileName, String programName, int startAddress, byte[] code,
+                                        List<ModificationInfo> modificationList, List<Symbol> exportedList, Set<String> imported)
+            throws IOException {
         List<TBlock> tblocks = buildTextRecords(startAddress, code);
         int programLength = code.length;
-
         StringBuilder content = new StringBuilder();
 
+        // Registro H
+        String hRec = String.format("H^%-6s^%06X^%06X", fitProgramName(programName), startAddress, programLength);
+        content.append(hRec).append("\n");
 
-        // Ordem de registro: H -> D -> R -> T -> M -> E
-
-        // === H record
-        String header = String.format("H^%-6s^%06X^%06X",
-                fitProgramName(programName),
-                startAddress,
-                programLength
-        );
-        content.append(header).append("\n");
-
-        // === D records (EXTDEF)
+        // Registros D
         if (!exportedList.isEmpty()) {
             StringBuilder dRec = new StringBuilder("D");
-            for (SymbolTable.SymbolInfo sinfo : exportedList) {
-                    dRec.append("^").append(sinfo.name)
-                            .append("^").append(String.format("%06X", sinfo.address));
-                }
+            for (Symbol symbol : exportedList) {
+                dRec.append("^").append(symbol.name)
+                        .append("^").append(String.format("%06X", symbol.address));
+            }
             content.append(dRec).append("\n");
         }
 
-        // === R records (EXTREF)
+        // Registros R
         if (!imported.isEmpty()) {
             StringBuilder rRec = new StringBuilder("R");
             for (String symbol : imported) {
@@ -183,49 +123,41 @@ public class AssemblerSecondPass {
             content.append(rRec).append("\n");
         }
 
-        // === T records (até 30 bytes cada)
+        // Registros T
         for (TBlock block : tblocks) {
             StringBuilder hex = new StringBuilder();
             for (byte b : block.data) {
                 hex.append(String.format("%02X", b & 0xFF));
             }
             int length = block.data.size();
-            String textRec = String.format("T^%06X^%02X^%s",
-                    block.startAddr,
-                    length,
-                    hex
-            );
-            content.append(textRec).append("\n");
+            String tRec = String.format("T^%06X^%02X^%s", block.startAddr, length, hex);
+            content.append(tRec).append("\n");
         }
 
-        // === M records
+        // Registros M
         for (ModificationInfo minfo : modificationList) {
             int address = startAddress + minfo.offset;
-            // length em 2 dígitos hex
             String lenHex = String.format("%02X", minfo.lengthInHalfBytes & 0xFF);
-            String mRecord = String.format("M^%06X^%s^%s",
-                    address,
-                    lenHex,
-                    minfo.reference
-            );
-            content.append(mRecord).append("\n");
+            String mRec = String.format("M^%06X^%s^%s", address, lenHex, minfo.reference);
+            content.append(mRec).append("\n");
         }
 
-        // === E record
-        String endRec = String.format("E^%06X", startAddress);
-        content.append(endRec).append("\n");
+        // Registro E
+        String eRec = String.format("E^%06X", startAddress);
+        content.append(eRec).append("\n");
 
-        // Salva o conteúdo acumulado num .obj
         FileUtils.writeFileInDir(Constants.SAVE_DIR, outFileName, content.toString());
     }
 
     /**
-     * Divide o array de bytes em blocos de até 30 bytes, gerando TBlock (startAddr + list<Byte>).
+     * Divide o código objeto em blocos de até 30 bytes para os T records.
+     * @param start Endereço inicial do programa.
+     * @param code  Código objeto.
+     * @return Lista de blocos (TBlock) com o endereço inicial e os dados.
      */
     private List<TBlock> buildTextRecords(int start, byte[] code) {
         List<TBlock> blocks = new ArrayList<>();
-        final int MAX_BYTES = 0x1E; // 30 decimal
-
+        final int MAX_BYTES = 30;
         int index = 0;
         while (index < code.length) {
             int blockLen = Math.min(MAX_BYTES, code.length - index);
@@ -239,37 +171,46 @@ public class AssemblerSecondPass {
         return blocks;
     }
 
-    // Ajusta o nome do programa para caber em 6 chars
+    /**
+     * Ajusta o nome do programa para 6 caracteres.
+     * @param name Nome original.
+     * @return Nome ajustado para 6 caracteres.
+     */
     private String fitProgramName(String name) {
         if (name == null) return "NONAME";
-        if (name.length() > 6) return name.substring(0, 6);
-        return name;
+        return (name.length() > 6) ? name.substring(0, 6) : name;
     }
 
-    // Determina o tamanho (em bytes) de cada linha de assembly
+    /**
+     * Calcula o tamanho da instrução em bytes usando o InstructionSizeCalculator.
+     * @param line Linha de assembly.
+     * @return Tamanho da instrução.
+     */
     private int getInstructionSize(AssemblyLine line) {
         return InstructionSizeCalculator.calculateSize(line.mnemonic(), line.operand());
     }
 
     /**
-     * Gera o código objeto para uma única linha de assembly.
+     * Gera o código objeto para uma linha de assembly.
+     * @param line         Linha de assembly.
+     * @param symbolTable  Tabela de símbolos.
+     * @return Array de bytes com o código objeto.
      */
     public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable) {
         String mnemonic = line.mnemonic();
         String operand = line.operand();
 
-        // Diretivas
+        // Diretivas WORD, BYTE, RESW e RESB
         if (mnemonic.equalsIgnoreCase("WORD")) {
-            return Convert.intTo3Bytes(parseNumber(operand));
+            return Convert.intTo3Bytes(Parser.parseNumber(operand));
         } else if (mnemonic.equalsIgnoreCase("BYTE")) {
-            return parseByteOperand(operand);
+            return Parser.parseByteOperand(operand);
         } else if (mnemonic.equalsIgnoreCase("RESW") || mnemonic.equalsIgnoreCase("RESB")) {
-            int count = parseNumber(operand) * (mnemonic.equalsIgnoreCase("RESW") ? 3 : 1);
+            int count = Parser.parseNumber(operand) * (mnemonic.equalsIgnoreCase("RESW") ? 3 : 1);
             return new byte[count];
         }
 
-        // Determine o formato da instrução a partir do mnemônico
-        int format = determineInstructionFormat(mnemonic);
+        int format = Parser.determineInstructionFormat(mnemonic);
         return switch (format) {
             case 1 -> generateInstructionCodeFormat1(mnemonic);
             case 2 -> generateInstructionCodeFormat2(mnemonic, operand);
@@ -277,23 +218,6 @@ public class AssemblerSecondPass {
             case 4 -> generateInstructionCodeFormat4(mnemonic, operand, symbolTable);
             default -> throw new IllegalArgumentException("Formato de instrução desconhecido para " + mnemonic);
         };
-    }
-
-    private int determineInstructionFormat(String mnemonic) {
-        if (mnemonic.startsWith("+")) {
-            return 4;
-        }
-        if (mnemonic.equalsIgnoreCase("FIX") || mnemonic.equalsIgnoreCase("FLOAT")
-                || mnemonic.equalsIgnoreCase("NORM") || mnemonic.equalsIgnoreCase("SIO")
-                || mnemonic.equalsIgnoreCase("HIO") || mnemonic.equalsIgnoreCase("TIO")) {
-            return 1;
-        }
-        if (mnemonic.equalsIgnoreCase("CLEAR") || mnemonic.equalsIgnoreCase("COMPR")
-                || mnemonic.equalsIgnoreCase("SUBR") || mnemonic.equalsIgnoreCase("ADDR")
-                || mnemonic.equalsIgnoreCase("RMO") || mnemonic.equalsIgnoreCase("TIXR")) {
-            return 2;
-        }
-        return 3; // Caso padrão: formato 3.
     }
 
     private byte[] generateInstructionCodeFormat1(String mnemonic) {
@@ -310,107 +234,47 @@ public class AssemblerSecondPass {
         }
         int r1 = Map.registerNameToNumber(regs[0].trim());
         int r2 = Map.registerNameToNumber(regs[1].trim());
-        byte[] code = new byte[2];
-        code[0] = (byte) opcode;
-        code[1] = (byte) ((r1 << 4) | (r2 & 0x0F));
-        return code;
+        return new byte[]{ (byte) opcode, (byte) ((r1 << 4) | (r2 & 0x0F)) };
     }
 
     private byte[] generateInstructionCodeFormat3(String mnemonic, String operand, SymbolTable symbolTable, AssemblyLine line) {
-        boolean indexed = (operand != null && operand.toUpperCase().endsWith(",X"));
-        // Remover sufixo ,X se houver
+        boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
         String operandString = indexed ? operand.replace(",X", "") : operand;
-
-        // Detecta modo imediato (#)
-        boolean isImmediate = (operandString != null && operandString.startsWith("#"));
-
-        // Remove '#' do começo, para resolver o endereço / parseNumber
+        boolean isImmediate = operandString != null && operandString.startsWith("#");
         if (isImmediate) {
             operandString = operandString.substring(1);
         }
-
         int opcode = Map.mnemonicToOpcode(mnemonic);
-
-        // Resolve address (ou parseNumber) – se for imediato, parseNumber do valor
-        int operandAddress = resolveOperandAddress(operandString, symbolTable);
-
-        // Calcula displacement PC-relativo
+        int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
         int disp = calculateDisplacement(line, operandAddress);
-
-        // Montagem do byte[3]
-        // Bits n e i:
-        // - immediate => n=0, i=1
-        // - caso contrário => n=1, i=1 (endereçamento direto)
         int nBit = isImmediate ? 0 : 1;
         int iBit = 1;
-        byte firstByte = (byte)((opcode & 0xFC) | (nBit << 1) | iBit);
-
+        byte firstByte = (byte) ((opcode & 0xFC) | (nBit << 1) | iBit);
         byte secondByte = 0;
         if (indexed) {
-            secondByte |= 0x80; // x=1
+            secondByte |= (byte) 0x80;
         }
-
-        // Se NÃO é imediato, p=1 (PC-rel), assumindo que você sempre use PC-rel no SIC/XE.
-        // Se for imediato, p=0
         if (!isImmediate) {
-            secondByte |= 0x20; // p=1
+            secondByte |= 0x20;
         }
-        // e=0
-        secondByte |= ((disp >> 8) & 0x0F);
-
-        byte[] code = new byte[3];
-        code[0] = firstByte;
-        code[1] = secondByte;
-        code[2] = (byte)(disp & 0xFF);
-
-        return code;
+        secondByte |= (byte) ((disp >> 8) & 0x0F);
+        return new byte[]{ firstByte, secondByte, (byte) (disp & 0xFF) };
     }
 
-    /**
-     * Gera o código objeto para instruções de formato 4.
-     * @param mnemonic Mnemônico da instrução
-     * @param operand Operando da instrução
-     * @param symbolTable Tabela de símbolos
-     * @return
-     */
     private byte[] generateInstructionCodeFormat4(String mnemonic, String operand, SymbolTable symbolTable) {
         mnemonic = mnemonic.replace("+", "");
         int opcode = Map.mnemonicToOpcode(mnemonic);
         boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
         String operandString = indexed ? operand.replace(",X", "") : operand;
-        int operandAddress = resolveOperandAddress(operandString, symbolTable);
-        int firstByte = (opcode & 0xFC) | 0x03; // n=1, i=1
-        int secondByte = 0;
-        if (indexed) {
-            secondByte |= 0x80;
-        }
-        secondByte |= 0x10; // seta e=1; b e p = 0
-        int high4 = (operandAddress >> 16) & 0x0F;
-        secondByte |= high4;
-        byte[] code = new byte[4];
-        code[0] = (byte) firstByte;
-        code[1] = (byte) secondByte;
-        code[2] = (byte) ((operandAddress >> 8) & 0xFF);
-        code[3] = (byte) (operandAddress & 0xFF);
-        return code;
-    }
-
-    /**
-     * Resolve o endereço do operando; se for símbolo presente na SymbolTable, retorna seu address.
-     * Se for imediato (#), parsea como número. Caso contrário, se for literal decimal/hex, parsea também.
-     */
-    private int resolveOperandAddress(String operand, SymbolTable symbolTable) {
-        if (operand == null) return 0;
-        if (operand.startsWith("#")) {
-            return parseNumber(operand.substring(1));
-        }
-        // Força o operando a maiúsculas para garantir consistência
-        String symKey = operand.toUpperCase();
-        if (symbolTable.contains(symKey)) {
-            return symbolTable.getAddress(symKey);
-        }
-        // Tenta parsear como número (caso não seja símbolo)
-        return parseNumber(operand);
+        int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
+        int firstByte = (opcode & 0xFC) | 0x03;
+        int secondByte = (indexed ? 0x80 : 0) | 0x10 | ((operandAddress >> 16) & 0x0F);
+        return new byte[]{
+                (byte) firstByte,
+                (byte) secondByte,
+                (byte) ((operandAddress >> 8) & 0xFF),
+                (byte) (operandAddress & 0xFF)
+        };
     }
 
     private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
@@ -423,36 +287,24 @@ public class AssemblerSecondPass {
         return disp & 0xFFF;
     }
 
-    private byte[] parseByteOperand(String operand) {
-        if (operand == null) {
-            throw new IllegalArgumentException("Operando ausente para BYTE.");
+    private boolean shouldGenerateMRecord(AssemblyLine line, SymbolTable symtab) {
+        int format = Parser.determineInstructionFormat(line.mnemonic());
+        if (format != 3 && format != 4) {
+            return false;
         }
-        if (operand.startsWith("X'") && operand.endsWith("'")) {
-            String hex = operand.substring(2, operand.length() - 1);
-            return Convert.hexStringToByteArray(hex);
-        } else if (operand.startsWith("C'") && operand.endsWith("'")) {
-            String chars = operand.substring(2, operand.length() - 1);
-            return chars.getBytes();
-        } else {
-            throw new IllegalArgumentException("Formato inválido para BYTE: " + operand);
+        String op = line.operand();
+        if (op == null || op.startsWith("#")) {
+            return false;
         }
-    }
-
-    private int parseNumber(String operand) {
-        if (operand == null) {
-            throw new IllegalArgumentException("Operando ausente.");
+        String cleaned = op.replaceAll("(?i),x", "").trim();
+        if (Check.isNumericLiteral(cleaned)) {
+            return false;
         }
-        if (operand.matches("\\d+")) {
-            return Integer.parseInt(operand);
-        }
-        if (operand.matches("[0-9A-Fa-f]+")) {
-            return Integer.parseInt(operand, 16);
-        }
-        throw new IllegalArgumentException("Formato inválido de número: " + operand);
+        return symtab.contains(cleaned);
     }
 
     /**
-     * Classe auxiliar para armazenar blocos de texto (T records).
+     * Bloco auxiliar para agrupar dados dos T records.
      */
     static class TBlock {
         int startAddr;
@@ -463,12 +315,12 @@ public class AssemblerSecondPass {
         }
     }
 
-    // TODO: Mover esse record para fora daqui.
     /**
-     * @param offset    offset no array de bytes
-     * @param reference ex: "+FOO" ou "-FOO"
+     * Registro auxiliar para informações de modificação (M record).
+     *
+     * @param offset           Offset no array de bytes.
+     * @param lengthInHalfBytes Número de dígitos (nibbles) do campo de endereço.
+     * @param reference        Referência (ex.: "+FOO" ou "-FOO").
      */
-    // Classe auxiliar para armazenar informações de reloc
-    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {
-    }
+    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {}
 }

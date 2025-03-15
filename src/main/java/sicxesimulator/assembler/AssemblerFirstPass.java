@@ -37,12 +37,12 @@ class AssemblerFirstPass {
             String line = removeInlineComments(originalLine).trim();
 
             // Ignorar linhas vazias ou comentadas
-            if (originalLine.isEmpty() || originalLine.startsWith(";")) {
+            if (line.isEmpty() || line.startsWith(";")) {
                 continue;
             }
 
             // Dividir a linha em partes
-            String[] parts = originalLine.split("\\s+", 3);
+            String[] parts = line.split("\\s+", 3);
             String label = null;
             String mnemonic = null;
             String operand = null;

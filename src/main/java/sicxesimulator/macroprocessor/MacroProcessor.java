@@ -1,10 +1,11 @@
 package sicxesimulator.macroprocessor;
 
+import sicxesimulator.utils.Constants;
+import sicxesimulator.utils.FileUtils;
 import sicxesimulator.utils.SimulatorLogger;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -15,13 +16,20 @@ public class MacroProcessor {
 
     /**
      * Processa o arquivo de entrada e gera o arquivo de saída com as macros expandidas.
-     * @param inputFile Nome do arquivo-fonte de entrada.
-     * @param outputFile Nome do arquivo de saída, normalmente "MASMAPRG.ASM".
+     * Utiliza os métodos de FileUtils para as operações de I/O.
+     *
+     * @param inputFile  Nome do arquivo-fonte de entrada.
+     * @param outputFile Nome do arquivo de saída, especificado como "MASMAPRG.ASM" (ou outro).
      * @throws IOException Se ocorrer um erro de leitura/escrita.
      */
     public void process(String inputFile, String outputFile) throws IOException {
+        // Limpa definições antigas
+        macroTable.clear();
         SimulatorLogger.logExecution("MacroProcessor iniciado. Entrada: " + inputFile);
-        List<String> sourceLines = Files.readAllLines(Paths.get(inputFile), StandardCharsets.UTF_8);
+
+        // Lê o conteúdo do arquivo de entrada utilizando FileUtils
+        String inputContent = FileUtils.readFile(inputFile);
+        List<String> sourceLines = Arrays.asList(inputContent.split("\\r?\\n"));
         List<String> outputLines = new ArrayList<>();
         Deque<MacroDefinition> macroStack = new ArrayDeque<>();
 
@@ -91,8 +99,21 @@ public class MacroProcessor {
             }
         }
 
-        Files.write(Paths.get(outputFile), expandedLines, StandardCharsets.UTF_8);
-        SimulatorLogger.logExecution("Processamento concluido. Arquivo gerado: " + outputFile);
+        // Converte a lista de linhas em uma única string separada por quebras de linha, removendo as linhas em branco
+        List<String> filtered = new ArrayList<>();
+        for (String line : expandedLines) {
+            if (!line.trim().isEmpty()) {
+                filtered.add(line);
+            }
+        }
+
+        String expandedContent = String.join("\n", filtered);
+
+
+        // Salva o arquivo de saída no diretório TEMP_DIR utilizando FileUtils
+        FileUtils.writeFileInDir(Constants.TEMP_DIR, outputFile, expandedContent);
+        SimulatorLogger.logExecution("Processamento concluído. Arquivo gerado: "
+                + Path.of(Constants.TEMP_DIR, outputFile).toAbsolutePath());
     }
 
     /**

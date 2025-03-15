@@ -139,14 +139,6 @@ public class AssemblerSecondPass {
         return s.matches("\\d+");
     }
 
-    // TODO: Mover esse record para fora daqui.
-    /**
-     * @param offset    offset no array de bytes
-     * @param reference ex: "+FOO" ou "-FOO"
-     */ // Classe auxiliar para armazenar informações de reloc
-        record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {
-    }
-
     /**
      * Gera um .obj textual no estilo SIC/XE:
      *  - Header (H)
@@ -245,15 +237,6 @@ public class AssemblerSecondPass {
             index += blockLen;
         }
         return blocks;
-    }
-
-    static class TBlock {
-        int startAddr;
-        List<Byte> data = new ArrayList<>();
-
-        TBlock(int start) {
-            this.startAddr = start;
-        }
     }
 
     // Ajusta o nome do programa para caber em 6 chars
@@ -383,7 +366,13 @@ public class AssemblerSecondPass {
         return code;
     }
 
-
+    /**
+     * Gera o código objeto para instruções de formato 4.
+     * @param mnemonic Mnemônico da instrução
+     * @param operand Operando da instrução
+     * @param symbolTable Tabela de símbolos
+     * @return
+     */
     private byte[] generateInstructionCodeFormat4(String mnemonic, String operand, SymbolTable symbolTable) {
         mnemonic = mnemonic.replace("+", "");
         int opcode = Map.mnemonicToOpcode(mnemonic);
@@ -424,8 +413,6 @@ public class AssemblerSecondPass {
         return parseNumber(operand);
     }
 
-
-
     private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
         int currentInstructionByteAddr = line.address();
         int nextInstructionByteAddr = currentInstructionByteAddr + getInstructionSize(line);
@@ -462,5 +449,26 @@ public class AssemblerSecondPass {
             return Integer.parseInt(operand, 16);
         }
         throw new IllegalArgumentException("Formato inválido de número: " + operand);
+    }
+
+    /**
+     * Classe auxiliar para armazenar blocos de texto (T records).
+     */
+    static class TBlock {
+        int startAddr;
+        List<Byte> data = new ArrayList<>();
+
+        TBlock(int start) {
+            this.startAddr = start;
+        }
+    }
+
+    // TODO: Mover esse record para fora daqui.
+    /**
+     * @param offset    offset no array de bytes
+     * @param reference ex: "+FOO" ou "-FOO"
+     */
+    // Classe auxiliar para armazenar informações de reloc
+    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {
     }
 }

@@ -30,7 +30,7 @@ public class Linker {
             throw new IllegalArgumentException("Nenhum módulo para linkar.");
         }
 
-        // Passo 1: atribuir base a cada módulo e coletar símbolos públicos (exportados)
+        /// ===== Passo 1: atribuir base a cada módulo e coletar símbolos públicos (exportados) =====
         int currentBase = loadAddress;
         Map<ObjectFile, Integer> baseMap = new HashMap<>();     // Módulo -> base
         Map<String, Integer> globalSymbols = new HashMap<>();   // symbolName -> globalAddress
@@ -80,7 +80,7 @@ public class Linker {
             }
         }
 
-        // Passo 2: Gerar um array final "finalCode" concatenando todos
+        /// ===== Passo 2: Gerar um array final "finalCode" concatenando todos =====
         byte[] finalCode = new byte[totalSize];
 
         // Cria uma SymbolTable final (vai conter todos os símbolos com seus endereços ajustados)
@@ -158,7 +158,7 @@ public class Linker {
         finalObject.setOrigin(ObjectFileOrigin.LINKED_MODULES);
         finalObject.setFullyRelocated(finalRelocation);
 
-        /// Passo 3.1) Gerar .obj textual
+        /// Gera o .obj final
         String objFileName = outputFileName + ".obj";
         try {
             // aqui ajusta para finalRelocation ou nao
@@ -168,7 +168,7 @@ public class Linker {
         }
 
 
-        // Passo 3.2) Gerar também um .meta binário final para a interface gráfica
+        /// Gera o .meta final
         File metaFile = new File(Constants.SAVE_DIR, outputFileName + ".meta");
         finalObject.saveToFile(metaFile);
 
@@ -287,7 +287,7 @@ public class Linker {
 
         // === R record (EXTREF)?
 
-        //nÃO TEM NÉ PQ JÁ É UM ARQUIVO LGIADO E N TEMOS LIGADOR MULTIFASE TO DE SACO CHEIO DESSA MERDA DE LIGADOR
+        //nÃO TEM NÉ PQ JÁ É UM ARQUIVO LIGADO E N TEMOS LIGADOR MULTIFASE TO DE SACO CHEIO DESSA MERDA DE LIGADOR
 
         // === T records (até 30 bytes cada)
         // Parecido com buildTextRecords no Assembler

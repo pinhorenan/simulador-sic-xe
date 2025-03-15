@@ -61,6 +61,5 @@ public class Machine {
      * Retorna a unidade de controle da máquina.
      * @return  A unidade de controle.
      */
-    @SuppressWarnings("ClassEscapesDefinedScope")
     public ControlUnit getControlUnit() { return controlUnit; }
 }

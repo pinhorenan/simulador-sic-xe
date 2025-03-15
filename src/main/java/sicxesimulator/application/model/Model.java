@@ -295,12 +295,20 @@ public class Model {
     }
 
     public void removeAndDeleteObjectFileFromList(ObjectFile objectFile) {
-        File file = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".obj");
+        File objFile = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".obj");
 
-        // Verifica se o arquivo existe e o deleta
-        if (file.exists()) {
+        // Verifica se o arquivo existe e o deleta (para os .obj)
+        if (objFile.exists()) {
             //noinspection ResultOfMethodCallIgnored
-            file.delete();
+            objFile.delete();
+        }
+
+        File metaFile = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".meta");
+
+        // Verifica se o arquivo existe e o deleta (para os .meta)
+        if (metaFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            metaFile.delete();
         }
     }
 }

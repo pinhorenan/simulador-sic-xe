@@ -3,6 +3,7 @@ package sicxesimulator.application.controller;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.stage.Stage;
+import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.application.view.MainLayout;
 import sicxesimulator.application.view.MainViewUpdater;
 import sicxesimulator.models.ObjectFile;

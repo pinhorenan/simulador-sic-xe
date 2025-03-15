@@ -1,7 +1,7 @@
 package sicxesimulator.machine.cpu;
 
 import sicxesimulator.machine.Memory;
-import sicxesimulator.models.Instruction;
+import sicxesimulator.machine.records.Instruction;
 import sicxesimulator.utils.Convert;
 
 @SuppressWarnings("JavadocBlankLines")

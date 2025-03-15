@@ -1,14 +1,16 @@
 package sicxesimulator.macroprocessor;
 
+import sicxesimulator.utils.SimulatorLogger;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import sicxesimulator.utils.SimulatorLogger;
 
+/**
+ * Processador de macros para o montador SIC/XE.
+ */
 public class MacroProcessor {
-
-    // Tabela global de macros: nome (maiúsculo) -> MacroDefinition
     private final Map<String, MacroDefinition> macroTable = new HashMap<>();
 
     /**
@@ -23,7 +25,6 @@ public class MacroProcessor {
         List<String> outputLines = new ArrayList<>();
         Deque<MacroDefinition> macroStack = new ArrayDeque<>();
 
-        // Primeira passagem: identificar e armazenar definições de macro
         for (int i = 0; i < sourceLines.size(); i++) {
             String line = sourceLines.get(i);
             String trimmed = line.trim();
@@ -77,7 +78,6 @@ public class MacroProcessor {
 
         SimulatorLogger.logExecution("Macros registradas: " + macroTable.keySet());
 
-        // Segunda passagem: expansão das macros no corpo principal
         List<String> expandedLines = new ArrayList<>();
         for (int i = 0; i < outputLines.size(); i++) {
             String line = outputLines.get(i);
@@ -85,14 +85,14 @@ public class MacroProcessor {
                 List<String> expanded = expandLine(line);
                 expandedLines.addAll(expanded);
             } catch (Exception e) {
-                SimulatorLogger.logError("Erro na expansão da linha " + (i + 1) + ": " + line, e);
+                SimulatorLogger.logError("Erro na expansao da linha " + (i + 1) + ": " + line, e);
                 // Em caso de erro, preserva a linha original
                 expandedLines.add(line);
             }
         }
 
         Files.write(Paths.get(outputFile), expandedLines, StandardCharsets.UTF_8);
-        SimulatorLogger.logExecution("Processamento concluído. Arquivo gerado: " + outputFile);
+        SimulatorLogger.logExecution("Processamento concluido. Arquivo gerado: " + outputFile);
     }
 
     /**
@@ -117,14 +117,13 @@ public class MacroProcessor {
             }
         } else {
             // Linha com pelo menos 2 tokens
-            // Supondo que, se houver rótulo, ele é o primeiro token e o mnemônico é o segundo.
             String possibleMacro = tokens[1].toUpperCase();
             if (macroTable.containsKey(possibleMacro)) {
                 MacroDefinition macro = macroTable.get(possibleMacro);
                 List<String> args = new ArrayList<>();
-                // Se houver argumentos, geralmente estarão na parte restante da linha (tokens[2])
+
+                // Linha com 3 tokens ou mais
                 if (tokens.length >= 3) {
-                    // Se os argumentos estiverem separados por vírgula
                     String argPart = tokens[2];
                     String[] argTokens = argPart.split(",");
                     for (String a : argTokens) {
@@ -151,11 +150,12 @@ public class MacroProcessor {
         List<String> expanded = new ArrayList<>();
         Map<String, String> paramMap = new HashMap<>();
         List<String> params = macro.getParameters();
+
         // Se a macro tiver parâmetros, mapeia cada parâmetro ao argumento correspondente.
         if (!params.isEmpty()) {
             if (args.size() != params.size()) {
-                throw new IllegalArgumentException("Número de argumentos (" + args.size() +
-                        ") não corresponde ao número de parâmetros (" + params.size() + ") para a macro " + macro.getName());
+                throw new IllegalArgumentException("Numero de argumentos (" + args.size() +
+                        ") nao corresponde ao numero de parametros (" + params.size() + ") para a macro " + macro.getName());
             }
             for (int i = 0; i < params.size(); i++) {
                 paramMap.put(params.get(i), args.get(i));
@@ -178,36 +178,5 @@ public class MacroProcessor {
             expanded.addAll(expandLine(expandedLine));
         }
         return expanded;
-    }
-
-    /**
-     * Classe que representa a definição de uma macro, agora com suporte a parâmetros.
-     */
-    private static class MacroDefinition {
-        private final String name;
-        private final List<String> parameters;
-        private final List<String> body;
-
-        public MacroDefinition(String name, List<String> parameters) {
-            this.name = name;
-            this.parameters = parameters;
-            this.body = new ArrayList<>();
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public List<String> getParameters() {
-            return parameters;
-        }
-
-        public void addLine(String line) {
-            body.add(line);
-        }
-
-        public List<String> getBody() {
-            return body;
-        }
     }
 }

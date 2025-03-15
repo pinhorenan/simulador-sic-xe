@@ -2,7 +2,7 @@ package sicxesimulator.application.components.panels;
 
 import javafx.scene.control.*;
 import sicxesimulator.application.controller.MenuBarController;
-import sicxesimulator.utils.DialogUtil;
+import sicxesimulator.application.util.DialogUtil;
 
 public class ToolbarPanel {
     private final MenuBar menuBar;

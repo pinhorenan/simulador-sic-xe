@@ -5,6 +5,8 @@ import javafx.beans.property.SimpleBooleanProperty;
 import sicxesimulator.application.model.records.MemoryEntry;
 import sicxesimulator.application.model.records.RegisterEntry;
 import sicxesimulator.application.model.records.SymbolEntry;
+import sicxesimulator.application.util.DialogUtil;
+import sicxesimulator.application.view.ViewConfig;
 import sicxesimulator.machine.cpu.Register;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.assembler.Assembler;

@@ -4,7 +4,7 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.stage.FileChooser;
 import sicxesimulator.models.ObjectFile;
 import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.DialogUtil;
+import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.utils.FileUtils;
 import java.io.File;
 import java.io.IOException;

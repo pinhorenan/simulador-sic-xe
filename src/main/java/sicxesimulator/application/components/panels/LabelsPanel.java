@@ -6,14 +6,14 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import sicxesimulator.application.controller.Controller;
 
-public class BottomBarPanel {
+public class LabelsPanel {
     private final HBox pane;
     private final Controller controller;
     private final Label memoryLabel;
     private final Label formatLabel;
     private final Label speedLabel;
 
-    public BottomBarPanel(Controller controller) {
+    public LabelsPanel(Controller controller) {
         this.controller = controller;
 
         memoryLabel = new Label("Memória: ");

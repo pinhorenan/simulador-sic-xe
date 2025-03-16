@@ -15,12 +15,12 @@ import sicxesimulator.data.ObjectFile;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ObjectFileTableView extends TableView<ObjectFileTableItem> {
+public class FileTable extends TableView<ObjectFileTableItem> {
 
     private final ObservableList<ObjectFileTableItem> entries = FXCollections.observableArrayList();
 
     @SuppressWarnings("unchecked")
-    public ObjectFileTableView() {
+    public FileTable() {
         // Configura a seleção múltipla
         this.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 

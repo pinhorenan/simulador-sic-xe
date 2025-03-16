@@ -8,8 +8,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import sicxesimulator.application.components.tables.ObjectFileTableView;
-import sicxesimulator.application.components.buttons.MainButtons;
+import sicxesimulator.application.components.buttons.FileListButtons;
+import sicxesimulator.application.components.tables.FileTable;
 import sicxesimulator.application.model.ObjectFileTableItem;
 import sicxesimulator.data.ObjectFile;
 import sicxesimulator.application.controller.Controller;
@@ -18,15 +18,15 @@ import sicxesimulator.application.util.DialogUtil;
 import java.io.IOException;
 import java.util.List;
 
-public class ObjectFilePanel {
+public class FileListPanel {
     private final TitledPane objectFilePane;
-    private final ObjectFileTableView objectFileTable;
+    private final FileTable objectFileTable;
     private final HBox fileControlButtons;
     private final Controller controller;
 
-    public ObjectFilePanel(Controller controller) {
+    public FileListPanel(Controller controller) {
         this.controller = controller;
-        this.objectFileTable = new ObjectFileTableView();
+        this.objectFileTable = new FileTable();
         objectFileTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         objectFileTable.setMaxWidth(Double.MAX_VALUE);
 
@@ -71,7 +71,7 @@ public class ObjectFilePanel {
         });
     }
 
-    public void setMainButtons(MainButtons buttons) {
+    public void setButtons(FileListButtons buttons) {
         fileControlButtons.getChildren().clear();
         fileControlButtons.getChildren().addAll(buttons.getLinkButton(), buttons.getDeleteButton());
     }
@@ -109,7 +109,7 @@ public class ObjectFilePanel {
         return objectFilePane;
     }
 
-    public ObjectFileTableView getObjectFileTable() {
+    public FileTable getObjectFileTable() {
         return objectFileTable;
     }
 }

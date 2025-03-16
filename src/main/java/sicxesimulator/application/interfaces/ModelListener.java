@@ -1,4 +1,4 @@
-package sicxesimulator.application.model;
+package sicxesimulator.application.interfaces;
 
 public interface ModelListener {
     void onFilesUpdated();

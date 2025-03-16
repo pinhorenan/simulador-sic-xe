@@ -26,7 +26,7 @@ public class MenuBarController {
         ObjectFile obj = sel.get(0).getObjectFile();
         // TODO: Não é pra mostrar no OutputPanel, mas por enquanto vai ser.
         String textual = obj.getObjectCodeAsString();  // Implementar no ObjectFile
-        controller.getMainLayout().getOutputPanel().getOutputArea().appendText("=== OBJ TEXT ===\n" + textual + "\n");
+        controller.getMainLayout().getExecutionPanel().getMachineOutput().appendText("=== OBJ TEXT ===\n" + textual + "\n");
     }
     
     // TODO: Mover isso para model

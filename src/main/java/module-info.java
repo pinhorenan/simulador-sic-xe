@@ -31,4 +31,7 @@ module sicxesimulator {
     exports sicxesimulator.hardware.data;
 
     opens sicxesimulator.application.components.buttons to javafx.controls, javafx.fxml, javafx.media;
+    opens sicxesimulator.application.util to javafx.controls, javafx.fxml, javafx.media;
+    exports sicxesimulator.application.interfaces;
+    opens sicxesimulator.application.interfaces to javafx.controls, javafx.fxml, javafx.media;
 }

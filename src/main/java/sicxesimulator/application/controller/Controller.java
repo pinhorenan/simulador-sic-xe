@@ -81,10 +81,10 @@ public class Controller {
             List<String> processedSourceLines = model.processCodeMacros(rawSourceLines);
             ObjectFile objectFile = model.assembleCode(rawSourceLines, processedSourceLines);
 
-            mainLayout.getOutputPanel().clearOutput();
+            mainLayout.getExecutionPanel().clearOutput();
             mainLayout.getInputPanel().setInputText(rawSourceText);
 
-            mainLayout.getOutputPanel().getOutputArea().appendText("Programa montado com sucesso!\n" + objectFile + "\n");
+            mainLayout.getExecutionPanel().getMachineOutput().appendText("Programa montado com sucesso!\n" + objectFile + "\n");
 
             initializeFilesView();
 
@@ -161,7 +161,7 @@ public class Controller {
                 try {
                     model.runNextInstruction();
                     Platform.runLater(() -> {
-                        mainLayout.getOutputPanel().getOutputArea().appendText(model.getMachine().getControlUnit().getLastExecutionLog() + "\n");
+                        mainLayout.getExecutionPanel().getMachineOutput().appendText(model.getMachine().getControlUnit().getLastExecutionLog() + "\n");
                         updater.updateAllTables();
                     });
                 } catch (Exception ex) {
@@ -170,7 +170,7 @@ public class Controller {
                 }
                 model.applyCycleDelay();
             }
-            Platform.runLater(() -> mainLayout.getOutputPanel().getOutputArea().appendText("Execução concluída!\n"));
+            Platform.runLater(() -> mainLayout.getExecutionPanel().getMachineOutput().appendText("Execução concluída!\n"));
         }).start();
     }
 
@@ -179,7 +179,7 @@ public class Controller {
             try {
                 model.runNextInstruction();
                 String log = model.getMachine().getControlUnit().getLastExecutionLog();
-                mainLayout.getOutputPanel().getOutputArea().appendText(log + "\n");
+                mainLayout.getExecutionPanel().getMachineOutput().appendText(log + "\n");
                 updater.updateAllTables();
                 SimulatorLogger.logExecution(log);
                 model.setSimulationFinished(model.getMachine().getControlUnit().isProcessorHalted());
@@ -198,7 +198,7 @@ public class Controller {
             model.setSimulationPaused(!isPaused);
 
             String message = isPaused ? "Execução retomada!" : "Execução pausada!";
-            mainLayout.getOutputPanel().getOutputArea().appendText(message + "\n");
+            mainLayout.getExecutionPanel().getMachineOutput().appendText(message + "\n");
             SimulatorLogger.logExecution(message);
         } else {
             DialogUtil.showError("Nenhum programa carregado para pausar!");
@@ -207,8 +207,8 @@ public class Controller {
 
     public void handleRestartAction() {
         model.restartMachine();
-        mainLayout.getOutputPanel().getOutputArea().clear();
-        mainLayout.getOutputPanel().getOutputArea().appendText("Máquina reiniciada!\n");
+        mainLayout.getExecutionPanel().getMachineOutput().clear();
+        mainLayout.getExecutionPanel().getMachineOutput().appendText("Máquina reiniciada!\n");
         updateAllTables();
     }
 
@@ -246,8 +246,8 @@ public class Controller {
         model.loadProgramToMachine(selectedFile, userLoadAddress);
 
         updateAllTables();
-        mainLayout.getOutputPanel().getOutputArea().clear();
-        mainLayout.getOutputPanel().getOutputArea().appendText(
+        mainLayout.getExecutionPanel().getMachineOutput().clear();
+        mainLayout.getExecutionPanel().getMachineOutput().appendText(
                 "Programa carregado com sucesso!\n" + selectedFile + "\n"
         );
     }
@@ -318,10 +318,10 @@ public class Controller {
     public void clearMemory() {
         model.getMachine().getMemory().clearMemory();
         updater.updateMemoryTableView();
-        mainLayout.getOutputPanel().getOutputArea().appendText("Memória limpa!\n");
+        mainLayout.getExecutionPanel().getMachineOutput().appendText("Memória limpa!\n");
         // Atualiza a label da bottom bar
-        if (mainLayout.getBottomBarPanel() != null) {
-            mainLayout.getBottomBarPanel().updateMemoryLabel();
+        if (mainLayout.getLabelsPanel() != null) {
+            mainLayout.getLabelsPanel().updateMemoryLabel();
         }
     }
 
@@ -329,10 +329,10 @@ public class Controller {
         try {
             model.getMachine().changeMemorySize(newSizeInBytes);
             model.setMemorySize(newSizeInBytes);
-            mainLayout.getOutputPanel().getOutputArea().appendText("Memória alterada para " + newSizeInBytes + " bytes.\n");
+            mainLayout.getExecutionPanel().getMachineOutput().appendText("Memória alterada para " + newSizeInBytes + " bytes.\n");
             updater.updateMemoryTableView();
-            if (mainLayout.getBottomBarPanel() != null) {
-                mainLayout.getBottomBarPanel().updateMemoryLabel();
+            if (mainLayout.getLabelsPanel() != null) {
+                mainLayout.getLabelsPanel().updateMemoryLabel();
             }
         } catch (Exception e) {
             DialogUtil.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
@@ -341,15 +341,15 @@ public class Controller {
 
     public void setSimulationSpeed(int speed) {
         model.setSimulationSpeed(speed);
-        if (mainLayout.getBottomBarPanel() != null) {
-            mainLayout.getBottomBarPanel().updateSpeedLabel();
+        if (mainLayout.getLabelsPanel() != null) {
+            mainLayout.getLabelsPanel().updateSpeedLabel();
         }
     }
 
     public void setViewFormat(String format) {
         model.getViewConfig().setAddressFormat(format);
-        if (mainLayout.getBottomBarPanel() != null) {
-            mainLayout.getBottomBarPanel().updateFormatLabel();
+        if (mainLayout.getLabelsPanel() != null) {
+            mainLayout.getLabelsPanel().updateFormatLabel();
         }
     }
 

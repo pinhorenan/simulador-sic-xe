@@ -1,4 +1,4 @@
-package sicxesimulator.application.components.buttons;
+package sicxesimulator.application.util;
 
 import javafx.scene.control.Button;
 

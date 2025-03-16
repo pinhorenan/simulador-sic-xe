@@ -6,21 +6,21 @@ import sicxesimulator.application.model.records.MemoryEntry;
 import sicxesimulator.application.model.records.RegisterEntry;
 import sicxesimulator.application.model.records.SymbolEntry;
 import sicxesimulator.application.util.DialogUtil;
+import sicxesimulator.application.util.ValueFormatter;
 import sicxesimulator.application.view.ViewConfig;
-import sicxesimulator.machine.cpu.Register;
-import sicxesimulator.models.ObjectFile;
-import sicxesimulator.assembler.Assembler;
-import sicxesimulator.linker.Linker;
-import sicxesimulator.loader.Loader;
-import sicxesimulator.macroprocessor.MacroProcessor;
-import sicxesimulator.machine.Machine;
-import sicxesimulator.utils.*;
+import sicxesimulator.hardware.cpu.Register;
+import sicxesimulator.data.ObjectFile;
+import sicxesimulator.software.assembler.Assembler;
+import sicxesimulator.software.linker.Linker;
+import sicxesimulator.software.loader.Loader;
+import sicxesimulator.software.macroprocessor.MacroProcessor;
+import sicxesimulator.hardware.Machine;
+import sicxesimulator.utils.Constants;
+import sicxesimulator.utils.Converter;
+import sicxesimulator.utils.FileUtils;
+import sicxesimulator.utils.Mapper;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,22 +31,12 @@ public class Model {
     private final Linker linker;
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
-
-    // Estados reativos
     private final BooleanProperty codeLoaded = new SimpleBooleanProperty(false);
     private final BooleanProperty simulationPaused = new SimpleBooleanProperty(false);
     private final BooleanProperty simulationFinished = new SimpleBooleanProperty(false);
-    // Listeners
-
     private final List<ModelListener> listeners = new ArrayList<>();
-
-    // Último arquivo carregado
-    private ObjectFile lastLoadedCode;
-
-    // View state
     private final ViewConfig viewConfig = new ViewConfig();
-
-    // Estado do modelo
+    private ObjectFile lastLoadedCode;
     private int memorySize;
     private int simulationSpeed;
 
@@ -74,7 +64,15 @@ public class Model {
         }
     }
 
-    ///  Getters de componentes
+    ///  ===== Métodos Getters ===== ///
+
+    public int getSimulationSpeed() {
+        return simulationSpeed;
+    }
+
+    public int getMemorySize() {
+        return memorySize;
+    }
 
     public Machine getMachine() {
         return machine;
@@ -95,7 +93,7 @@ public class Model {
             byte[] word = memory.readWord(wordIndex);
             int byteAddress = wordIndex * 3;
             String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
-            entries.add(new MemoryEntry(formattedAddress, Convert.bytesToHex(word)));
+            entries.add(new MemoryEntry(formattedAddress, Converter.bytesToHex(word)));
         }
         return entries;
     }
@@ -126,8 +124,19 @@ public class Model {
         return entries;
     }
 
+    public BooleanProperty codeLoadedProperty() {
+        return codeLoaded;
+    }
 
-    ///  Getters/Setters de atributos do modelo
+    public BooleanProperty simulationFinishedProperty() {
+        return simulationFinished;
+    }
+
+    public BooleanProperty simulationPausedProperty() {
+        return simulationPaused;
+    }
+
+    /// ===== Métodos Setters ===== ///
 
     public void setSimulationSpeed(int newSimulationSpeed) {
         if (newSimulationSpeed >= 0 && newSimulationSpeed <= 4) {
@@ -137,36 +146,16 @@ public class Model {
         }
     }
 
-    public int getSimulationSpeed() {
-        return simulationSpeed;
-    }
-
     public void setMemorySize(int newMemorySize) {
         this.memorySize = newMemorySize;
-    }
-
-    public int getMemorySize() {
-        return memorySize;
-    }
-
-    public BooleanProperty codeLoadedProperty() {
-        return codeLoaded;
     }
 
     public void setCodeLoaded(boolean loaded) {
         codeLoaded.set(loaded);
     }
 
-    public BooleanProperty simulationFinishedProperty() {
-        return simulationFinished;
-    }
-
     public void setSimulationFinished(boolean finished) {
         simulationFinished.set(finished);
-    }
-
-    public BooleanProperty simulationPausedProperty() {
-        return simulationPaused;
     }
 
     public void setSimulationPaused(boolean paused) {
@@ -175,6 +164,12 @@ public class Model {
 
     /// Controle dos módulos (montador, processador de macros, ligador, carregador)
 
+    /**
+     * Processa as macros no código fonte fornecido.
+     * @param rawSourceLines O código-fonte original, com as definições de macro.
+     * @return O código-fonte processado, sem as definições de macro e com todos os macros expandidos.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     public List<String> processCodeMacros(List<String> rawSourceLines) throws IOException {
         // Usa a constante TEMP_DIR definida em Constants
         FileUtils.ensureDirectoryExists(Constants.TEMP_DIR);
@@ -195,6 +190,13 @@ public class Model {
         return expanded;
     }
 
+    /**
+     * Monta o código fonte fornecido e retorna o arquivo objeto resultante.
+     * @param rawSourceLines O código-fonte original, com as definições de macro (passado aqui para exibir na interface).
+     * @param preProcessedSourceCode O código-fonte processado, sem as definições de macro e com todos os macros expandidos (que realmente é a base para a montagem).
+     * @return O arquivo objeto resultante.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     public ObjectFile assembleCode(List<String> rawSourceLines, List<String> preProcessedSourceCode) throws IOException {
         ObjectFile machineCode = assembler.assemble(rawSourceLines, preProcessedSourceCode);
         addAndSaveObjectFileToList(machineCode);
@@ -202,6 +204,13 @@ public class Model {
         return machineCode;
     }
 
+    /**
+     * Liga os arquivos objeto fornecidos e retorna o arquivo objeto resultante.
+     * @param files Lista de arquivos objeto a serem ligados.
+     * @param loadAddress Endereço de carga do programa.
+     * @param fullRelocation Se o ligador deve fazer a realocação completa.
+     * @return O arquivo objeto resultante.
+     */
     public ObjectFile linkObjectFiles(List<ObjectFile> files, int loadAddress, boolean fullRelocation) {
         ObjectFile linkedObj = linker.linkModules(files, fullRelocation, loadAddress, "LinkedProgram");
         addAndSaveObjectFileToList(linkedObj);
@@ -210,14 +219,23 @@ public class Model {
 
     /// Controle de execução do programa
 
+    /**
+     * Chama o runCycle() da máquina para executar a próxima instrução.
+     */
     public void runNextInstruction() {
         machine.runCycle();
     }
 
+    /**
+     * Aplica um delay conforme a velocidade de simulação atual.
+     * Se a velocidade for 0, o retorna imediatamente.
+     * Se a velocidade for 1 a 4, o dorme por um tempo proporcional à velocidade.
+     * Esse delay só se aplica quando tentamos executar inteiramente o programa, sem passo a passo.
+     */
     public void applyCycleDelay() {
         if (simulationSpeed > 0) {
             try {
-                long delay = Map.simulationSpeedToCycleDelay(simulationSpeed);
+                long delay = Mapper.simulationSpeedToCycleDelay(simulationSpeed);
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
                 System.err.println("Execução interrompida: " + e.getMessage());
@@ -226,12 +244,21 @@ public class Model {
         }
     }
 
+    /**
+     * Reinicia a máquina.
+     * Isso limpa a memória e os registradores e redefine o estado da máquina.
+     */
     public void restartMachine() {
         setCodeLoaded(false);
         setSimulationFinished(false);
         machine.reset();
     }
 
+    /**
+     * Carrega o programa do arquivo objeto fornecido na memória da máquina.
+     * @param selectedFile O arquivo objeto a ser carregado.
+     * @param baseAddress O endereço base de carga do programa.
+     */
     public void loadProgramToMachine(ObjectFile selectedFile, int baseAddress) {
         if (selectedFile != null) {
             loader.loadObjectFile(selectedFile, machine.getMemory(), baseAddress);
@@ -290,7 +317,7 @@ public class Model {
         }
     }
 
-    public void removeAndDeleteObjectFileFromList(ObjectFile objectFile) {
+    public void deleteSavedProgram(ObjectFile objectFile) {
         File objFile = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".obj");
 
         // Verifica se o arquivo existe e o deleta (para os .obj)

@@ -1,6 +1,8 @@
 package sicxesimulator.macroprocessor;
 
 import org.junit.jupiter.api.Test;
+import sicxesimulator.software.macroprocessor.MacroProcessor;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;

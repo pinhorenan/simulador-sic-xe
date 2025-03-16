@@ -6,8 +6,8 @@ import sicxesimulator.application.model.records.SymbolEntry;
 import sicxesimulator.application.components.tables.MemoryTableView;
 import sicxesimulator.application.components.tables.RegisterTableView;
 import sicxesimulator.application.components.tables.SymbolTableView;
-import sicxesimulator.models.ObjectFile;
-import sicxesimulator.utils.ValueFormatter;
+import sicxesimulator.data.ObjectFile;
+import sicxesimulator.application.util.ValueFormatter;
 
 public class MainViewUpdater {
     private final Controller controller;

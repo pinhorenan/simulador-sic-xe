@@ -11,7 +11,7 @@ import javafx.scene.layout.Region;
 import sicxesimulator.application.components.tables.ObjectFileTableView;
 import sicxesimulator.application.components.buttons.MainButtons;
 import sicxesimulator.application.model.ObjectFileTableItem;
-import sicxesimulator.models.ObjectFile;
+import sicxesimulator.data.ObjectFile;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.util.DialogUtil;
 

@@ -1,9 +1,9 @@
 package sicxesimulator.application.model;
 
 import javafx.beans.property.*;
-import sicxesimulator.models.ObjectFile;
+import sicxesimulator.data.ObjectFile;
 
-import static sicxesimulator.models.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
+import static sicxesimulator.data.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
 
 @SuppressWarnings("ALL")
 public class ObjectFileTableItem {

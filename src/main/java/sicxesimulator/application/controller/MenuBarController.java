@@ -2,7 +2,7 @@ package sicxesimulator.application.controller;
 
 import javafx.scene.control.ChoiceDialog;
 import javafx.stage.FileChooser;
-import sicxesimulator.models.ObjectFile;
+import sicxesimulator.data.ObjectFile;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.utils.FileUtils;

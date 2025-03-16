@@ -6,15 +6,16 @@ import javafx.stage.Stage;
 import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.application.view.MainLayout;
 import sicxesimulator.application.view.MainViewUpdater;
-import sicxesimulator.models.ObjectFile;
+import sicxesimulator.data.ObjectFile;
 import sicxesimulator.application.model.Model;
 import sicxesimulator.application.model.ObjectFileTableItem;
 import sicxesimulator.application.model.records.MemoryEntry;
 
 import sicxesimulator.application.model.records.RegisterEntry;
 import sicxesimulator.application.model.records.SymbolEntry;
-import sicxesimulator.utils.*;
-import sicxesimulator.utils.Map;
+import sicxesimulator.utils.Constants;
+import sicxesimulator.utils.SimulatorLogger;
+import sicxesimulator.utils.Mapper;
 
 import java.io.*;
 import java.util.*;
@@ -140,7 +141,7 @@ public class Controller {
 
         for (ObjectFileTableItem item : selectedItems) {
             ObjectFile objectFile = item.getObjectFile();
-            model.removeAndDeleteObjectFileFromList(objectFile);
+            model.deleteSavedProgram(objectFile);
         }
 
         // Atualiza a tabela removendo os itens selecionados
@@ -226,7 +227,7 @@ public class Controller {
         // Se RELOCAVEL, podemos assumir 0 (ou outro) e deixar a relocação para a lógica do loader.
         //noinspection UnusedAssignment
         int userLoadAddress = 0;
-        if (!selectedFile.isFullyRelocated() && selectedFile.getStartAddress() != 0) {
+        if (selectedFile.isFullyRelocated() && selectedFile.getStartAddress() != 0) {
             try {
                 userLoadAddress = DialogUtil.askForInteger(
                         "Endereço de Carga",
@@ -271,7 +272,7 @@ public class Controller {
 
     public String getCycleDelay() {
         int simulationSpeed = model.getSimulationSpeed();
-        return Map.simulationSpeedToCycleDelay(simulationSpeed)+ "ms";
+        return Mapper.simulationSpeedToCycleDelay(simulationSpeed)+ "ms";
     }
 
     public List<MemoryEntry> getMemoryEntries() {

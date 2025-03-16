@@ -2,6 +2,8 @@ package sicxesimulator.machine;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sicxesimulator.hardware.Machine;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MachineTest {

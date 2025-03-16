@@ -17,18 +17,18 @@ module sicxesimulator {
     exports sicxesimulator.application.components.panels;
     exports sicxesimulator.application.components.buttons;
     exports sicxesimulator.application.components.tables;
-    exports sicxesimulator.linker;
-    exports sicxesimulator.loader;
-    exports sicxesimulator.assembler;
-    exports sicxesimulator.assembler.util;
-    exports sicxesimulator.assembler.records;
-    exports sicxesimulator.macroprocessor;
+    exports sicxesimulator.software.linker;
+    exports sicxesimulator.software.loader;
+    exports sicxesimulator.software.assembler;
+    exports sicxesimulator.software.assembler.util;
+    exports sicxesimulator.software.assembler.data;
+    exports sicxesimulator.software.macroprocessor;
     exports sicxesimulator.utils;
-    exports sicxesimulator.models;
-    exports sicxesimulator.models.records;
-    exports sicxesimulator.machine;
-    exports sicxesimulator.machine.cpu;
-    exports sicxesimulator.machine.records;
+    exports sicxesimulator.data;
+    exports sicxesimulator.data.records;
+    exports sicxesimulator.hardware;
+    exports sicxesimulator.hardware.cpu;
+    exports sicxesimulator.hardware.data;
 
     opens sicxesimulator.application.components.buttons to javafx.controls, javafx.fxml, javafx.media;
 }

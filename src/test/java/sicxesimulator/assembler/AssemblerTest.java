@@ -2,7 +2,9 @@ package sicxesimulator.assembler;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-import sicxesimulator.models.ObjectFile;
+import sicxesimulator.data.ObjectFile;
+import sicxesimulator.software.assembler.Assembler;
+
 import java.util.List;
 
 public class AssemblerTest {

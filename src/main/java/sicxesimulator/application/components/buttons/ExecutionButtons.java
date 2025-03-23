@@ -40,9 +40,9 @@ public class ExecutionButtons implements ButtonBinding {
                 .and(controller.getSimulationFinishedProperty().not());
 
         // Os botões: runButton, pauseButton, nextButton são habilitados quando o código foi carregado e a simulação não foi finalizada.
-        runButton.disableProperty().bind(executionAllowed);
-        pauseButton.disableProperty().bind(executionAllowed); // TODO: Habilitar apenas quando a execução está "em andamento" (botão executar pressionado).
-        nextButton.disableProperty().bind(executionAllowed);
+        runButton.disableProperty().bind(executionAllowed.not());
+        pauseButton.disableProperty().bind(executionAllowed.not()); // TODO: Habilitar apenas quando a execução está "em andamento" (botão executar pressionado).
+        nextButton.disableProperty().bind(executionAllowed.not());
 
         // O loadButton ("Carregar") deve ser habilitado se houver exatamente 1 item selecionado.
         loadButton.disableProperty().bind(

@@ -16,13 +16,13 @@ public class MainLayout {
     private final SymbolPanel symbolPanel;
     private final ExecutionPanel executionPanel;
     private final InputPanel inputPanel;
-    private LabelsPanel labelsPanel;
-    private FileListPanel objectFilePanel; // Será definido depois, via setController
-
     private final HBox leftPane;
 
-    private MenuBarController menuBarController;
+    private LabelsPanel labelsPanel;
+    private FileListPanel objectFilePanel;
+
     private Controller mainController;
+    private MenuBarController menuBarController;
 
     public MainLayout() {
         this.root = new BorderPane();
@@ -57,9 +57,6 @@ public class MainLayout {
         root.setPadding(new Insets(0));
     }
 
-    /**
-     * Define o Controller e, a partir dele, instancia o ObjectFilePanel e atualiza o leftPane.
-     */
     public void setController(Controller mainController) {
         this.mainController = mainController;
         // Cria o ObjectFilePanel usando o Controller já criado

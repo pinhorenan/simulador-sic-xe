@@ -14,7 +14,6 @@ import sicxesimulator.application.model.records.MemoryEntry;
 import sicxesimulator.application.model.records.RegisterEntry;
 import sicxesimulator.application.model.records.SymbolEntry;
 import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.SimulatorLogger;
 import sicxesimulator.utils.Mapper;
 
 import java.io.*;
@@ -88,11 +87,8 @@ public class Controller {
 
             initializeFilesView();
 
-            SimulatorLogger.logAssemblyCode(rawSourceText);
-            SimulatorLogger.logMachineCode(objectFile.toString());
         } catch (IllegalArgumentException | IOException e) {
             DialogUtil.showError("Erro na montagem: " + e.getMessage());
-            SimulatorLogger.logError("Erro na montagem", e);
         }
     }
 
@@ -161,10 +157,14 @@ public class Controller {
                 try {
                     model.runNextInstruction();
                     Platform.runLater(() -> {
-                        mainLayout.getExecutionPanel().getMachineOutput().appendText(model.getMachine().getControlUnit().getLastExecutionLog() + "\n");
+                        mainLayout.getExecutionPanel().getMachineOutput().appendText(
+                                model.getMachine().getControlUnit().getLastExecutionLog() + "\n"
+                        );
                         updater.updateAllTables();
                     });
                 } catch (Exception ex) {
+                    // Registra o estado detalhado ao ocorrer erro durante a execução contínua
+                    model.logDetailedState("Erro em handleRunAction()");
                     Platform.runLater(() -> DialogUtil.showError("Erro na execução: " + ex.getMessage()));
                     break;
                 }
@@ -174,6 +174,7 @@ public class Controller {
         }).start();
     }
 
+
     public void handleNextAction() {
         if (model.codeLoadedProperty().get() && !model.simulationFinishedProperty().get()) {
             try {
@@ -181,16 +182,21 @@ public class Controller {
                 String log = model.getMachine().getControlUnit().getLastExecutionLog();
                 mainLayout.getExecutionPanel().getMachineOutput().appendText(log + "\n");
                 updater.updateAllTables();
-                SimulatorLogger.logExecution(log);
                 model.setSimulationFinished(model.getMachine().getControlUnit().isProcessorHalted());
+                // Aguarda a atualização da interface antes de capturar o estado detalhado:
+                Platform.runLater(() -> model.logDetailedState("Após execução de instrução em handleNextAction()"));
             } catch (Exception e) {
-                DialogUtil.showError("Erro na execução: " + e.getMessage());
-                SimulatorLogger.logError("Erro na execução", e);
+                Platform.runLater(() -> {
+                    model.logDetailedState("Erro em handleNextAction()");
+                    DialogUtil.showError("Erro na execução: " + e.getMessage());
+                });
             }
         } else {
             DialogUtil.showError("Nenhum programa montado ou simulação já concluída!");
         }
     }
+
+
 
     public void handlePauseAction() {
         if (model.codeLoadedProperty().get()) {
@@ -199,7 +205,6 @@ public class Controller {
 
             String message = isPaused ? "Execução retomada!" : "Execução pausada!";
             mainLayout.getExecutionPanel().getMachineOutput().appendText(message + "\n");
-            SimulatorLogger.logExecution(message);
         } else {
             DialogUtil.showError("Nenhum programa carregado para pausar!");
         }
@@ -222,35 +227,28 @@ public class Controller {
         }
 
         ObjectFile selectedFile = selectedItems.getFirst().getObjectFile();
+        int userLoadAddress;
 
-        // Se ABSOLUTO, perguntar o endereço de carga.
-        // Se RELOCAVEL, podemos assumir 0 (ou outro) e deixar a relocação para a lógica do loader.
-        //noinspection UnusedAssignment
-        int userLoadAddress = 0;
+        // Se o objeto final já está totalmente realocado e possui um start address diferente de 0,
+        // usamos esse endereço diretamente.
         if (selectedFile.isFullyRelocated() && selectedFile.getStartAddress() != 0) {
-            try {
-                userLoadAddress = DialogUtil.askForInteger(
-                        "Endereço de Carga",
-                        "Carregador Absoluto",
-                        "Digite o endereço onde carregar:"
-                );
-            } catch (IOException e) {
-                throw new RuntimeException("Operação cancelada ou inválida.", e);
-            }
-        } else {
-            // Se já for relocado ou o startAddress for 0, usamos o próprio startAddress.
             userLoadAddress = selectedFile.getStartAddress();
+        } else {
+            // Caso contrário, solicita ao usuário o endereço de carga.
+            try {
+                userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador", "Informe o endereço onde carregar:");
+            } catch (IOException e) {
+                DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
+                return;
+            }
         }
 
-
         model.loadProgramToMachine(selectedFile, userLoadAddress);
-
         updateAllTables();
         mainLayout.getExecutionPanel().getMachineOutput().clear();
-        mainLayout.getExecutionPanel().getMachineOutput().appendText(
-                "Programa carregado com sucesso!\n" + selectedFile + "\n"
-        );
+        mainLayout.getExecutionPanel().getMachineOutput().appendText("Programa carregado com sucesso!\n" + selectedFile + "\n");
     }
+
 
     /// ===== Métodos Getters ===== ///
 

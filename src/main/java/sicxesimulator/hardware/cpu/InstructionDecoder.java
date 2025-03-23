@@ -168,8 +168,8 @@ public class InstructionDecoder {
      * Para endereçamento indireto (n=1, i=0):
      *  - Ler a memória nesse EA para obter o endereço final.
      *
-     *  Para endereçamento imediato (n=0, i=1):
-     *  - O EA pode representar diretamente o operando, mas no caso de dados esse valor ainda é interpretado como literal. (Aqui devolvemos EA mesmo.)
+     * Para endereçamento imediato (n=0, i=1):
+     *  - O EA representa diretamente o operando (apenas extensão de sinal para formato 3, se necessário).
      *
      * @param dispOrAddr    deslocamento (formato3, 12 bits) ou addr (formato4, 20 bits)
      * @param x             bit x
@@ -181,45 +181,50 @@ public class InstructionDecoder {
      * @return              O endereço efetivo da instrução
      */
     private int calculateEffectiveAddress(int dispOrAddr, int x, int b, int p, int e, int n, int i) {
-        // Converte o deslocamento/addr para valor com sinal se for formato 3 (12 bits):
-        // Formato 4 (20 bits) normalmente não se interpreta como valor negativo (PC-relativo), mas sim absoluto.
-        // Segue a convenção do SIC/XE: p=1 não faz sentido se e=1, mas deixamos a checagem se surgir necessidade.
-        int addressBase = dispOrAddr;
+        // Se for modo imediato (n==0, i==1), devolve o valor literal (aplicando extensão de sinal para formato 3, se necessário)
+        if (n == 0 && i == 1) {
+            int immediate = dispOrAddr;
+            if (e == 0) { // Formato 3: 12 bits com sinal
+                if ((immediate & 0x800) != 0) { // bit 11 setado
+                    immediate = immediate - 0x1000;
+                }
+            }
+            return immediate;
+        }
 
-        if (e == 0) {
-            // Formato 3 => disp12 com sinal
-            if ((addressBase & 0x800) != 0) { // bit 11 setado
+        // Caso contrário, trata os modos direto e indireto
+        int addressBase = dispOrAddr;
+        if (e == 0) { // Formato 3: realiza extensão de sinal para 12 bits
+            if ((addressBase & 0x800) != 0) { // se bit 11 estiver setado
                 addressBase = addressBase - 0x1000;
             }
         }
-        // Se p==1, soma PC+(tamanho da instrução);
-        //  tamanho 3 bytes se e=0; 4 bytes se e=1
-        if(p == 1) {
+
+        // Aplica endereçamento relativo ao PC se p==1
+        if (p == 1) {
             addressBase += programCounter + ((e == 1) ? 4 : 3);
-        } else if (b == 1) {
+        } else if (b == 1) { // ou endereçamento base se b==1
             addressBase += registers.getRegister("B").getIntValue();
         }
-        // Indexado
+
+        // Aplica indexação se x==1
         if (x == 1) {
             addressBase += registers.getRegister("X").getIntValue();
         }
 
-        // Modo de endereçamento indireto (n=1, i=0):
+        // Se for endereçamento indireto (n==1, i==0), obtém o endereço final lendo a memória
         if (n == 1 && i == 0) {
-            // Verifica se o endereço calculado está alinhado em 3 bytes
             if (addressBase % 3 != 0) {
                 throw new IllegalArgumentException("Endereço indireto não alinhado: " + addressBase);
             }
-            // Lê a memória para obter endereço final (24 bits).
             byte[] wordBytes = memory.readWord(addressBase / 3);
             return Converter.bytesToInt(wordBytes);
         }
 
-        // Modo de endereçamento imediato (n=0, i=1): O EA é devolvido como está (é valor literal).
-
-        // Modo de endereçamento direto (n=1, i=1): O EA está em addressBase.
+        // Caso seja endereçamento direto (n==1, i==1), retorna o endereço calculado
         return addressBase;
     }
+
 
 
     /**

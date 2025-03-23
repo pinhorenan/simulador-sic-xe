@@ -16,15 +16,10 @@ import sicxesimulator.software.linker.Linker;
 import sicxesimulator.software.loader.Loader;
 import sicxesimulator.software.macroprocessor.MacroProcessor;
 import sicxesimulator.hardware.Machine;
-import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.Converter;
-import sicxesimulator.utils.FileUtils;
-import sicxesimulator.utils.Mapper;
+import sicxesimulator.utils.*;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class Model {
     private final Machine machine;
@@ -52,20 +47,6 @@ public class Model {
         // Verifica a pasta apontada pela constante "SAVE_DIR" e carrega os arquivos de objeto
         loadObjectFilesFromSaveDir();
     }
-
-    /// Métodos de notificação
-
-    public void addListener(ModelListener listener) {
-        listeners.add(listener);
-    }
-
-    private void notifyListeners() {
-        for (ModelListener listener : listeners) {
-            listener.onFilesUpdated();
-        }
-    }
-
-    ///  ===== Métodos Getters ===== ///
 
     public int getSimulationSpeed() {
         return simulationSpeed;
@@ -137,8 +118,6 @@ public class Model {
         return simulationPaused;
     }
 
-    /// ===== Métodos Setters ===== ///
-
     public void setSimulationSpeed(int newSimulationSpeed) {
         if (newSimulationSpeed >= 0 && newSimulationSpeed <= 4) {
             this.simulationSpeed = newSimulationSpeed;
@@ -162,8 +141,6 @@ public class Model {
     public void setSimulationPaused(boolean paused) {
         simulationPaused.set(paused);
     }
-
-    /// Controle dos módulos (montador, processador de macros, ligador, carregador)
 
     /**
      * Processa as macros no código fonte fornecido.
@@ -262,12 +239,23 @@ public class Model {
      */
     public void loadProgramToMachine(ObjectFile selectedFile, int baseAddress) {
         if (selectedFile != null) {
+            // Carrega o objeto na memória
             loader.loadObjectFile(selectedFile, machine.getMemory(), baseAddress);
+            // Atualiza o PC para o startAddress definido no objeto final.
+            // Assim, se o header indica E^000100, o PC passa a ser 0x100.
+            machine.getControlUnit().setIntValuePC(selectedFile.getStartAddress());
+
             setCodeLoaded(true);
             lastLoadedCode = selectedFile;
+
+            // Loga o estado logo após a carga para depuração.
+            logDetailedState("Programa carregado em loadProgramToMachine()");
+
             notifyListeners();
         }
     }
+
+
 
     /// ===== Manipulação da lista de arquivos objeto =====
 
@@ -335,4 +323,65 @@ public class Model {
             metaFile.delete();
         }
     }
+
+    /**
+     * Loga o estado detalhado da máquina para auxiliar na depuração.
+     * São registrados:
+     * - A memória: endereços (a cada 3 bytes) que possuem valor diferente de zero,
+     *   no formato "Endereço -> Valor".
+     * - O estado de todos os registradores.
+     * - O código objeto carregado (texto).
+     * - A tabela de símbolos: mapeamento do símbolo para seu endereço.
+     *
+     * @param contextMessage Uma mensagem de contexto indicando onde o log foi invocado.
+     */
+    public void logDetailedState(String contextMessage) {
+        String objectCodeText = "(Nenhum objeto carregado)";
+        Map<String, Integer> symbolMap = new HashMap<>();
+        String sourceCodeText = "(Nenhum código fonte disponível)";
+
+        if (lastLoadedCode != null) {
+            objectCodeText = lastLoadedCode.getObjectCodeAsString();
+
+            // Converte o SymbolTable para Map<String, Integer>
+            Map<String, sicxesimulator.data.Symbol> symbols = lastLoadedCode.getSymbolTable().getAllSymbols();
+            for (Map.Entry<String, sicxesimulator.data.Symbol> entry : symbols.entrySet()) {
+                symbolMap.put(entry.getKey(), entry.getValue().address);
+            }
+
+            // Junta o código-fonte (rawSourceCode) em uma única String
+            List<String> rawSource = lastLoadedCode.getRawSourceCode();
+            if (rawSource != null && !rawSource.isEmpty()) {
+                sourceCodeText = String.join("\n", rawSource);
+            }
+        }
+
+        // Captura o histórico da execução (caso haja)
+        String executionOutput = machine.getControlUnit().getExecutionHistory();
+        if (executionOutput == null || executionOutput.isEmpty()) {
+            executionOutput = "(Sem saída de execução)";
+        }
+
+        DetailedLogger.logMachineState(
+                machine.getMemory(),
+                machine.getControlUnit().getRegisterSet(),
+                objectCodeText,
+                symbolMap,
+                sourceCodeText,
+                executionOutput,
+                contextMessage
+        );
+    }
+
+
+    public void addListener(ModelListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyListeners() {
+        for (ModelListener listener : listeners) {
+            listener.onFilesUpdated();
+        }
+    }
+
 }

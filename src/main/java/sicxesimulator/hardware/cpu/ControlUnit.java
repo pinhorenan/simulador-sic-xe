@@ -3,14 +3,15 @@ package sicxesimulator.hardware.cpu;
 import sicxesimulator.hardware.Memory;
 import sicxesimulator.hardware.data.Instruction;
 
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Classe responsável pelo controle do ciclo de execução do processador do simulador SIC/XE.
  * Gerencia a decodificação e execução das instruções.
  */
 public class ControlUnit {
-    private static final Logger logger = Logger.getLogger(ControlUnit.class.getName());
+    private final List<String> executionHistory = new ArrayList<>(); // Histórico de execução, para depuração
 
     private final InstructionDecoder decoder;
     private final ExecutionUnit executionUnit;
@@ -31,8 +32,6 @@ public class ControlUnit {
         this.executionUnit = new ExecutionUnit(registerSet, memory);
         this.halted = false;
     }
-
-    /// ===== Métodos de Acesso e Modificação =====
 
     /**
      * Retorna o conjunto de registradores do processador.
@@ -82,8 +81,6 @@ public class ControlUnit {
         return halted;
     }
 
-    /// ===== Métodos de Controle do Ciclo de Execução =====
-
     /**
      * Realiza um passo completo do ciclo de execução: busca, decodificação e execução da instrução.
      */
@@ -107,8 +104,6 @@ public class ControlUnit {
     private void incrementPC(int instructionSizeInBytes) {
         setIntValuePC(getIntValuePC() + instructionSizeInBytes);
     }
-
-    /// ===== Métodos Utilitários =====
 
     /**
      * Limpa o conteúdo de todos os registradores.
@@ -143,8 +138,8 @@ public class ControlUnit {
         String log;
 
         // Log antes da execução
-        logger.info(String.format("Executando instrucao: Opcode %s, Operandos %s, EffectiveAddress %06X, Indexed: %s",
-                Integer.toHexString(opcode), java.util.Arrays.toString(operands), effectiveAddress, indexed));
+//        logger.info(String.format("Executando instrucao: Opcode %s, Operandos %s, EffectiveAddress %06X, Indexed: %s",
+//                Integer.toHexString(opcode), java.util.Arrays.toString(operands), effectiveAddress, indexed));
 
         switch (format) {
             case 2:
@@ -274,6 +269,12 @@ public class ControlUnit {
             default:
                 throw new IllegalStateException("Formato de instrucao nao implementado: " + currentInstruction.format());
         }
+
+        executionHistory.add(log);
         return log;
+    }
+
+    public String getExecutionHistory() {
+        return String.join("\n", executionHistory);
     }
 }

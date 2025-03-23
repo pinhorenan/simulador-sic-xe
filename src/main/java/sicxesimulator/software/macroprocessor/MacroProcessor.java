@@ -2,10 +2,8 @@ package sicxesimulator.software.macroprocessor;
 
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.FileUtils;
-import sicxesimulator.utils.SimulatorLogger;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -25,16 +23,14 @@ public class MacroProcessor {
     public void process(String inputFile, String outputFile) throws IOException {
         // Limpa definições antigas
         macroTable.clear();
-        SimulatorLogger.logExecution("MacroProcessor iniciado. Entrada: " + inputFile);
 
         // Lê o conteúdo do arquivo de entrada utilizando FileUtils
         String inputContent = FileUtils.readFile(inputFile);
-        List<String> sourceLines = Arrays.asList(inputContent.split("\\r?\\n"));
+        String[] sourceLines = inputContent.split("\\r?\\n");
         List<String> outputLines = new ArrayList<>();
         Deque<MacroDefinition> macroStack = new ArrayDeque<>();
 
-        for (int i = 0; i < sourceLines.size(); i++) {
-            String line = sourceLines.get(i);
+        for (String line : sourceLines) {
             String trimmed = line.trim();
 
             // Linha vazia: preservar conforme contexto
@@ -62,7 +58,6 @@ public class MacroProcessor {
                     }
                 }
                 MacroDefinition macroDef = new MacroDefinition(macroName, params);
-                SimulatorLogger.logExecution("Definindo macro: " + macroName + " (linha " + (i + 1) + ")");
                 macroStack.push(macroDef);
                 continue;
             }
@@ -71,7 +66,6 @@ public class MacroProcessor {
             if (!macroStack.isEmpty() && trimmed.equalsIgnoreCase("MEND")) {
                 MacroDefinition completedMacro = macroStack.pop();
                 macroTable.put(completedMacro.getName().toUpperCase(), completedMacro);
-                SimulatorLogger.logExecution("Macro definida: " + completedMacro.getName() + " (linha " + (i + 1) + ")");
                 continue;
             }
 
@@ -84,16 +78,13 @@ public class MacroProcessor {
             }
         }
 
-        SimulatorLogger.logExecution("Macros registradas: " + macroTable.keySet());
-
         List<String> expandedLines = new ArrayList<>();
-        for (int i = 0; i < outputLines.size(); i++) {
-            String line = outputLines.get(i);
+        for (String line : outputLines) {
             try {
                 List<String> expanded = expandLine(line);
                 expandedLines.addAll(expanded);
             } catch (Exception e) {
-                SimulatorLogger.logError("Erro na expansao da linha " + (i + 1) + ": " + line, e);
+                // TODO: Melhorar tratamento de erros, inserir um log aqui.
                 // Em caso de erro, preserva a linha original
                 expandedLines.add(line);
             }
@@ -112,8 +103,7 @@ public class MacroProcessor {
 
         // Salva o arquivo de saída no diretório TEMP_DIR utilizando FileUtils
         FileUtils.writeFileInDir(Constants.TEMP_DIR, outputFile, expandedContent);
-        SimulatorLogger.logExecution("Processamento concluído. Arquivo gerado: "
-                + Path.of(Constants.TEMP_DIR, outputFile).toAbsolutePath());
+        // TODO: Adicionar log de sucesso
     }
 
     /**

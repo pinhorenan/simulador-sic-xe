@@ -38,7 +38,7 @@ public class AssemblerSecondPass {
         for (AssemblyLine line : midObject.assemblyLines()) {
             int lineOffset = line.address() - startAddress;
             if (lineOffset < 0 || lineOffset >= machineCode.length) {
-                SimulatorLogger.logError("Offset inválido: " + lineOffset, null);
+                DetailedLogger.logError("Fora dos limites de endereço: " + line.address(), null);
                 continue;
             }
 
@@ -47,12 +47,13 @@ public class AssemblerSecondPass {
                 System.arraycopy(code, 0, machineCode, lineOffset, code.length);
             }
 
-            if (shouldGenerateMRecord(line, symbolTable)) {
+            if (shouldGenerateMRecord(line)) {
                 int format = Parser.determineInstructionFormat(line.mnemonic());
                 int nibbleLen = (format == 3) ? 3 : 5;
                 int mOffset = lineOffset + 1; // O campo de endereço geralmente inicia após o opcode
                 String operand = line.operand();
-                String sym = operand.replaceAll("(?i),x", "");
+                // Aqui, a referência é o símbolo (com o sinal +, pois é PC-relativo)
+                String sym = operand.replaceAll("(?i),x", "").trim();
                 modificationList.add(new ModificationInfo(mOffset, nibbleLen, "+" + sym));
             }
         }
@@ -79,7 +80,7 @@ public class AssemblerSecondPass {
         try {
             writeTextualObjectFile(programName + ".obj", programName, startAddress, machineCode, modificationList, exportedList, imported);
         } catch (Exception e) {
-            SimulatorLogger.logError("Falha ao gravar arquivo .obj textual: " + e.getMessage(), null);
+            DetailedLogger.logError("Erro ao gravar arquivo .obj", e);
         }
         return metaFile;
     }
@@ -239,35 +240,84 @@ public class AssemblerSecondPass {
         return new byte[]{ (byte) opcode, (byte) ((r1 << 4) | (r2 & 0x0F)) };
     }
 
+    /**
+     * Gera o código objeto para uma instrução de formato 3.
+     * Se o operando for imediato (inicia com '#'), grava o valor literal diretamente.
+     * Se for uma referência a símbolo externo, grava 0 no campo de deslocamento e gera um M record.
+     * Caso contrário, calcula o deslocamento PC-relative.
+     */
     private byte[] generateInstructionCodeFormat3(String mnemonic, String operand, SymbolTable symbolTable, AssemblyLine line) {
-        boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
-        String operandString = indexed ? operand.replace(",X", "") : operand;
-        boolean isImmediate = operandString != null && operandString.startsWith("#");
-        if (isImmediate) {
-            operandString = operandString.substring(1);
+        // Se o operando for null, tratamos como string vazia para evitar NPE
+        String operandString = (operand == null) ? "" : operand.trim();
+        // Verifica se há indexação (caso a string não esteja vazia)
+        boolean indexed = !operandString.isEmpty() && operandString.toUpperCase().endsWith(",X");
+        if (indexed) {
+            // Remove a parte “,X” e elimina espaços em branco
+            operandString = operandString.substring(0, operandString.length() - 2).trim();
         }
+        // Determina se é imediata
+        boolean isImmediate = operandString.startsWith("#");
+
         int opcode = Mapper.mnemonicToOpcode(mnemonic);
-        int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
-        int disp = calculateDisplacement(line, operandAddress);
-        int nBit = isImmediate ? 0 : 1;
-        int iBit = 1;
+        int nBit, iBit;
+        int disp;
+
+        if (isImmediate) {
+            // Para imediato, remove o '#' e converte para número
+            operandString = operandString.substring(1).trim();
+            int literal = Parser.parseNumber(operandString);
+            if (literal < 0 || literal > 0xFFF) {
+                throw new IllegalArgumentException("Literal imediato fora de 12 bits: " + literal);
+            }
+            nBit = 0;
+            iBit = 1;
+            disp = literal;
+        } else {
+            // Instrução não imediata
+            nBit = 1;
+            iBit = 1;
+            // Se o operando estiver vazio ou for considerado externo, deixa o campo de deslocamento zerado (placeholder)
+            if (operandString.isEmpty() || isExternal(operandString, symbolTable)) {
+                disp = 0;
+            } else {
+                int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
+                disp = calculateDisplacement(line, operandAddress);
+            }
+        }
+
         byte firstByte = (byte) ((opcode & 0xFC) | (nBit << 1) | iBit);
         byte secondByte = 0;
         if (indexed) {
-            secondByte |= (byte) 0x80;
+            secondByte |= (byte) 0x80; // bit x = 1
         }
         if (!isImmediate) {
-            secondByte |= 0x20;
+            secondByte |= 0x20; // p = 1 para PC-relativo
         }
         secondByte |= (byte) ((disp >> 8) & 0x0F);
-        return new byte[]{ firstByte, secondByte, (byte) (disp & 0xFF) };
+        byte thirdByte = (byte) (disp & 0xFF);
+
+        return new byte[]{ firstByte, secondByte, thirdByte };
+    }
+
+
+    private boolean isExternal(String operandString, SymbolTable symbolTable) {
+        String sym = operandString.toUpperCase();
+        if (symbolTable.contains(sym)) {
+            Symbol s = symbolTable.getSymbolInfo(sym);
+            // Consideramos externo se o símbolo não for definido como local (ou seja, não foi definido no módulo)
+            return !s.isPublic;
+        }
+        return false;
     }
 
     private byte[] generateInstructionCodeFormat4(String mnemonic, String operand, SymbolTable symbolTable) {
         mnemonic = mnemonic.replace("+", "");
         int opcode = Mapper.mnemonicToOpcode(mnemonic);
-        boolean indexed = operand != null && operand.toUpperCase().endsWith(",X");
-        String operandString = indexed ? operand.replace(",X", "") : operand;
+        String operandString = (operand == null) ? "" : operand.trim();
+        boolean indexed = !operandString.isEmpty() && operandString.toUpperCase().endsWith(",X");
+        if (indexed) {
+            operandString = operandString.substring(0, operandString.length() - 2).trim();
+        }
         int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
         int firstByte = (opcode & 0xFC) | 0x03;
         int secondByte = (indexed ? 0x80 : 0) | 0x10 | ((operandAddress >> 16) & 0x0F);
@@ -289,40 +339,29 @@ public class AssemblerSecondPass {
         return disp & 0xFFF;
     }
 
-    private boolean shouldGenerateMRecord(AssemblyLine line, SymbolTable symtab) {
+    private boolean shouldGenerateMRecord(AssemblyLine line) {
         int format = Parser.determineInstructionFormat(line.mnemonic());
         if (format != 3 && format != 4) {
             return false;
         }
         String op = line.operand();
-        if (op == null || op.startsWith("#")) {
+        if (op == null || op.trim().isEmpty() || op.startsWith("#")) {
             return false;
         }
         String cleaned = op.replaceAll("(?i),x", "").trim();
-        if (Checker.isNumericLiteral(cleaned)) {
-            return false;
-        }
-        return symtab.contains(cleaned);
+        // Geramos o M record se o operando não for um literal numérico
+        return !Checker.isNumericLiteral(cleaned);
     }
 
-    /**
-     * Bloco auxiliar para agrupar dados dos T records.
-     */
+    // Registro auxiliar para informações de modificação (M record).
+    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {}
+
+    // Bloco auxiliar para agrupar dados dos T records.
     static class TBlock {
         int startAddr;
         List<Byte> data = new ArrayList<>();
-
         TBlock(int start) {
             this.startAddr = start;
         }
     }
-
-    /**
-     * Registro auxiliar para informações de modificação (M record).
-     *
-     * @param offset           Offset no array de bytes.
-     * @param lengthInHalfBytes Número de dígitos (nibbles) do campo de endereço.
-     * @param reference        Referência (ex.: "+FOO" ou "-FOO").
-     */
-    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {}
 }

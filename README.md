@@ -21,8 +21,8 @@ O simulador conta com uma interface gráfica intuitiva que permite ao usuário:
 Clone o repositório e acesse a pasta do projeto:
 
 ```bash
-git clone https://github.com/pinhorenan/Simulador_SIC_XE.git
-cd Simulador_SIC_XE
+git clone https://github.com/pinhorenan/Simulador_SIC-XE.git
+cd Simulador_SIC-XE
 ```
 
 ### 2. Compilando e Executando com Gradle Wrapper

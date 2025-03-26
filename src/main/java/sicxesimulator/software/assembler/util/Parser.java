@@ -7,7 +7,7 @@ public abstract class Parser {
 
     public static int parseAddress(String operand) {
         if (operand == null) {
-            throw new IllegalArgumentException("Operando ausente para endereço.");
+            throw new IllegalArgumentException("Operando ausente para endereco.");
         }
         operand = operand.trim().toLowerCase();
 
@@ -19,7 +19,7 @@ public abstract class Parser {
         if (operand.matches("\\d+")) {
             return Integer.parseInt(operand);
         }
-        throw new IllegalArgumentException("Formato inválido de endereço: " + operand
+        throw new IllegalArgumentException("Formato invalido de endereco: " + operand
                 + ". Use apenas decimal (ex: 100) ou 0x para hex (ex: 0x100).");
     }
 
@@ -37,7 +37,7 @@ public abstract class Parser {
         if (operand.matches("\\d+")) {
             return Integer.parseInt(operand);
         }
-        throw new IllegalArgumentException("Formato inválido de número: " + operand
+        throw new IllegalArgumentException("Formato invalido de numero: " + operand
                 + ". Use decimal (ex: 100) ou 0x para hex (ex: 0x1a).");
     }
 
@@ -52,7 +52,7 @@ public abstract class Parser {
             String chars = operand.substring(2, operand.length() - 1);
             return chars.getBytes();
         } else {
-            throw new IllegalArgumentException("Formato inválido para BYTE: " + operand);
+            throw new IllegalArgumentException("Formato invalido para BYTE: " + operand);
         }
     }
 

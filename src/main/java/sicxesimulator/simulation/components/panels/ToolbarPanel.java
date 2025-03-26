@@ -2,7 +2,6 @@ package sicxesimulator.simulation.components.panels;
 
 import javafx.scene.control.*;
 import sicxesimulator.simulation.controller.MenuBarController;
-import sicxesimulator.simulation.util.DialogUtil;
 
 public class ToolbarPanel {
     private final MenuBar menuBar;
@@ -27,13 +26,11 @@ public class ToolbarPanel {
 
         // Menu do Montador
         Menu assemblerMenu = new Menu("Montador");
-        MenuItem showSymbolTable = new MenuItem("Mostrar tabela de símbolos");
-        showSymbolTable.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Montagem", "Modo de Montagem", "Nada implementado por aqui ainda."));
 
         MenuItem showObjectCode = new MenuItem("Mostrar código objeto");
         showObjectCode.setOnAction(e -> menuBarController.handleShowObjectCode());
 
-        assemblerMenu.getItems().addAll(showSymbolTable, showObjectCode);
+        assemblerMenu.getItems().add(showObjectCode);
 
         // Menu do Ligador
         Menu linkerMenu = new Menu("Ligador");

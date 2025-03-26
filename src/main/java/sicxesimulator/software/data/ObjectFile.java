@@ -2,6 +2,7 @@ package sicxesimulator.software.data;
 
 import sicxesimulator.software.data.records.RelocationRecord;
 import sicxesimulator.utils.Constants;
+import sicxesimulator.utils.Logger;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -40,9 +41,9 @@ public class ObjectFile implements Serializable {
                       String fileName,
                       List<String> rawSourceCode,
                       Set<String> importedSymbols,
-                      List<RelocationRecord> relocationRecords) {
+                      @SuppressWarnings("ClassEscapesDefinedScope") List<RelocationRecord> relocationRecords) {
         if (machineCode == null || symbolTable == null || fileName == null) {
-            throw new IllegalArgumentException("Nenhum parâmetro pode ser nulo.");
+            throw new IllegalArgumentException("Nenhum parametro pode ser nulo.");
         }
         this.startAddress = startAddress;
         this.machineCode = machineCode;
@@ -71,7 +72,7 @@ public class ObjectFile implements Serializable {
     public String getObjectCodeAsString() {
         File objFile = new File(Constants.SAVE_DIR, this.getProgramName() + ".obj");
         if (!objFile.exists()) {
-            return "Arquivo .obj não encontrado.";
+            return "Arquivo .obj nao encontrado.";
         }
         try {
             return Files.readString(objFile.toPath());
@@ -101,6 +102,7 @@ public class ObjectFile implements Serializable {
         return rawSourceCode;
     }
 
+    @SuppressWarnings("ClassEscapesDefinedScope")
     public List<RelocationRecord> getRelocationRecords() {
         return relocationRecords;
     }
@@ -132,7 +134,7 @@ public class ObjectFile implements Serializable {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             return (ObjectFile) ois.readObject();
         } catch (ClassNotFoundException e) {
-            throw new IOException("Formato do arquivo inválido ou classe não encontrada ao ler ObjectFile.", e);
+            throw new IOException("Formato do arquivo invalido ou classe nao encontrada ao ler ObjectFile.", e);
         }
     }
 
@@ -143,19 +145,17 @@ public class ObjectFile implements Serializable {
      */
     public void saveToFile(File file) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
-            // TODO: SALVAR em resources/saved
             oos.writeObject(this);
         } catch (IOException e) {
-            // TODO: Implementar um logging mais robusto.
-            //noinspection CallToPrintStackTrace
-            e.printStackTrace();
+            Logger.logError("Erro ao salvar ObjectFile em: " + file.getAbsolutePath(), e);
         }
     }
+
 
     @Override
     public String toString() {
         return "Nome: " + fileName
-                + "\nEndereço de início = " + String.format("%04X", startAddress)
+                + "\nEndereco de inicio = " + String.format("%04X", startAddress)
                 + "\nTamanho = " + machineCode.length + " bytes";
     }
 

@@ -4,6 +4,6 @@ import sicxesimulator.simulation.model.data.records.RegisterEntry;
 
 public class RegisterTable extends BaseTableView<RegisterEntry> {
     public RegisterTable() {
-        super(RegisterEntry.class, "Registrador:registerName", "Valor:value");
+        super("Registrador:registerName", "Valor:value");
     }
 }

@@ -1,69 +1,104 @@
 package sicxesimulatorTest.hardware;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sicxesimulator.hardware.Memory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class MemoryTest {
+class MemoryTest {
 
-    @Test
-    public void testMemorySizeBelowMinimum() {
-        // Como a nova implementação não lança exceção para tamanhos abaixo de um mínimo,
-        // apenas criamos a memória e verificamos o tamanho.
-        Memory mem = new Memory(512);
-        assertEquals(512, mem.getSize());
+    private Memory memory;
+
+    @BeforeEach
+    void setUp() {
+        // Cria uma memória com 30 bytes para os testes
+        memory = new Memory(30);
     }
 
     @Test
-    public void testGetSizeInBytes() {
-        Memory mem = new Memory(1024);
-        assertEquals(1024, mem.getSize());
+    void testGetSizeAndAddressRange() {
+        // 30 bytes => 10 palavras (30/3)
+        assertEquals(30, memory.getSize());
+        assertEquals(10, memory.getAddressRange());
     }
 
     @Test
-    public void testWriteAndReadWord() {
-        Memory mem = new Memory(1024);
-        byte[] data = {0x01, 0x02, 0x03};
-        int wordAddress = 10;
-        mem.writeWord(wordAddress, data);
-        byte[] readData = mem.readWord(wordAddress);
-        assertArrayEquals(data, readData);
+    void testWriteAndReadByte() {
+        // Escreve um valor (por exemplo, 300 mod 256 = 44) no endereço 5
+        memory.writeByte(5, 300);
+        assertEquals(44, memory.readByte(5));
     }
 
     @Test
-    public void testWriteAndReadByte() {
-        Memory mem = new Memory(1024);
-        // Usando endereço em bytes diretamente. Por exemplo, escrevemos no byte de índice 5.
-        int byteAddr = 5;
-        int value = 0xAB;
-        mem.writeByte(byteAddr, value);
-        int readValue = mem.readByte(byteAddr);
-        assertEquals(value, readValue);
+    void testWriteByteOutOfBounds() {
+        // Endereço 30 está fora dos limites (0 a 29)
+        assertThrows(IndexOutOfBoundsException.class, () -> memory.writeByte(30, 100));
     }
 
     @Test
-    public void testMemoryMapOnlyNonZero() {
-        Memory mem = new Memory(1024);
-        // Escreve uma palavra com valor não zero em uma posição.
-        // Neste exemplo, escrevemos {0x00, 0x0F, 0x00} na palavra de índice 2.
-        byte[] data = {0x00, 0x0F, 0x00};
-        int wordAddress = 2;
-        mem.writeWord(wordAddress, data);
+    void testReadByteOutOfBounds() {
+        // Tentar ler no endereço 30 deve lançar exceção
+        assertThrows(IndexOutOfBoundsException.class, () -> memory.readByte(30));
+    }
 
-        byte[] map = mem.getMemoryMap();
+    @Test
+    void testWriteAndReadWord() {
+        // Cria uma palavra com 3 bytes e escreve na palavra de índice 2 (offset 6)
+        byte[] word = new byte[]{(byte)0xAA, (byte)0xBB, (byte)0xCC};
+        memory.writeWord(2, word);
+        byte[] readWord = memory.readWord(2);
+        assertArrayEquals(word, readWord);
+    }
 
-        // Calcula o endereço em bytes do segundo byte da palavra 2
-        int targetAddress = wordAddress * 3 + 1;
+    @Test
+    void testWriteWordInvalidLength() {
+        // Tenta escrever uma "palavra" com tamanho diferente de 3
+        byte[] invalidWord = new byte[]{0x01, 0x02};
+        assertThrows(IllegalArgumentException.class, () -> memory.writeWord(0, invalidWord));
+    }
 
-        // Verifica que o byte no targetAddress é 0x0F e todos os outros bytes são 0.
-        for (int i = 0; i < map.length; i++) {
-            int val = map[i] & 0xFF;
-            if (i == targetAddress) {
-                assertEquals(0x0F, val, "Valor no endereço " + i + " deve ser 0x0F");
-            } else {
-                assertEquals(0, val, "Valor no endereço " + i + " deve ser 0");
-            }
+    @Test
+    void testWriteWordOutOfBounds() {
+        // Com 30 bytes, índice máximo válido é 9 (9*3+3 = 30). Índice 10 deve lançar exceção.
+        byte[] word = new byte[]{0x01, 0x02, 0x03};
+        assertThrows(IndexOutOfBoundsException.class, () -> memory.writeWord(10, word));
+    }
+
+    @Test
+    void testClearMemory() {
+        // Preenche a memória com 0xFF e depois limpa
+        for (int i = 0; i < memory.getSize(); i++) {
+            memory.writeByte(i, 0xFF);
         }
+        memory.clearMemory();
+        byte[] map = memory.getMemoryMap();
+        for (int value : map) {
+            assertEquals(0, value);
+        }
+    }
+
+    @Test
+    void testGetMemoryMapReturnsCopy() {
+        // Escreve um valor e obtém o mapa da memória
+        memory.writeByte(0, 0x12);
+        byte[] map1 = memory.getMemoryMap();
+        // Modifica o array retornado
+        map1[0] = 0x34;
+        byte[] map2 = memory.getMemoryMap();
+        // O valor original deve permanecer inalterado
+        assertEquals(0x12, map2[0] & 0xFF);
+    }
+
+    @Test
+    void testToString() {
+        // Preenche a memória com valores crescentes
+        for (int i = 0; i < memory.getSize(); i++) {
+            memory.writeByte(i, i);
+        }
+        String memString = memory.toString();
+        // Verifica se a string contém a representação hexadecimal de alguns valores
+        assertTrue(memString.contains("00"));
+        assertTrue(memString.contains("0A")); // 10 em hexadecimal
     }
 }

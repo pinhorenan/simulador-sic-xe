@@ -11,6 +11,7 @@ import java.util.List;
  * Classe orquestradora do processo de montagem.
  * Executa a primeira e segunda passagens, gera os arquivos de saída e retorna o ObjectFile final.
  */
+@SuppressWarnings("ClassEscapesDefinedScope")
 public class Assembler {
     private final AssemblerFirstPass firstPass;
     private final AssemblerSecondPass secondPass;

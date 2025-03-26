@@ -6,14 +6,14 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 
 public abstract class BaseTableView<T> extends TableView<T> {
 
-    public BaseTableView(Class<T> type, String... columnMappings) {
+    public BaseTableView(String... columnMappings) {
         super();
-        this.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        createColumns(type, columnMappings);
+        this.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        createColumns(columnMappings);
         this.getStyleClass().add("base-table");
     }
 
-    private void createColumns(Class<T> type, String... columnMappings) {
+    private void createColumns(String... columnMappings) {
         for (String mapping : columnMappings) {
             String[] split = mapping.split(":");
             if (split.length == 2) {

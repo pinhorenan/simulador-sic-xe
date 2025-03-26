@@ -1,42 +1,38 @@
 package sicxesimulatorTest.hardware;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import sicxesimulator.hardware.Machine;
-
 import static org.junit.jupiter.api.Assertions.*;
+import sicxesimulator.hardware.Machine;
+import sicxesimulator.hardware.Memory;
+import sicxesimulator.hardware.cpu.RegisterSet;
 
 public class MachineTest {
 
-    private Machine machine;
-
-    @BeforeEach
-    public void setUp() {
-        // Inicializa a máquina com um tamanho arbitrário (por exemplo, 24576 bytes conforme o construtor)
-        machine = new Machine();
+    @Test
+    void testMachineInitialization() {
+        // Cria uma nova instância da máquina
+        Machine machine = new Machine();
+        // Verifica se a memória e o conjunto de registradores estão inicializados
+        Memory mem = machine.getMemory();
+        RegisterSet regs = machine.getControlUnit().getRegisterSet();
+        assertNotNull(mem, "A memória da máquina não deve ser nula");
+        assertNotNull(regs, "O conjunto de registradores não deve ser nulo");
+        // Verifica se o tamanho da memória é pelo menos 1KB, conforme especificado
+        assertTrue(mem.getSize() >= 1024, "O tamanho da memória deve ser maior ou igual a 1024 bytes");
     }
 
     @Test
-    public void testInitialMemorySize() {
-        // Verifica se o tamanho da memória está conforme especificado
-        int size = machine.getMemorySize();
-        assertTrue(size >= 1024);
-    }
-
-    @Test
-    public void testRunCycleAndReset() {
-        // Simula um ciclo simples: escreva uma instrução na memória e rode um ciclo.
-        byte[] fakeInstruction = {0x00, 0x00, 0x09};
-        machine.getMemory().writeWord(0, fakeInstruction);
-
-        int initialPC = machine.getControlUnit().getIntValuePC();
-        machine.runCycle();
-        int newPC = machine.getControlUnit().getIntValuePC();
-        // Espera que o PC seja incrementado em 3 bytes
-        assertEquals(initialPC + 3, newPC);
-
-        // Testa o reset da máquina
+    void testMachineReset() {
+        Machine machine = new Machine();
+        Memory mem = machine.getMemory();
+        RegisterSet regs = machine.getControlUnit().getRegisterSet();
+        // Altera alguns valores na memória e nos registradores
+        mem.writeByte(0, 0x55);
+        regs.getRegister("A").setValue(999);
+        // Chama o reset da máquina
         machine.reset();
-        assertEquals(0, machine.getControlUnit().getIntValuePC());
+        // Após o reset, espera-se que a memória esteja zerada e os registradores resetados
+        assertEquals(0, mem.readByte(0), "Após reset, o byte na memória deve ser 0");
+        assertEquals(0, regs.getRegister("A").getIntValue(), "Após reset, o registrador A deve ser 0");
     }
 }

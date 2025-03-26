@@ -18,7 +18,7 @@ public record IntermediateRepresentation(
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Endereço de início: ").append(Integer.toHexString(startAddress)).append("\n");
+        sb.append("Endereco de inicio: ").append(Integer.toHexString(startAddress)).append("\n");
         sb.append("Symbol Table: ").append(symbolTable).append("\n");
         sb.append("Assembly Lines:\n");
         for (AssemblyLine line : assemblyLines) {

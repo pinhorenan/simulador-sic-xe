@@ -28,7 +28,7 @@ public class View extends Application {
 
         // Verifica se o model foi injetado
         if (injectedModel == null) {
-            throw new IllegalStateException("O model não foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");
+            throw new IllegalStateException("O model nao foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");
         }
 
         //Criamos o layout principal primeiro

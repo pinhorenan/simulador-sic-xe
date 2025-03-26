@@ -7,6 +7,10 @@ module sicxesimulator {
     exports sicxesimulator.software.assembler;
     exports sicxesimulator.software.data;
     exports sicxesimulator.software.linker;
+
     requires java.logging;
+    requires javafx.base;
     requires javafx.controls;
+    requires javafx.graphics;
+    requires javafx.swing;
 }

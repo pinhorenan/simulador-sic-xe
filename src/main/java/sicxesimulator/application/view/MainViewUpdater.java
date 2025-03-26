@@ -62,6 +62,7 @@ public class MainViewUpdater {
         updateMemorySizeLabel();
         updateAddressFormatLabel();
         updateCycleDelayLabel();
+        updateLinkerModeLabel();
     }
 
     public void updateMemorySizeLabel() {
@@ -74,6 +75,10 @@ public class MainViewUpdater {
 
     public void updateCycleDelayLabel() {
         mainLayout.getLabelsPanel().updateSpeedLabel();
+    }
+
+    public void updateLinkerModeLabel() {
+        mainLayout.getLabelsPanel().updateLinkerModeLabel();
     }
 
 }

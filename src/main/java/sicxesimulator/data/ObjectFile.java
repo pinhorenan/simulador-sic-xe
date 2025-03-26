@@ -82,7 +82,7 @@ public class ObjectFile implements Serializable {
 
 
     public boolean isFullyRelocated() {
-        return !fullyRelocated;
+        return fullyRelocated;
     }
 
     public SymbolTable getSymbolTable() {

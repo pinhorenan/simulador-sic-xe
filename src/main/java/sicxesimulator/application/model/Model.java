@@ -36,6 +36,7 @@ public class Model {
     private int memorySize;
     private int simulationSpeed;
 
+
     public Model() {
         this.machine = new Machine();
         this.memorySize = machine.getMemorySize();
@@ -46,6 +47,21 @@ public class Model {
 
         // Verifica a pasta apontada pela constante "SAVE_DIR" e carrega os arquivos de objeto
         loadObjectFilesFromSaveDir();
+    }
+
+    public enum LinkerMode {
+        ABSOLUTO,
+        RELOCAVEL
+    }
+
+    private LinkerMode linkerMode = LinkerMode.RELOCAVEL;
+
+    public LinkerMode getLinkerMode() {
+        return linkerMode;
+    }
+
+    public void setLinkerMode(LinkerMode newMode) {
+        this.linkerMode = newMode;
     }
 
     public int getSimulationSpeed() {

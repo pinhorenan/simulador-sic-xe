@@ -97,6 +97,10 @@ public class InputPanel {
         expandedCodeArea.setText(text);
     }
 
+    public TextArea getExpandedCodeArea() {
+        return expandedCodeArea;
+    }
+
     public TextArea getInputArea() {
         return inputArea;
     }

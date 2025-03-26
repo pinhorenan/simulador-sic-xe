@@ -11,68 +11,36 @@ public class ToolbarPanel {
         this.menuBar = createMenuBar(menuBarController);
     }
 
+    public MenuBar getMenuBar() {
+        return menuBar;
+    }
+
     private MenuBar createMenuBar(MenuBarController menuBarController) {
         MenuBar menuBar = new MenuBar();
 
         // Menu "Arquivo"
         Menu fileMenu = new Menu("Arquivo");
-
-        // Esse é essencial.
         MenuItem openAsmFile = new MenuItem("Abrir Arquivo .ASM");
         openAsmFile.setOnAction(e -> menuBarController.handleImportASM());
 
-        // TODO: Revisar a necessidade desse menu
-        MenuItem exportExpandedCode = new MenuItem("Exportar .ASM Expandido");
-        exportExpandedCode.setOnAction(e -> {
-            try {
-                menuBarController.handleExportASM();
-            } catch (Exception ex) {
-                new Alert(Alert.AlertType.ERROR, "Erro ao exportar código ASM: " + ex.getMessage()).showAndWait();
-            }
-        });
+        fileMenu.getItems().addAll(openAsmFile);
 
-        // TODO: Revisar a necessidade desse menu
-        MenuItem exportObjFile = new MenuItem("Exportar Arquivo .OBJ");
-        exportObjFile.setOnAction(e -> menuBarController.handleExportOBJ());
-
-        MenuItem clearObjectDirectory = new MenuItem("Limpar arquivos salvos");
-        clearObjectDirectory.setOnAction(e -> menuBarController.handleClearObjectDirectory());
-
-        fileMenu.getItems().addAll(openAsmFile, exportExpandedCode, exportObjFile, clearObjectDirectory);
-
-        // TODO: Menu do Processador de Macros
-        Menu macroProcessorMenu = new Menu("Processador de Macros");
-        MenuItem setMacroProcessorMode = new MenuItem("Modo de Processamento");
-        setMacroProcessorMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Processamento", "Modo de Processamento", "Nada implementado por aqui ainda."));
-
-        macroProcessorMenu.getItems().addAll(setMacroProcessorMode);
-
-        // TODO: Menu do Montador
+        // Menu do Montador
         Menu assemblerMenu = new Menu("Montador");
-        MenuItem setAssemblerMode = new MenuItem("Modo de Montagem");
-        setAssemblerMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Montagem", "Modo de Montagem", "Nada implementado por aqui ainda."));
-
         MenuItem showSymbolTable = new MenuItem("Mostrar tabela de símbolos");
         showSymbolTable.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Montagem", "Modo de Montagem", "Nada implementado por aqui ainda."));
 
         MenuItem showObjectCode = new MenuItem("Mostrar código objeto");
         showObjectCode.setOnAction(e -> menuBarController.handleShowObjectCode());
 
-        assemblerMenu.getItems().addAll(setAssemblerMode, showSymbolTable, showObjectCode);
+        assemblerMenu.getItems().addAll(showSymbolTable, showObjectCode);
 
-        // TODO: Menu do Ligador
+        // Menu do Ligador
         Menu linkerMenu = new Menu("Ligador");
-        MenuItem setLinkerMode = new MenuItem("Modo de Ligação");
+        MenuItem setLinkerMode = new MenuItem("Selecionar Modo");
         setLinkerMode.setOnAction(e -> menuBarController.handleSetLinkerModeAction());
 
         linkerMenu.getItems().addAll(setLinkerMode);
-
-        // TODO: Menu do Carregador
-        Menu loaderMenu = new Menu("Carregador");
-        MenuItem setLoaderMode = new MenuItem("Modo de Carregamento");
-        setLoaderMode.setOnAction(e -> DialogUtil.showAlert(Alert.AlertType.INFORMATION, "Modo de Carregamento", "Modo de Carregamento", "Nada implementado por aqui ainda."));
-
-        loaderMenu.getItems().addAll(setLoaderMode);
 
         // Menu "Memória"
         Menu memoryMenu = new Menu("Memória");
@@ -102,23 +70,16 @@ public class ToolbarPanel {
         MenuItem decView = new MenuItem("Decimal");
         decView.setOnAction(e -> menuBarController.handleSetDecimalViewAction());
 
-        MenuItem binView = new MenuItem("Binário");
-        binView.setOnAction(e -> menuBarController.handleSetBinaryViewAction());
-
-        viewMenu.getItems().addAll(hexView, octView, decView, binView);
+        viewMenu.getItems().addAll(hexView, octView, decView);
 
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
-        MenuItem helpItem = new MenuItem("Ajuda e Tutorial");
+        MenuItem helpItem = new MenuItem("Abrir janela de ajuda");
         helpItem.setOnAction(e -> menuBarController.handleHelpAction());
 
         helpMenu.getItems().add(helpItem);
 
-        menuBar.getMenus().addAll(fileMenu, macroProcessorMenu, assemblerMenu, linkerMenu, loaderMenu,  memoryMenu, executionMenu, viewMenu, helpMenu);
-        return menuBar;
-    }
-
-    public MenuBar getMenuBar() {
+        menuBar.getMenus().addAll(fileMenu, assemblerMenu, linkerMenu, memoryMenu, executionMenu, viewMenu, helpMenu);
         return menuBar;
     }
 }

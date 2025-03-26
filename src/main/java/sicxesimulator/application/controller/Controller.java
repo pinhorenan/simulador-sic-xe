@@ -2,6 +2,12 @@ package sicxesimulator.application.controller;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.application.view.MainLayout;
@@ -24,18 +30,12 @@ public class Controller {
     private final MainLayout mainLayout;
     private final MainViewUpdater updater;
 
-    // Modo de ligação atual (recebido do MenuBarController)
-    private MenuBarController.LinkerMode currentLinkerMode = MenuBarController.LinkerMode.RELOCAVEL;
-
-
     public Controller(Model model, MainLayout mainLayout) {
         this.model = model;
         this.mainLayout = mainLayout;
         this.updater = new MainViewUpdater(this, mainLayout);
         this.model.addListener(this::initializeFilesView);
     }
-
-    /// ===== Inicialização da Tabela de Arquivos Montados ===== ///
 
     public void initializeFilesView() {
         List<ObjectFile> files = loadSavedObjectFiles();
@@ -70,8 +70,6 @@ public class Controller {
         return objectFiles;
     }
 
-    /// ===== Controles de Montagem ===== ///
-
     public void handleAssembleAction() {
         String rawSourceText = mainLayout.getInputPanel().getInputText();
         List<String> rawSourceLines = Arrays.asList(rawSourceText.split("\\r?\\n"));
@@ -92,35 +90,50 @@ public class Controller {
         }
     }
 
-    /// ===== Controles da Tabela e Arquivos Montados ===== ///
-
     public void handleLinkSelectedFilesAction() {
-        List<ObjectFile> selectedFiles = mainLayout.getObjectFilePanel().getObjectFileTable().getSelectedFiles();
+        List<ObjectFile> selectedFiles = mainLayout.getObjectFilePanel()
+                .getObjectFileTable()
+                .getSelectedFiles();
 
-        if (selectedFiles.size() <= 2) {
-            DialogUtil.showError("Selecione pelo menos 2 módulos para ligar.");
+        if (selectedFiles.size() < 2) {
+            DialogUtil.showError("Selecione ao menos 2 módulos para ligar.");
             return;
-        } // Essa checagem é "inútil", já que o botão é desabilitado caso não tenha pelo menos 2 módulos selecionados
-        // Vou deixar aqui só por precaução/registro
+        }
 
         int loadAddr = 0;
-        boolean fullReloc;
+        boolean fullReloc = false;
 
-        if (currentLinkerMode == MenuBarController.LinkerMode.ABSOLUTO) {
+        // Se o modo de ligador for ABSOLUTO:
+        if (model.getLinkerMode() == Model.LinkerMode.ABSOLUTO) {
             try {
-                loadAddr = DialogUtil.askForInteger("Endereço de Carga", "Linkagem Absoluta", "Informe o endereço.");
-                fullReloc = DialogUtil.askForBoolean("Relocação Final", "Aplicar relocação agora?");
+                // Sempre pergunta o endereço base
+                loadAddr = DialogUtil.askForInteger(
+                        "Endereço de Carga",
+                        "Linkagem Absoluta",
+                        "Informe o endereço."
+                );
+                // Em absoluto, normalmente sempre é realocação final:
+                fullReloc = true;
+
+                // Se você REALMENTE quiser dar a opção de não realocar,
+                // poderia perguntar aqui, mas isso raramente faz sentido p/ modo absoluto.
+                // Exemplo (opcional):
+                //fullReloc = DialogUtil.askForBoolean("Relocação Final", "Aplicar reloc agora?");
+
             } catch (IOException e) {
                 DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
                 return;
             }
         } else {
-            // Modo RELOCAVEL -> por padrão loadAddress = 0
-            fullReloc = DialogUtil.askForBoolean("Relocação Final", "Aplicar relocação agora?");
+            // Modo RELOCÁVEL => Endereço base = 0
+            loadAddr = 0;
+
+            // Pergunta se o usuário quer realocar agora ou deixar para o Loader
+            fullReloc = DialogUtil.askForBoolean("Relocação Final",
+                    "Deseja que o Linker aplique a realocação agora?");
         }
 
-
-        // Invoca a lógica de linkagem, passando os parâmetros coletados
+        // Invoca a lógica de linkagem do Model
         ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddr, fullReloc);
 
         DialogUtil.showInfoDialog("Arquivos Linkados",
@@ -129,7 +142,6 @@ public class Controller {
 
         initializeFilesView();
     }
-
 
     public void handleDeleteSelectedFilesAction() {
         var objectFileTable = mainLayout.getObjectFilePanel().getObjectFileTable();
@@ -148,8 +160,6 @@ public class Controller {
             initializeFilesView();  // Isso garante que a tabela será atualizada corretamente.
         }
     }
-
-    /// ===== Controles da Máquina ===== ///
 
     public void handleRunAction() {
         new Thread(() -> {
@@ -174,7 +184,6 @@ public class Controller {
         }).start();
     }
 
-
     public void handleNextAction() {
         if (model.codeLoadedProperty().get() && !model.simulationFinishedProperty().get()) {
             try {
@@ -195,8 +204,6 @@ public class Controller {
             DialogUtil.showError("Nenhum programa montado ou simulação já concluída!");
         }
     }
-
-
 
     public void handlePauseAction() {
         if (model.codeLoadedProperty().get()) {
@@ -249,9 +256,6 @@ public class Controller {
         mainLayout.getExecutionPanel().getMachineOutput().appendText("Programa carregado com sucesso!\n" + selectedFile + "\n");
     }
 
-
-    /// ===== Métodos Getters ===== ///
-
     public Stage getStage() {
         return mainLayout.getRoot().getScene().getWindow() instanceof Stage ? (Stage) mainLayout.getRoot().getScene().getWindow() : null;
     }
@@ -292,8 +296,6 @@ public class Controller {
     public BooleanProperty getSimulationFinishedProperty() {
         return model.simulationFinishedProperty();
     }
-
-    /// ===== Controles de Configuração ===== ///
 
     public void loadInputField(String content) {
         mainLayout.getInputPanel().setInputText(content);
@@ -351,15 +353,14 @@ public class Controller {
         }
     }
 
-    public void setLinkerMode(MenuBarController.LinkerMode mode) {
-        this.currentLinkerMode = mode;
-        // Se quiser, você pode mostrar no console ou atualizar algo na interface
-        System.out.println("Controller recebeu Modo de Ligação: " + mode);
+    public void setLinkerMode(Model.LinkerMode mode) {
+        model.setLinkerMode(mode);
+        updateAllLabels();
     }
 
-    public void showHelpWindow() {
-        DialogUtil.showInfo("Aqui está a ajuda do simulador SIC/XE. (nenhuma, por enquanto, eu acho.)");
-    }
+
+
+
 
     public void updateAllTables() {
         updater.updateAllTables();
@@ -375,5 +376,94 @@ public class Controller {
 
     public MainViewUpdater getUpdater() {
         return updater;
+    }
+
+    private VBox createSection(String title, String body) {
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #4d4d4d;");
+
+        Label bodyLabel = new Label(body.strip());
+        bodyLabel.setWrapText(true);
+        bodyLabel.setStyle("-fx-font-size: 13px; -fx-text-fill: #555555;");
+
+        VBox section = new VBox(5, titleLabel, bodyLabel);
+        section.setStyle("-fx-background-color: #fafafa; -fx-padding: 10px; -fx-border-radius: 5px; -fx-effect: dropshadow(gaussian, #cccccc, 10, 0, 0, 2);");
+        return section;
+    }
+
+    public void showHelpWindow() {
+        Stage helpStage = new Stage();
+        helpStage.setTitle("Ajuda do Simulador SIC/XE");
+        helpStage.initModality(Modality.APPLICATION_MODAL);
+
+        // Título
+        Label titleLabel = new Label("Ajuda do Simulador SIC/XE");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #333;");
+
+        VBox content = new VBox(15);
+        content.setPadding(new Insets(20));
+        content.setStyle("-fx-background-color: #f4f4f4; -fx-border-radius: 10px;");  // Fundo suave
+
+        content.getChildren().add(titleLabel);
+
+        content.getChildren().addAll(
+                createSection("1. Memória", """
+            A memória do simulador tem tamanho padrão de 24576 bytes. O valor pode ser alterado a partir do menu "Memória", no topo da janela.
+            A memória é endereçada à palavras de 3 bytes (24 bits).
+            O endereço de memória é exibido em formato hexadecimal.
+            O conteúdo da memória pode ser exibido em diferentes formatos (hexadecimal, decimal, octal).
+        """),
+
+                createSection("2. Registradores", """
+            O SIC/XE possui os seguintes registradores:
+            - A: Acumulador
+            - X: Registrador de índice
+            - L: Registrador de ligação
+            - B: Registrador base
+            - S, T: Uso geral
+            - F: Acumulador de ponto flutuante (48 bits)
+            - PC: Contador de programa
+            - SW: Palavra de status
+        """),
+
+                createSection("3. Modos de Endereçamento", """
+            - Direto: usa endereço informado diretamente.
+            - Indireto: o endereço é recuperado indiretamente da memória.
+            - Imediato: o valor do operando está embutido na instrução.
+        """),
+
+                createSection("4. Instruções", """
+            Instruções comuns:
+            ADD, SUB, LDA, STA, COMP, J, JSUB, RSUB, entre outras.
+            Consulte a especificação para ver a lista completa.
+        """),
+
+                createSection("5. Como usar o simulador", """
+            - Começe importando um código .ASM a partir do menu "Arquivo", no canto superior esquerdo.
+            - Você também pode escrever um código diretamente na caixa de entrada.
+            - Clique em "Montar" para gerar o código objeto. O processo de montagem ativa a expansão dos macros, que acontece antes da montagem.
+            - O código .ASM expandido pode ser visto na caixa de texto abaixo da caixa de entrada.
+            - Para carregar o código objeto na memória, selecione um arquivo na tabela de arquivos montados e clique em "Carregar".
+            - Use os botões de execução para rodar instruções.
+        """),
+
+                createSection("6. Ligação de Módulos", """
+            - Para ligar módulos, selecione pelo menos 2 arquivos na tabela de arquivos montados e clique em "Linkar".
+            - Carregue o programa resultante na memória para executá-lo.
+            - O modo de ligação (absoluto ou relocável) pode ser escolhido no menu "Ligador".
+            - Use os botões de execução para rodar instruções.
+        """)
+        );
+
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent;");
+        scrollPane.setPrefSize(600, 500);
+
+        Scene scene = new Scene(scrollPane);
+        scene.getStylesheets().add("styles.css");  // Adiciona a folha de estilos externa (opcional)
+
+        helpStage.setScene(scene);
+        helpStage.show();
     }
 }

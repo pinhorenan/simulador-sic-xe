@@ -2,14 +2,13 @@ package sicxesimulator.application.controller;
 
 import javafx.scene.control.ChoiceDialog;
 import javafx.stage.FileChooser;
+import sicxesimulator.application.model.Model;
 import sicxesimulator.data.ObjectFile;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.utils.FileUtils;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 public class MenuBarController {
@@ -24,24 +23,10 @@ public class MenuBarController {
         }
         //noinspection SequencedCollectionMethodCanBeUsed
         ObjectFile obj = sel.get(0).getObjectFile();
-        // TODO: Não é pra mostrar no OutputPanel, mas por enquanto vai ser.
+
         String textual = obj.getObjectCodeAsString();  // Implementar no ObjectFile
-        controller.getMainLayout().getExecutionPanel().getMachineOutput().appendText("=== OBJ TEXT ===\n" + textual + "\n");
+        controller.getMainLayout().getInputPanel().getExpandedCodeArea().setText("=== OBJ TEXT ===\n" + textual + "\n");
     }
-    
-    // TODO: Mover isso para model
-    public enum LinkerMode {
-        ABSOLUTO, RELOCAVEL
-    }
-
-    // TODO: Mover isso para model
-    private LinkerMode currentLinkerMode = LinkerMode.RELOCAVEL;
-
-    // TODO: Mover isso para model
-    // Endereço base (apenas se estivermos no modo Absoluto).
-    @SuppressWarnings("unused")
-    private final int baseAddress = 0;
-
 
     public MenuBarController(Controller controller) {
         this.controller = controller;
@@ -68,70 +53,6 @@ public class MenuBarController {
         }
     }
 
-
-    // Ação do menuItem "Exportar código expandido"
-    public void handleExportASM() {
-        try {
-            List<String> expandedCode = controller.getExpandedCode();
-            if (expandedCode.isEmpty()) {
-                DialogUtil.showError("Nenhum código para exportar.");
-                return;
-            }
-
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly Expandido", "*.asm"));
-            fileChooser.setInitialFileName(controller.getSuggestedFileName(".asm"));
-
-            File file = fileChooser.showSaveDialog(controller.getStage());
-
-            if (file != null) {
-                FileUtils.writeFile(file.getAbsolutePath(), String.join("\n", expandedCode));
-                DialogUtil.showInfo("Arquivo .ASM Expandido exportado com sucesso!");
-            }
-        } catch (IOException e) {
-            DialogUtil.showError("Erro ao exportar código ASM: " + e.getMessage());
-        }
-    }
-
-
-    // Ação do menuItem "Exportar arquivo .obj"
-    public void handleExportOBJ() {
-        try {
-            byte[] objFileContent = controller.getObjectFileBytes();
-            if (objFileContent == null) {
-                DialogUtil.showError("Nenhum código montado disponível.");
-                return;
-            }
-
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos .OBJ", "*.obj"));
-            fileChooser.setInitialFileName(controller.getSuggestedFileName(".obj"));
-
-            File file = fileChooser.showSaveDialog(controller.getStage());
-
-            if (file != null) {
-                FileUtils.writeFile(file.getAbsolutePath(), Arrays.toString(objFileContent));
-                DialogUtil.showInfo("Arquivo .OBJ exportado com sucesso!");
-            }
-        } catch (IOException e) {
-            DialogUtil.showError("Erro ao exportar arquivo OBJ: " + e.getMessage());
-        }
-    }
-
-    // Ação do menuItem "Limpar arquivos salvos"
-    public void handleClearObjectDirectory() {
-        File savedDir = new File(Constants.SAVE_DIR);
-        if (!savedDir.exists()) return;
-        File[] files = savedDir.listFiles((d,name)-> (name.endsWith(".obj") || name.endsWith(".meta")));
-        assert files != null;
-        for (File f : files) {
-            //noinspection ResultOfMethodCallIgnored
-            f.delete();
-        }
-        DialogUtil.showInfo("Diretório de arquivos salvos limpo.");
-        controller.initializeFilesView();
-    }
-
     /// ===================== MENU MEMÓRIA ===================== ///
 
     // Ação do menuItem "Limpar memória"
@@ -152,27 +73,25 @@ public class MenuBarController {
 
     /// ===================== MENU LIGADOR ===================== ///
 
-    // Ação do MenuItem "Modo de Ligação"
     public void handleSetLinkerModeAction() {
-        // Diálogo para o usuário escolher ABSOLUTO ou RELOCAVEL
-        ChoiceDialog<LinkerMode> dialog = new ChoiceDialog<>(currentLinkerMode, LinkerMode.values());
+        // Pega o modo atual do Model
+        Model.LinkerMode currentMode = controller.getModel().getLinkerMode();
+
+        // Abre um ChoiceDialog para trocar
+        ChoiceDialog<Model.LinkerMode> dialog = new ChoiceDialog<>(currentMode, Model.LinkerMode.values());
         dialog.setTitle("Modo de Ligação");
         dialog.setHeaderText("Selecione o modo de ligação:");
         dialog.setContentText("Modo:");
 
-        Optional<LinkerMode> result = dialog.showAndWait();
-        if (result.isPresent()) {
-            currentLinkerMode = result.get();
-            System.out.println("Modo de Ligação definido para: " + currentLinkerMode);
 
-            // Informa ao Controller principal qual modo foi escolhido
-            controller.setLinkerMode(currentLinkerMode);
+        Optional<Model.LinkerMode> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            Model.LinkerMode newMode = result.get();
+            controller.setLinkerMode(newMode);
         }
     }
 
-    /// ===================== MENU EXECUÇÃO ===================== ///
 
-    // Ação do menuItem "Mudar velocidade de execução"
     public void handleChangeRunningSpeedAction(int newSimulationSpeed) {
         controller.setSimulationSpeed(newSimulationSpeed);
     }
@@ -189,10 +108,6 @@ public class MenuBarController {
 
     public void handleSetDecimalViewAction() {
         controller.setViewFormat("DEC");
-    }
-
-    public void handleSetBinaryViewAction() {
-        controller.setViewFormat("BIN");
     }
 
     /// ===================== MENU AJUDA ===================== ///

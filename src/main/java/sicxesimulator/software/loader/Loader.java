@@ -2,22 +2,23 @@ package sicxesimulator.software.loader;
 
 import sicxesimulator.hardware.Memory;
 import sicxesimulator.data.ObjectFile;
-import sicxesimulator.data.records.RelocationRecord;
 import sicxesimulator.data.Symbol;
 import sicxesimulator.data.SymbolTable;
+import sicxesimulator.data.records.RelocationRecord;
 
 /**
  * Carregador de módulos objeto na memória.
- * Agora, se o objeto NÃO estiver fullyRelocated,
- * este Loader aplica as relocações.
+ * Se o objeto não estiver fullyRelocated,
+ * este Loader aplica as relocações com base nos RelocationRecords.
  */
 public class Loader {
 
     /**
      * Carrega um módulo objeto na memória, aplicando relocação se necessário.
-     * @param finalObject Módulo objeto a ser carregado.
-     * @param memory      Memória onde o módulo será carregado.
-     * @param baseAddress Endereço base onde o módulo será carregado.
+     *
+     * @param finalObject Módulo objeto a ser carregado
+     * @param memory      Memória onde o módulo será carregado
+     * @param baseAddress Endereço base onde o módulo será efetivamente colocado
      */
     public void loadObjectFile(
             ObjectFile finalObject,
@@ -28,33 +29,32 @@ public class Loader {
         int codeLength = code.length;
 
         // Verifica se cabe na memória
-        if (!fitsInMemory(memory, baseAddress, codeLength)) {
+        if (baseAddress + codeLength > memory.getSize()) {
             throw new IllegalArgumentException(
-                    "Não cabe na memória (base + code.length > memorySize)."
+                    "Programa não cabe na memória (base + code.length > memória)."
             );
         }
 
-        // Copia o código para memória
+        // Copia o array de bytes do objeto para a memória
         copyCodeToMemory(memory, baseAddress, code);
 
-        // Se o objeto não está "fullyRelocated", então precisamos aplicar
-        // as relocations agora
+        // Se não estiver 100% realocado, aplicamos as relocações
         if (!finalObject.isFullyRelocated()) {
-            if (finalObject.getRelocationRecords() != null) {
-                applyRelocations(memory, baseAddress, finalObject.getRelocationRecords());
+            if (finalObject.getRelocationRecords() != null && !finalObject.getRelocationRecords().isEmpty()) {
+                applyRelocations(memory, baseAddress, finalObject);
             }
-            // E atualiza a SymbolTable, pois os símbolos agora ficam no baseAddress
+
+            // Ajusta endereços na SymbolTable, para refletir o deslocamento baseAddress
             updateSymbolTableAddresses(finalObject.getSymbolTable(), baseAddress);
 
-            // Marcamos que agora está realocado
+            // Marca que agora está realocado
             finalObject.setFullyRelocated(true);
         }
     }
 
-    private boolean fitsInMemory(Memory memory, int baseAddress, int codeLength) {
-        return baseAddress + codeLength <= memory.getSize();
-    }
-
+    /**
+     * Copia o código para a memória a partir de baseAddress.
+     */
     private void copyCodeToMemory(Memory memory, int baseAddress, byte[] code) {
         for (int i = 0; i < code.length; i++) {
             memory.writeByte(baseAddress + i, code[i] & 0xFF);
@@ -62,20 +62,18 @@ public class Loader {
     }
 
     /**
-     * Aplica todos os relocation records no código já carregado na memória.
+     * Aplica todos os registros de relocação do ObjectFile na memória.
      */
-    private void applyRelocations(
-            Memory memory,
-            int baseAddress,
-            Iterable<RelocationRecord> relocations
-    ) {
-        for (RelocationRecord rec : relocations) {
-            applyRelocationInMemory(memory, baseAddress, rec);
+    private void applyRelocations(Memory memory, int baseAddress, ObjectFile finalObject) {
+        SymbolTable symTab = finalObject.getSymbolTable();
+        for (RelocationRecord rec : finalObject.getRelocationRecords()) {
+            applyRelocationInMemory(memory, baseAddress, rec, symTab);
         }
     }
 
     /**
-     * Ajusta a tabela de símbolos para refletir o baseAddress atual.
+     * Ajusta a tabela de símbolos, somando baseAddress a cada símbolo,
+     * pois agora o programa está carregado efetivamente em baseAddress.
      */
     private void updateSymbolTableAddresses(SymbolTable symbolTable, int baseAddress) {
         for (var entry : symbolTable.getAllSymbols().entrySet()) {
@@ -85,36 +83,46 @@ public class Loader {
     }
 
     /**
-     * Aplica uma relocação no código objeto carregado.
-     * Observação: aqui, assumimos que se pcRelative() == true, subtrai-se 3 (Formato 3).
-     * Se houver Formato 4, precisaria ajustar para subtrair 4 nesses casos.
+     * Aplica uma relocação individual: soma o endereço do símbolo ao valor
+     * lido, e subtrai 3 se for PC-relative (formato 3).
+     * Se fosse Formato 4, poderíamos subtrair 4, etc.
      */
     private void applyRelocationInMemory(
             Memory memory,
             int baseAddress,
-            RelocationRecord rec
+            RelocationRecord rec,
+            SymbolTable symTab
     ) {
+        // offset é a posição (relativa ao startAddress do .obj),
+        // mas já "fundido" na concatenação do Linker
         int offset = rec.offset();
         int length = rec.length();
 
-        // Lê o valor atual
+        // Lê valor atual em 'offset' (na memória final)
         int val = 0;
         for (int i = 0; i < length; i++) {
-            val = (val << 8) | (memory.readByte(offset + i) & 0xFF);
+            val = (val << 8) | (memory.readByte(baseAddress + offset + i) & 0xFF);
         }
 
-        // Soma o baseAddress
-        int newVal = val + baseAddress;
+        // Obter o endereço do símbolo
+        Integer symAddr = symTab.getSymbolAddress(rec.symbol());
+        if (symAddr == null) {
+            throw new RuntimeException("Símbolo não encontrado no Loader: " + rec.symbol());
+        }
 
-        // Se for PC-relativo, subtrai 3. (Ajuste para Formato 3)
+        // Soma o endereço do símbolo ao valor
+        int newVal = val + symAddr;
+
+        // Se pcRelative => subtrai 3
         if (rec.pcRelative()) {
             newVal -= 3;
         }
 
-        // Grava de volta
+        // Grava o resultado de volta na memória
+        int tmp = newVal;
         for (int i = length - 1; i >= 0; i--) {
-            memory.writeByte(offset + i, (newVal & 0xFF));
-            newVal >>>= 8;
+            memory.writeByte(baseAddress + offset + i, tmp & 0xFF);
+            tmp >>>= 8;
         }
     }
 }

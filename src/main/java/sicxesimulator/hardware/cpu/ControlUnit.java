@@ -137,10 +137,6 @@ public class ControlUnit {
         int effectiveAddress = currentInstruction.effectiveAddress();
         String log;
 
-        // Log antes da execução
-//        logger.info(String.format("Executando instrucao: Opcode %s, Operandos %s, EffectiveAddress %06X, Indexed: %s",
-//                Integer.toHexString(opcode), java.util.Arrays.toString(operands), effectiveAddress, indexed));
-
         switch (format) {
             case 2:
                 // Instruções de formato 2 (apenas registradores)

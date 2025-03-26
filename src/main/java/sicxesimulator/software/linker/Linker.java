@@ -14,20 +14,26 @@ import java.util.*;
 import static sicxesimulator.data.ObjectFile.ObjectFileOrigin.LINKED_MODULES;
 
 /**
- * Linker que suporta:
- *   - finalRelocation=true  => Aplica a realocação no próprio array de bytes
- *   - finalRelocation=false => Apenas concatena e ajusta offsets dos relocations, deixando para o Loader
+ * Linker que suporta dois modos:
+ *   - finalRelocation=true  => Aplica a realocação final (corrige o array de bytes).
+ *                             O arquivo resultante fica totalmente resolvido.
+ *   - finalRelocation=false => Gera um arquivo parcial, deixando relocations pendentes
+ *                              para serem aplicados pelo Loader em tempo de carga.
  */
 public class Linker {
 
     /**
      * Linka uma lista de módulos em um único ObjectFile final.
      *
-     * @param modules         módulos a serem linkados
-     * @param finalRelocation se true, o arquivo final já terá os endereços corrigidos (sem relocation records)
-     * @param loadAddress     endereço de carga base (se finalRelocation=true)
-     * @param outputFileName  nome do arquivo final (sem extensão)
-     * @return ObjectFile resultante
+     * @param modules         Lista de módulos a serem linkados.
+     * @param finalRelocation true se o Linker já deve realizar toda a realocação
+     *                        diretamente no array de bytes. false para gerar relocations
+     *                        que serão aplicados depois pelo Loader.
+     * @param loadAddress     Endereço base de carga a ser usado se finalRelocation=true.
+     *                        Se finalRelocation=false, este valor não afeta a realocação final
+     *                        mas pode ser usado na “costura” interna.
+     * @param outputFileName  Nome do arquivo .obj resultante (sem extensão).
+     * @return Objeto final linkado (ObjectFile).
      */
     public ObjectFile linkModules(
             List<ObjectFile> modules,
@@ -39,35 +45,42 @@ public class Linker {
             throw new IllegalArgumentException("Nenhum módulo para linkar.");
         }
 
-        // 1) Atribuir "base" para cada módulo e criar tabela global de símbolos
+        // Passo 1: Atribuir base para cada módulo e montar tabela global de símbolos
         LinkerContext context = assignBasesAndGlobalSymbols(modules, finalRelocation, loadAddress);
 
-        // 2) Verificar símbolos importados
+        // Passo 2: Validar símbolos importados (ver se todos existem em "globalSymbols")
         verifyImportedSymbols(modules, context.globalSymbols);
 
-        // 3) Concatena e (se finalRelocation) aplica a relocação já no array de bytes
+        // Passo 3: Concatena os bytes de cada módulo. Se finalRelocation=true,
+        // já aplica a realocação nos bytes; senão, apenas gera relocationRecords novos.
         FinalCodeData finalData = buildFinalCodeAndSymbols(modules, context, finalRelocation);
 
-        // 4) Determina endereço inicial e combina o código-fonte
-        int finalStart = finalRelocation ? loadAddress : modules.getFirst().getStartAddress();
+        // Passo 4: Determina endereço inicial no objeto final
+        // Se já realocou tudo, começa no loadAddress. Caso contrário,
+        // poderíamos reaproveitar o do primeiro módulo. Aqui fica a critério do design.
+        int finalStart = finalRelocation
+                ? loadAddress
+                : modules.get(0).getStartAddress();
+
+        // Combina os fontes de todos módulos (opcional, serve para fins de debug)
         List<String> combinedSource = combineModuleSources(modules);
 
-        // 5) Monta o objeto final
+        // Passo 5: Cria o ObjectFile resultante
+        // - Se finalRelocation=true => sem relocationRecords;
+        //   do contrário, com a lista gerada (finalData.relocationRecords).
         ObjectFile finalObj = new ObjectFile(
                 finalStart,
                 finalData.code,
                 finalData.symbolTable,
                 outputFileName,
                 combinedSource,
-                // sem importedSymbols: Collections.emptySet()
-                Collections.emptySet(),
-                // Se foi realocado de forma "final", não há relocations no objeto final
+                Collections.emptySet(), // ImportedSymbols não são mais relevantes no objeto final
                 finalRelocation ? Collections.emptyList() : finalData.relocationRecords
         );
         finalObj.setOrigin(LINKED_MODULES);
         finalObj.setFullyRelocated(finalRelocation);
 
-        // 6) Gera arquivos de saída
+        // Passo 6: sgerar saída textual H-D-T-M-E e gravar no disco
         String objFileName = outputFileName + ".obj";
         try {
             writeLinkedObjectFile(finalObj, objFileName, finalRelocation);
@@ -80,10 +93,10 @@ public class Linker {
         return finalObj;
     }
 
-    // ============================================================================
-    // Etapa 1: Constrói a tabela de símbolos globais e mapeia cada módulo -> base
-    // ============================================================================
-
+    /**
+     * Atribui endereços-base para cada módulo, constrói a tabela global de símbolos
+     * e calcula tamanho total do programa.
+     */
     private LinkerContext assignBasesAndGlobalSymbols(
             List<ObjectFile> modules,
             boolean finalRelocation,
@@ -97,22 +110,28 @@ public class Linker {
 
         for (ObjectFile mod : modules) {
             baseMap.put(mod, currentBase);
-            // Copia símbolos exportados para a "globalSymbols"
+
+            // Copia símbolos "public" (exportados) do módulo para a tabela global
             for (Map.Entry<String, Symbol> e : mod.getSymbolTable().getAllSymbols().entrySet()) {
                 String symName = e.getKey();
                 Symbol sym = e.getValue();
                 if (sym.isPublic) {
-                    // Se finalRelocation, o símbolo global é (base + sym.address)
-                    // Se não, ainda não fixamos endereços => "endereço local" é mantido
-                    int globalAddr = finalRelocation ? currentBase + sym.address : sym.address;
+                    // Se finalRelocation=true, definimos o endereço global como (base+local)
+                    // Se false, mantemos local. (No final, no buildFinalCodeAndSymbols,
+                    //  somaremos "globalOffset" para unificar.)
+                    int globalAddr = finalRelocation ? (currentBase + sym.address) : sym.address;
 
                     if (exportedSymbols.contains(symName)) {
-                        throw new IllegalStateException("Símbolo " + symName + " exportado por mais de um módulo.");
+                        throw new IllegalStateException(
+                                "Símbolo " + symName + " exportado por mais de um módulo."
+                        );
                     }
                     exportedSymbols.add(symName);
                     globalSymbols.put(symName, globalAddr);
                 }
             }
+
+            // Tamanho do programa final: soma dos tamanhos de cada módulo
             totalSize += mod.getProgramLength();
             currentBase += mod.getProgramLength();
         }
@@ -120,20 +139,26 @@ public class Linker {
         return new LinkerContext(baseMap, globalSymbols, totalSize);
     }
 
+    /**
+     * Verifica se cada símbolo importado de cada módulo existe em globalSymbols.
+     */
     private void verifyImportedSymbols(List<ObjectFile> modules, Map<String, Integer> globalSymbols) {
         for (ObjectFile mod : modules) {
             for (String sym : mod.getImportedSymbols()) {
                 if (!globalSymbols.containsKey(sym)) {
-                    throw new IllegalArgumentException("Símbolo importado [" + sym + "] não foi definido em nenhum módulo.");
+                    throw new IllegalArgumentException(
+                            "Símbolo importado [" + sym + "] não foi definido em nenhum módulo."
+                    );
                 }
             }
         }
     }
 
-    // ============================================================================
-    // Etapa 3: Concatena os blocos de código + ajusta/gera relocations
-    // ============================================================================
-
+    /**
+     * Concatena e constrói o código final.
+     * Se finalRelocation=true, já aplica reloc no array de bytes.
+     * Caso contrário, realoca apenas o offset e gera novos RelocationRecords agregados.
+     */
     private FinalCodeData buildFinalCodeAndSymbols(
             List<ObjectFile> modules,
             LinkerContext ctx,
@@ -149,16 +174,15 @@ public class Linker {
             byte[] code = mod.getObjectCode();
             int base = ctx.baseMap.get(mod);
 
-            // Se finalRelocation, ajusta cada M record "na hora"
+            // Se finalRelocation=true, corrigimos cada RelocationRecord no array do módulo
             if (finalRelocation) {
                 for (RelocationRecord rec : mod.getRelocationRecords()) {
                     fixAddressInCode(code, rec, mod, base, ctx.globalSymbols);
                 }
             } else {
-                // Caso relocável => apenas gera novos relocations com offset global
+                // Gera novos relocation records com offset somado
                 for (RelocationRecord rec : mod.getRelocationRecords()) {
                     int newOffset = rec.offset() + globalOffset;
-                    // Replicamos o PC-relativo, length, symbol etc.
                     RelocationRecord newRec = new RelocationRecord(
                             newOffset,
                             rec.symbol(),
@@ -169,15 +193,15 @@ public class Linker {
                 }
             }
 
-            // Copia o código (possivelmente já realocado) para finalCode
+            // Copia o código deste módulo (já realocado ou não) para a posição final
             System.arraycopy(code, 0, finalCode, globalOffset, code.length);
 
-            // Atualiza symbol table final
+            // Ajusta a SymbolTable final
+            //   Se finalRelocation=true => address = base + sym.address
+            //   Se false => address = globalOffset + sym.address
             for (Map.Entry<String, Symbol> e : mod.getSymbolTable().getAllSymbols().entrySet()) {
                 String symName = e.getKey();
                 Symbol sym = e.getValue();
-                // Se finalRelocation => (base + localAddress)
-                // Se relocável => (globalOffset + localAddress)
                 int finalAddr = finalRelocation
                         ? (base + sym.address)
                         : (globalOffset + sym.address);
@@ -191,8 +215,9 @@ public class Linker {
     }
 
     /**
-     * Aplica a correção no array de bytes para cada registro de relocação (caso finalRelocation == true).
-     * Se for PC-relativo, subtrai 3. (Adapte para Formato 4 se precisar subtrair 4.)
+     * Realocação "final" diretamente no array de bytes.
+     * Consulta o endereço do símbolo (resolvido em globalSymbols) e soma.
+     * Se pcRelative, subtrai 3 (ou 4, conforme formato).
      */
     private void fixAddressInCode(
             byte[] code,
@@ -204,57 +229,60 @@ public class Linker {
         int offset = rec.offset();
         int length = rec.length();
         if (offset + length > code.length) {
-            throw new IllegalArgumentException("RelocationRecord fora do array do módulo " + module.getProgramName());
+            throw new IllegalArgumentException(
+                    "RelocationRecord fora do array do módulo " + module.getProgramName()
+            );
         }
 
-        // Lê valor atual
+        // Lê valor atual no array
         int oldVal = 0;
         for (int i = 0; i < length; i++) {
             oldVal = (oldVal << 8) | (code[offset + i] & 0xFF);
         }
 
-        // Resolvem o endereço do símbolo
+        // Descobre o endereço do símbolo
         Integer resolved = globalSymbols.get(rec.symbol());
         if (resolved == null) {
-            // Tenta ver se é um símbolo local do próprio módulo
-            Integer local = module.getSymbolTable().getSymbolAddress(rec.symbol());
-            if (local == null) {
+            // Tenta ver se é símbolo local do próprio módulo
+            Integer localAddr = module.getSymbolTable().getSymbolAddress(rec.symbol());
+            if (localAddr == null) {
                 throw new IllegalStateException("Símbolo não encontrado: " + rec.symbol());
             }
-            resolved = moduleBase + local;
+            resolved = moduleBase + localAddr;
         }
 
-        // Ajusta valor
+        // Soma
         int newVal = oldVal + resolved;
+        // Se pcRelative, subtrai 3 (Formato 3)
         if (rec.pcRelative()) {
-            newVal -= 3; // Em Formato 3
+            newVal -= 3;
         }
 
-        // Escreve de volta
+        // Escreve o valor de volta
         for (int i = length - 1; i >= 0; i--) {
             code[offset + i] = (byte) (newVal & 0xFF);
             newVal >>>= 8;
         }
     }
 
-    // ============================================================================
-    // Etapa 4: Combina os fontes
-    // ============================================================================
+    /**
+     * Combina as linhas de código-fonte de todos módulos. (Opcional, para depuração)
+     */
     private List<String> combineModuleSources(List<ObjectFile> modules) {
         List<String> combined = new ArrayList<>();
         for (ObjectFile mod : modules) {
-            List<String> src = mod.getRawSourceCode();
-            if (src != null) {
-                combined.addAll(src);
+            if (mod.getRawSourceCode() != null) {
+                combined.addAll(mod.getRawSourceCode());
             }
             combined.add(";---- Fim do Módulo " + mod.getProgramName() + " ----");
         }
         return combined;
     }
 
-    // ============================================================================
-    // Gera o arquivo .obj final com H, D, T, M, E
-    // ============================================================================
+    /**
+     * Gera o arquivo .obj textual (formato H/D/T/M/E) do objeto final.
+     * Se finalRelocation=false, inclui M records para que o Loader possa realocar.
+     */
     private void writeLinkedObjectFile(
             ObjectFile finalObj,
             String outputFileName,
@@ -267,23 +295,30 @@ public class Linker {
         SymbolTable finalSym = finalObj.getSymbolTable();
 
         StringBuilder content = new StringBuilder();
-        // H record
-        content.append(String.format("H^%-6s^%06X^%06X\n", fitProgramName(progName), startAddr, progLen));
+        // H record (Header)
+        content.append(
+                String.format("H^%-6s^%06X^%06X\n", fitProgramName(progName), startAddr, progLen)
+        );
 
-        // D record (símbolos exportados)
+        // D record (Define) - símbolos exportados
         List<Symbol> exported = new ArrayList<>();
         for (Symbol s : finalSym.getAllSymbols().values()) {
-            if (s.isPublic) exported.add(s);
+            if (s.isPublic) {
+                exported.add(s);
+            }
         }
         if (!exported.isEmpty()) {
             StringBuilder dRec = new StringBuilder("D");
             for (Symbol es : exported) {
-                dRec.append("^").append(es.name).append("^").append(String.format("%06X", es.address));
+                dRec.append("^")
+                        .append(es.name)
+                        .append("^")
+                        .append(String.format("%06X", es.address));
             }
             content.append(dRec).append("\n");
         }
 
-        // T records
+        // T records (Text)
         List<TBlock> tblocks = buildTextRecords(startAddr, code);
         for (TBlock b : tblocks) {
             StringBuilder hex = new StringBuilder();
@@ -291,24 +326,28 @@ public class Linker {
                 hex.append(String.format("%02X", bb & 0xFF));
             }
             int sizeBlock = b.data.size();
-            content.append(String.format("T^%06X^%02X^%s\n", b.startAddress, sizeBlock, hex));
+            content.append(
+                    String.format("T^%06X^%02X^%s\n", b.startAddress, sizeBlock, hex)
+            );
         }
 
-        // Se finalRelocation == false => M records
+        // M records (Modification) - só se finalRelocation=false
         if (!finalRelocation) {
             for (RelocationRecord rec : finalObj.getRelocationRecords()) {
                 int address = startAddr + rec.offset();
                 int halfBytes = rec.length() * 2;
-                // Notação de +SÍMBOLO
-                String mLine = String.format("M^%06X^%02X^+%s", address, halfBytes, rec.symbol());
+                // +SÍMBOLO
+                String mLine = String.format(
+                        "M^%06X^%02X^+%s", address, halfBytes, rec.symbol()
+                );
                 content.append(mLine).append("\n");
             }
         }
 
-        // E record
+        // E record (End)
         content.append(String.format("E^%06X\n", startAddr));
 
-        // Escreve em disco
+        // Grava no disco
         FileUtils.writeFileInDir(Constants.SAVE_DIR, outputFileName, content.toString());
     }
 
@@ -317,6 +356,9 @@ public class Linker {
         return (name.length() > 6) ? name.substring(0, 6) : name;
     }
 
+    /**
+     * Divide o array de bytes em blocos (máx 30) para gerar T records.
+     */
     private List<TBlock> buildTextRecords(int start, byte[] code) {
         List<TBlock> blocks = new ArrayList<>();
         final int MAX_BYTES = 30;
@@ -333,9 +375,9 @@ public class Linker {
         return blocks;
     }
 
-    // ============================================================================
-    // Classes internas auxiliares
-    // ============================================================================
+    // ---------------------------------------------------------------
+    // Classes auxiliares internas
+    // ---------------------------------------------------------------
     private static class LinkerContext {
         Map<ObjectFile, Integer> baseMap;
         Map<String, Integer> globalSymbols;

@@ -12,7 +12,8 @@ import java.util.*;
 /**
  * Classe que realiza a primeira passagem do montador, gerando uma representação intermediária.
  */
-class AssemblerFirstPass {
+@SuppressWarnings("ClassEscapesDefinedScope")
+public class AssemblerFirstPass {
 
     /**
      * Processa as linhas de código-fonte e gera uma IntermediateRepresentation.
@@ -20,7 +21,7 @@ class AssemblerFirstPass {
      * @param sourceLines Lista de linhas de código assembly.
      * @return Representação intermediária contendo linhas de assembly, símbolos e endereços.
      */
-    protected IntermediateRepresentation process(List<String> originalSourceLines, List<String> sourceLines) {
+    public IntermediateRepresentation process(List<String> originalSourceLines, List<String> sourceLines) {
         int locationCounter = 0;
         boolean endFound = false;
         String programName = null;

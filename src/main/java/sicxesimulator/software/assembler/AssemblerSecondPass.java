@@ -24,7 +24,7 @@ public class AssemblerSecondPass {
      * @param midObject Representação intermediária gerada pela primeira passagem.
      * @return ObjectFile contendo o endereço inicial, o código objeto (.meta) e o arquivo textual .obj com H/T/M/E.
      */
-    protected ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
+    public ObjectFile generateObjectFile(@SuppressWarnings("ClassEscapesDefinedScope") IntermediateRepresentation midObject) {
         int startAddress = midObject.startAddress();
         int programSize = midObject.assemblyLines().stream().mapToInt(this::getInstructionSize).sum();
         byte[] machineCode = new byte[programSize];
@@ -199,7 +199,7 @@ public class AssemblerSecondPass {
      * @param symbolTable  Tabela de símbolos.
      * @return Array de bytes com o código objeto.
      */
-    public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable) {
+    public byte[] generateObjectCode(@SuppressWarnings("ClassEscapesDefinedScope") AssemblyLine line, SymbolTable symbolTable) {
         String mnemonic = line.mnemonic();
         String operand = line.operand();
 

@@ -30,8 +30,7 @@ public class Loader {
 
         // Verifica se cabe na memória
         if (baseAddress + codeLength > memory.getSize()) {
-            throw new IllegalArgumentException(
-                    "Programa não cabe na memória (base + code.length > memória)."
+            throw new IllegalArgumentException("Programa nao cabe na memoria (base + code.length > memoria)."
             );
         }
 
@@ -40,17 +39,19 @@ public class Loader {
 
         // Se não estiver 100% realocado, aplicamos as relocações
         if (!finalObject.isFullyRelocated()) {
+            // 1) Atualiza a SymbolTable
+            updateSymbolTableAddresses(finalObject.getSymbolTable(), baseAddress);
+
+            // 2) Aplica as relocações com os símbolos já atualizados
             if (finalObject.getRelocationRecords() != null && !finalObject.getRelocationRecords().isEmpty()) {
                 applyRelocations(memory, baseAddress, finalObject);
             }
 
-            // Ajusta endereços na SymbolTable, para refletir o deslocamento baseAddress
-            updateSymbolTableAddresses(finalObject.getSymbolTable(), baseAddress);
-
-            // Marca que agora está realocado
+            // 3) Marca que agora está realocado
             finalObject.setFullyRelocated(true);
         }
     }
+
 
     /**
      * Copia o código para a memória a partir de baseAddress.

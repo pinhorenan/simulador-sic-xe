@@ -24,6 +24,7 @@ public class View extends Application {
         // Configurações da janela
         primaryStage.setResizable(false);
         primaryStage.setTitle("Simulador SIC/XE");
+        primaryStage.getIcons().add(new javafx.scene.image.Image("icon.png"));
 
         // Verifica se o model foi injetado
         if (injectedModel == null) {

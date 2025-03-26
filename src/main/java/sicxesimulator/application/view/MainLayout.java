@@ -2,44 +2,43 @@ package sicxesimulator.application.view;
 
 import javafx.geometry.Insets;
 import javafx.scene.layout.*;
+import sicxesimulator.application.components.buttons.AssemblerButtons;
+import sicxesimulator.application.components.buttons.ExecutionButtons;
+import sicxesimulator.application.components.buttons.FileListButtons;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.controller.MenuBarController;
 import sicxesimulator.application.components.panels.*;
-import sicxesimulator.application.components.buttons.MainButtons;
 
 public class MainLayout {
     private final BorderPane root;
     private final MemoryPanel memoryPanel;
     private final RegisterPanel registerPanel;
     private final SymbolPanel symbolPanel;
-    private final OutputPanel outputPanel;
+    private final ExecutionPanel executionPanel;
     private final InputPanel inputPanel;
-    private final ExecutionControlsPanel executionControlsPanel;
-    private BottomBarPanel bottomBarPanel;
-    private ObjectFilePanel objectFilePanel; // Será definido depois, via setController
-
     private final HBox leftPane;
 
-    private MenuBarController menuBarController;
+    private LabelsPanel labelsPanel;
+    private FileListPanel objectFilePanel;
+
     private Controller mainController;
-    private MainButtons mainButtons;
+    private MenuBarController menuBarController;
 
     public MainLayout() {
         this.root = new BorderPane();
 
         // Criamos os painéis que não dependem do Controller
         this.inputPanel = new InputPanel();
-        this.outputPanel = new OutputPanel();
+        this.executionPanel = new ExecutionPanel();
         this.memoryPanel = new MemoryPanel();
         this.registerPanel = new RegisterPanel();
         this.symbolPanel = new SymbolPanel();
-        this.executionControlsPanel = new ExecutionControlsPanel();
 
         // Criamos o container rightPane (que não depende do ObjectFilePanel)
         HBox memoryAndRegisterTables = new HBox(10, memoryPanel.getPane(), registerPanel.getPane());
-        VBox rightPane = new VBox(5, outputPanel.getPane(), executionControlsPanel.getPane(), memoryAndRegisterTables);
+        VBox rightPane = new VBox(5, executionPanel.getPane(), memoryAndRegisterTables);
         rightPane.setPrefWidth(400);
-        VBox.setVgrow(outputPanel.getPane(), Priority.ALWAYS);
+        VBox.setVgrow(executionPanel.getPane(), Priority.ALWAYS);
 
         // Criar um centerPane para o inputPanel
         VBox inputContainer = new VBox(inputPanel.getPane());
@@ -51,7 +50,6 @@ public class MainLayout {
         VBox filesAndSymbols = new VBox(symbolPanel.getPane());
         leftPane = new HBox(filesAndSymbols);
 
-
         HBox mainContent = new HBox(5, leftPane, centerPane, rightPane);
         mainContent.setPadding(new Insets(10));
 
@@ -59,13 +57,10 @@ public class MainLayout {
         root.setPadding(new Insets(0));
     }
 
-    /**
-     * Define o Controller e, a partir dele, instancia o ObjectFilePanel e atualiza o leftPane.
-     */
     public void setController(Controller mainController) {
         this.mainController = mainController;
         // Cria o ObjectFilePanel usando o Controller já criado
-        this.objectFilePanel = new ObjectFilePanel(mainController);
+        this.objectFilePanel = new FileListPanel(mainController);
 
         // Atualiza o container que agrupa o ObjectFilePanel e o SymbolPanel
         VBox filesAndSymbols = new VBox(5, objectFilePanel.getPane(), symbolPanel.getPane());
@@ -80,29 +75,31 @@ public class MainLayout {
         updateToolbar();
     }
 
-    public void setMainButtons(MainButtons mainButtons) {
-        this.mainButtons = mainButtons;
-        updateToolbar();
-        this.executionControlsPanel.setMainButtons(mainButtons);
-        if (objectFilePanel != null) {
-            this.objectFilePanel.setMainButtons(mainButtons);
-        }
-        this.inputPanel.setMainButtons(mainButtons);
-    }
-
     private void updateToolbar() {
-        if (menuBarController != null && mainButtons != null) {
+        if (menuBarController != null) {
             ToolbarPanel toolbarPanel = new ToolbarPanel(menuBarController);
             root.setTop(toolbarPanel.getMenuBar());
             // Atualizamos o inputPanel com os MainButtons também
-            this.inputPanel.setMainButtons(mainButtons);
         }
     }
 
-    public void updateBottomBar() {
-        if (bottomBarPanel == null) {
-            bottomBarPanel = new BottomBarPanel(mainController);
-            root.setBottom(bottomBarPanel.getPane());
+    public void setButtons(FileListButtons fileListButtons, ExecutionButtons executionButtons, AssemblerButtons assemblerButtons) {
+        updateToolbar();
+        if (objectFilePanel != null) {
+            this.objectFilePanel.setButtons(fileListButtons);
+        }
+        if (executionPanel != null) {
+            this.executionPanel.setButtons(executionButtons);
+        }
+        if (inputPanel != null) {
+            this.inputPanel.setButtons(assemblerButtons);
+        }
+    }
+
+    public void updateLabelsPanel() {
+        if (labelsPanel == null) {
+            labelsPanel = new LabelsPanel(mainController);
+            root.setBottom(labelsPanel.getPane());
         }
     }
 
@@ -122,19 +119,19 @@ public class MainLayout {
         return symbolPanel;
     }
 
-    public ObjectFilePanel getObjectFilePanel() {
+    public FileListPanel getObjectFilePanel() {
         return objectFilePanel;
     }
 
-    public OutputPanel getOutputPanel() {
-        return outputPanel;
+    public ExecutionPanel getExecutionPanel() {
+        return executionPanel;
     }
 
     public InputPanel getInputPanel() {
         return inputPanel;
     }
 
-    public BottomBarPanel getBottomBarPanel() {
-        return bottomBarPanel;
+    public LabelsPanel getLabelsPanel() {
+        return labelsPanel;
     }
 }

@@ -3,9 +3,11 @@ package sicxesimulator.application.view;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import sicxesimulator.application.components.buttons.AssemblerButtons;
+import sicxesimulator.application.components.buttons.ExecutionButtons;
+import sicxesimulator.application.components.buttons.FileListButtons;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.controller.MenuBarController;
-import sicxesimulator.application.components.buttons.MainButtons;
 import sicxesimulator.application.model.Model;
 
 public class MainView extends Application {
@@ -28,45 +30,51 @@ public class MainView extends Application {
             throw new IllegalStateException("O model não foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");
         }
 
-        // 1️⃣ Criamos o layout principal primeiro
+        //Criamos o layout principal primeiro
         MainLayout mainLayout = new MainLayout();
 
-        // 2️⃣ Criamos o Controller e passamos o MainLayout
+        // Criamos o Controller e passamos o MainLayout
         Controller mainController = new Controller(injectedModel, mainLayout);
 
-        // Enviar o controlador para o layout, permitindo a inicialização da ObjectFilePanel.
+        // Enviamos o controlador para o layout, permitindo a inicialização da ObjectFilePanel.
         mainLayout.setController(mainController);
-        mainLayout.updateBottomBar();
+        mainLayout.updateLabelsPanel();
 
-        // 3️⃣ Criamos o MenuBarController e passamos o Controller
+        // Criamos o MenuBarController e passamos o Controller
         MenuBarController menuBarController = new MenuBarController(mainController);
 
-        // 4️⃣ Criamos os botões principais
-        MainButtons simulationToolbar = new MainButtons(mainController, mainLayout);
+        // Criamos os botões principais
+        FileListButtons fileListButtons = new FileListButtons(mainController, mainLayout);
+        ExecutionButtons executionButtons = new ExecutionButtons(mainController, mainLayout);
+        AssemblerButtons assemblerButtons = new AssemblerButtons(mainController, mainLayout);
 
-        // 5️⃣ Atualizamos o MainLayout
+        // Atualizamos o MainLayout
         mainLayout.setMenuBarController(menuBarController);
-        mainLayout.setMainButtons(simulationToolbar);
+        mainLayout.setButtons(fileListButtons, executionButtons, assemblerButtons);
 
-        // 6️⃣ Carregamos os arquivos `.obj` imediatamente
+        // Carregamos os arquivos ".obj" imediatamente
         mainController.initializeFilesView();
 
-        // 7️⃣ Atualizamos as tabelas na inicialização para mostrar os valores zerados
+        // Atualizamos as tabelas na inicialização para mostrar os valores zerados
         mainController.updateAllTables();
         mainController.updateAllLabels();
 
-        // 8️⃣ Criamos e exibimos a cena principal
+        // Criamos e exibimos a cena principal
         Scene scene = new Scene(mainLayout.getRoot(), 1000, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // 9️⃣ Configuração inicial
-        simulationToolbar.setupBindings();
+        // Configuração inicial
+        fileListButtons.setupBindings();
+        executionButtons.setupBindings();
+        assemblerButtons.setupBindings();
     }
 
-
-    /// ===== Métodos auxiliares =====
-
+    /**
+     * Define o model a ser injetado na aplicação.
+     *
+     * @param model O model a ser injetado
+     */
     public static void setModel(Model model) {
         injectedModel = model;
     }

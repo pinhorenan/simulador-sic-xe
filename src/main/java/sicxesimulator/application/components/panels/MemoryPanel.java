@@ -1,14 +1,14 @@
 package sicxesimulator.application.components.panels;
 
 import javafx.scene.control.TitledPane;
-import sicxesimulator.application.components.tables.MemoryTableView;
+import sicxesimulator.application.components.tables.MemoryTable;
 
 public class MemoryPanel {
     private final TitledPane memoryPane;
-    private final MemoryTableView memoryTable;
+    private final MemoryTable memoryTable;
 
     public MemoryPanel() {
-        this.memoryTable = new MemoryTableView();
+        this.memoryTable = new MemoryTable();
         this.memoryPane = new TitledPane("Memória", memoryTable);
         memoryPane.setCollapsible(false);
         memoryPane.setPrefHeight(150); // 🔹 Reduzimos a altura do painel
@@ -18,7 +18,7 @@ public class MemoryPanel {
         return memoryPane;
     }
 
-    public MemoryTableView getMemoryTable() {
+    public MemoryTable getMemoryTable() {
         return memoryTable;
     }
 }

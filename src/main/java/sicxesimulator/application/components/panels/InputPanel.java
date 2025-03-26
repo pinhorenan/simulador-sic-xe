@@ -3,7 +3,7 @@ package sicxesimulator.application.components.panels;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import sicxesimulator.application.components.buttons.MainButtons;
+import sicxesimulator.application.components.buttons.AssemblerButtons;
 
 public class InputPanel {
     private final TitledPane inputPane;
@@ -12,12 +12,12 @@ public class InputPanel {
     private Button assembleButton;
 
     public InputPanel() {
-        // Área de entrada de código (sem altura fixa)
+        // Área de entrada de código
         inputArea = new TextArea();
         inputArea.setPromptText("Insira seu código assembly aqui...");
         inputArea.setStyle("-fx-font-family: Consolas; -fx-font-size: 14;");
 
-        // Área para exibir o código expandido (sem altura fixa)
+        // Área para exibir o código expandido
         expandedCodeArea = new TextArea();
         expandedCodeArea.setPromptText("Código Expandido...");
         expandedCodeArea.setEditable(false);
@@ -67,12 +67,12 @@ public class InputPanel {
      * Define os botões reais após a criação do "MainButtons",
      * garantindo que o botão de montagem mantenha os bindings.
      */
-    public void setMainButtons(MainButtons mainButtons) {
+    public void setButtons(AssemblerButtons buttons) {
         if (assembleButton != null) {
-            return; // Evita reatribuição caso já tenha sido definido
+            return;
         }
 
-        this.assembleButton = mainButtons.getAssembleButton();
+        this.assembleButton = buttons.getAssembleButton();
 
         // Atualiza o cabeçalho para incluir o botão Montar corretamente
         BorderPane headerPane = (BorderPane) inputPane.getGraphic();
@@ -95,6 +95,10 @@ public class InputPanel {
 
     public void setExpandedCodeText(String text) {
         expandedCodeArea.setText(text);
+    }
+
+    public TextArea getExpandedCodeArea() {
+        return expandedCodeArea;
     }
 
     public TextArea getInputArea() {

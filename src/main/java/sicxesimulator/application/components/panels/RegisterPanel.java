@@ -1,24 +1,24 @@
 package sicxesimulator.application.components.panels;
 
 import javafx.scene.control.TitledPane;
-import sicxesimulator.application.components.tables.RegisterTableView;
+import sicxesimulator.application.components.tables.RegisterTable;
 
 public class RegisterPanel {
     private final TitledPane registerPane;
-    private final RegisterTableView registerTable;
+    private final RegisterTable registerTable;
 
     public RegisterPanel() {
-        this.registerTable = new RegisterTableView();
+        this.registerTable = new RegisterTable();
         this.registerPane = new TitledPane("Registradores", registerTable);
         registerPane.setCollapsible(false);
-        registerPane.setPrefHeight(150); // 🔹 Reduzimos a altura do painel
+        registerPane.setPrefHeight(150);
     }
 
     public TitledPane getPane() {
         return registerPane;
     }
 
-    public RegisterTableView getRegisterTable() {
+    public RegisterTable getRegisterTable() {
         return registerTable;
     }
 }

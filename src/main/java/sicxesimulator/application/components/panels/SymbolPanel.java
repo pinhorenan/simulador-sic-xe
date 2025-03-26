@@ -1,14 +1,14 @@
 package sicxesimulator.application.components.panels;
 
 import javafx.scene.control.TitledPane;
-import sicxesimulator.application.components.tables.SymbolTableView;
+import sicxesimulator.application.components.tables.SymbolTable;
 
 public class SymbolPanel {
     private final TitledPane symbolPane;
-    private final SymbolTableView symbolTable;
+    private final SymbolTable symbolTable;
 
     public SymbolPanel() {
-        this.symbolTable = new SymbolTableView();
+        this.symbolTable = new SymbolTable();
         this.symbolPane = new TitledPane("Tabela de Símbolos", symbolTable);
         symbolPane.setCollapsible(false);
     }
@@ -17,7 +17,7 @@ public class SymbolPanel {
         return symbolPane;
     }
 
-    public SymbolTableView getSymbolTable() {
+    public SymbolTable getSymbolTable() {
         return symbolTable;
     }
 }

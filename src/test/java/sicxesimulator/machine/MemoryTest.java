@@ -1,6 +1,8 @@
 package sicxesimulator.machine;
 
 import org.junit.jupiter.api.Test;
+import sicxesimulator.hardware.Memory;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MemoryTest {

@@ -3,11 +3,11 @@ package sicxesimulator.application.view;
 import javafx.application.Platform;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.model.records.SymbolEntry;
-import sicxesimulator.application.components.tables.MemoryTableView;
-import sicxesimulator.application.components.tables.RegisterTableView;
-import sicxesimulator.application.components.tables.SymbolTableView;
-import sicxesimulator.models.ObjectFile;
-import sicxesimulator.utils.ValueFormatter;
+import sicxesimulator.application.components.tables.MemoryTable;
+import sicxesimulator.application.components.tables.RegisterTable;
+import sicxesimulator.application.components.tables.SymbolTable;
+import sicxesimulator.data.ObjectFile;
+import sicxesimulator.application.util.ValueFormatter;
 
 public class MainViewUpdater {
     private final Controller controller;
@@ -27,19 +27,19 @@ public class MainViewUpdater {
     }
 
     public void updateMemoryTableView() {
-        MemoryTableView memoryTable = mainLayout.getMemoryPanel().getMemoryTable();
+        MemoryTable memoryTable = mainLayout.getMemoryPanel().getMemoryTable();
         memoryTable.getItems().clear();
         memoryTable.getItems().addAll(controller.getMemoryEntries());
     }
 
     public void updateRegisterTableView() {
-        RegisterTableView registerTable = mainLayout.getRegisterPanel().getRegisterTable();
+        RegisterTable registerTable = mainLayout.getRegisterPanel().getRegisterTable();
         registerTable.getItems().clear();
         registerTable.getItems().addAll(controller.getRegisterEntries());
     }
 
     public void updateSymbolTableView() {
-        SymbolTableView symbolTable = mainLayout.getSymbolPanel().getSymbolTable();
+        SymbolTable symbolTable = mainLayout.getSymbolPanel().getSymbolTable();
         symbolTable.getItems().clear();
         symbolTable.getItems().addAll(controller.getSymbolEntries());
     }
@@ -47,7 +47,7 @@ public class MainViewUpdater {
     public void updateSymbolTableView(ObjectFile objectFile) {
         if (objectFile == null) return;
 
-        SymbolTableView symbolTable = mainLayout.getSymbolPanel().getSymbolTable();
+        SymbolTable symbolTable = mainLayout.getSymbolPanel().getSymbolTable();
         symbolTable.getItems().clear();
 
         var symbolsMap = objectFile.getSymbolTable().getAllSymbols();
@@ -62,18 +62,23 @@ public class MainViewUpdater {
         updateMemorySizeLabel();
         updateAddressFormatLabel();
         updateCycleDelayLabel();
+        updateLinkerModeLabel();
     }
 
     public void updateMemorySizeLabel() {
-        mainLayout.getBottomBarPanel().updateMemoryLabel();
+        mainLayout.getLabelsPanel().updateMemoryLabel();
     }
 
     public void updateAddressFormatLabel() {
-        mainLayout.getBottomBarPanel().updateFormatLabel();
+        mainLayout.getLabelsPanel().updateFormatLabel();
     }
 
     public void updateCycleDelayLabel() {
-        mainLayout.getBottomBarPanel().updateSpeedLabel();
+        mainLayout.getLabelsPanel().updateSpeedLabel();
+    }
+
+    public void updateLinkerModeLabel() {
+        mainLayout.getLabelsPanel().updateLinkerModeLabel();
     }
 
 }

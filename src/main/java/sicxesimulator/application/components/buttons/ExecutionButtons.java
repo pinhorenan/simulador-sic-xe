@@ -6,10 +6,10 @@ import javafx.scene.control.Button;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.interfaces.ButtonBinding;
 import sicxesimulator.application.util.ButtonFactory;
-import sicxesimulator.application.view.MainLayout;
+import sicxesimulator.application.view.Layout;
 
 public class ExecutionButtons implements ButtonBinding {
-    private final MainLayout mainLayout;
+    private final Layout mainLayout;
     private final Controller controller;
 
     private final Button runButton;
@@ -18,7 +18,7 @@ public class ExecutionButtons implements ButtonBinding {
     private final Button loadButton;
     private final Button restartButton;
 
-    public ExecutionButtons(Controller controller, MainLayout mainLayout) {
+    public ExecutionButtons(Controller controller, Layout mainLayout) {
         this.controller = controller;
         this.mainLayout = mainLayout;
 

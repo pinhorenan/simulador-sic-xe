@@ -4,7 +4,6 @@ import sicxesimulator.hardware.Memory;
 import sicxesimulator.hardware.data.Instruction;
 import sicxesimulator.utils.Converter;
 
-@SuppressWarnings("JavadocBlankLines")
 public class InstructionDecoder {
     private final Memory memory;
     private final RegisterSet registers;
@@ -109,18 +108,15 @@ public class InstructionDecoder {
 
     /**
      * Decodifica instruções em formato 3/4.
-     *
      * Estrutura (formato 3):
      *  - Byte 1: bits 7..2 = opcode; bits 1..0 = n e i
      *  - Byte 2: bit 7 = x; bit 6 = b; bit 5 = p; bit 4 = e; bits 3..0 = 4 bits altos do deslocamento
      *  - Byte 3: 8 bits baixos do deslocamento
-     *
      * Estrutura (formato 4, e=1):
      *  - Byte 1: bits 7..2 = opcode; bits 1..0 = n e i
      *  - Byte 2: bit 7 = x; bit 6 = b; bit 5 = p; bit 4 = e; bits 3..0 = 4 bits altos do addr20
      *  - Byte 3: 8 bits médios do addr20
      *  - Byte 4: 8 bits baixos do addr20
-     *
      *  Retorna um array com:
      *  [0]=disp/addr (12 ou 20 bits), [1]=x, [2]=b, [3]=p, [4]=e, [5]=n, [6]=i
      *
@@ -159,15 +155,12 @@ public class InstructionDecoder {
 
     /**
      * Calcula o endereço efetivo (EA) a partir do deslocamento e dos bits de modo.
-     *
      * - Se p == 1 (PC-relativo): EA = (PC_original + tamanhoInstrução) + disp (com sinal)
      * - Se b == 1 (Base-relativo): EA = (valor do registrador B) + disp
      * - Caso contrário: EA = disp (endereço absoluto)
      * - Se x == 1: EA += (valor do registrador X)
-     *
      * Para endereçamento indireto (n=1, i=0):
      *  - Ler a memória nesse EA para obter o endereço final.
-     *
      * Para endereçamento imediato (n=0, i=1):
      *  - O EA representa diretamente o operando (apenas extensão de sinal para formato 3, se necessário).
      *

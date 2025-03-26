@@ -6,15 +6,15 @@ import javafx.scene.control.Button;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.interfaces.ButtonBinding;
 import sicxesimulator.application.util.ButtonFactory;
-import sicxesimulator.application.view.MainLayout;
+import sicxesimulator.application.view.Layout;
 
 public class FileListButtons implements ButtonBinding {
-    private final MainLayout mainLayout;
+    private final Layout mainLayout;
 
     private final Button linkButton;
     private final Button deleteButton;
 
-    public FileListButtons(Controller controller, MainLayout mainLayout) {
+    public FileListButtons(Controller controller, Layout mainLayout) {
         this.mainLayout = mainLayout;
 
         this.linkButton = ButtonFactory.createButton("Linkar", controller::handleLinkSelectedFilesAction);

@@ -1,4 +1,4 @@
-package sicxesimulator.machine;
+package sicxesimulatorTest.hardware;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

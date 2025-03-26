@@ -9,7 +9,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
-import sicxesimulator.application.model.ObjectFileTableItem;
+import sicxesimulator.application.model.data.ObjectFileTableItem;
 import sicxesimulator.data.ObjectFile;
 
 import java.util.List;

@@ -1,6 +1,9 @@
-package sicxesimulator.hardware.cpu;
+package sicxesimulatorTest.hardware.cpu;
 
 import org.junit.jupiter.api.Test;
+import sicxesimulator.hardware.cpu.Register;
+import sicxesimulator.hardware.cpu.RegisterSet;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RegisterSetTest {

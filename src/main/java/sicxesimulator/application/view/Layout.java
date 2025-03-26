@@ -9,7 +9,7 @@ import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.controller.MenuBarController;
 import sicxesimulator.application.components.panels.*;
 
-public class MainLayout {
+public class Layout {
     private final BorderPane root;
     private final MemoryPanel memoryPanel;
     private final RegisterPanel registerPanel;
@@ -24,7 +24,7 @@ public class MainLayout {
     private Controller mainController;
     private MenuBarController menuBarController;
 
-    public MainLayout() {
+    public Layout() {
         this.root = new BorderPane();
 
         // Criamos os painéis que não dependem do Controller

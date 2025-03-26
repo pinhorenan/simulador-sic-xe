@@ -5,52 +5,42 @@ import sicxesimulator.utils.Converter;
 
 public abstract class Parser {
 
-    /**
-     * Converte um operando em um endereço numérico.
-     *
-     * @param operand Operando a ser convertido.
-     * @return Endereço numérico.
-     * @throws IllegalArgumentException se o operando estiver ausente ou com formato inválido.
-     */
     public static int parseAddress(String operand) {
         if (operand == null) {
             throw new IllegalArgumentException("Operando ausente para endereço.");
         }
+        operand = operand.trim().toLowerCase();
+
+        // Se começar com "0x", interpretamos como hexadecimal
+        if (operand.startsWith("0x")) {
+            return Integer.parseInt(operand.substring(2), 16);
+        }
+        // Caso contrário, interpretamos como decimal
         if (operand.matches("\\d+")) {
             return Integer.parseInt(operand);
-        } else if (operand.matches("[0-9A-Fa-f]+")) {
-            return Integer.parseInt(operand, 16);
         }
-        throw new IllegalArgumentException("Formato inválido de endereço: " + operand);
+        throw new IllegalArgumentException("Formato inválido de endereço: " + operand
+                + ". Use apenas decimal (ex: 100) ou 0x para hex (ex: 0x100).");
     }
 
-    /**
-     * Converte uma string em um número inteiro (decimal ou hexadecimal).
-     *
-     * @param operand String contendo o número.
-     * @return Número inteiro.
-     * @throws IllegalArgumentException se o operando estiver ausente ou com formato inválido.
-     */
     public static int parseNumber(String operand) {
         if (operand == null) {
             throw new IllegalArgumentException("Operando ausente.");
         }
+        operand = operand.trim().toLowerCase();
+
+        // Se começar com "0x", interpretamos como hexadecimal
+        if (operand.startsWith("0x")) {
+            return Integer.parseInt(operand.substring(2), 16);
+        }
+        // Caso contrário, interpretamos como decimal
         if (operand.matches("\\d+")) {
             return Integer.parseInt(operand);
         }
-        if (operand.matches("[0-9A-Fa-f]+")) {
-            return Integer.parseInt(operand, 16);
-        }
-        throw new IllegalArgumentException("Formato inválido de número: " + operand);
+        throw new IllegalArgumentException("Formato inválido de número: " + operand
+                + ". Use decimal (ex: 100) ou 0x para hex (ex: 0x1a).");
     }
 
-    /**
-     * Parseia o operando da diretiva BYTE para um array de bytes.
-     *
-     * @param operand Operando da diretiva BYTE.
-     * @return Array de bytes correspondente.
-     * @throws IllegalArgumentException se o operando estiver ausente ou com formato inválido.
-     */
     public static byte[] parseByteOperand(String operand) {
         if (operand == null) {
             throw new IllegalArgumentException("Operando ausente para BYTE.");
@@ -66,13 +56,6 @@ public abstract class Parser {
         }
     }
 
-    /**
-     * Resolve o endereço do operando, considerando símbolos e valores imediatos.
-     *
-     * @param operand     Operando da instrução.
-     * @param symbolTable Tabela de símbolos.
-     * @return Endereço numérico do operando.
-     */
     public static int resolveOperandAddress(String operand, SymbolTable symbolTable) {
         if (operand == null) return 0;
         if (operand.startsWith("#")) {
@@ -85,12 +68,6 @@ public abstract class Parser {
         return parseNumber(operand);
     }
 
-    /**
-     * Determina o formato da instrução (1, 2, 3 ou 4) com base no mnemônico.
-     *
-     * @param mnemonic Mnemônico da instrução.
-     * @return Formato da instrução.
-     */
     public static int determineInstructionFormat(String mnemonic) {
         if (mnemonic.startsWith("+")) {
             return 4;

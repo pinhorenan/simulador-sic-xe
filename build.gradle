@@ -37,7 +37,7 @@ sourceSets {
 // Configuração do JavaFX (é preciso o plugin `org.openjfx.javafxplugin` para reconhecer este bloco)
 javafx {
     version = "21.0.1"
-    modules = ['javafx.controls']
+    modules = ['javafx.controls', 'javafx.fxml']
 }
 
 application {

@@ -10,15 +10,15 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import sicxesimulator.application.util.DialogUtil;
-import sicxesimulator.application.view.MainLayout;
-import sicxesimulator.application.view.MainViewUpdater;
+import sicxesimulator.application.view.Layout;
+import sicxesimulator.application.view.ViewUpdater;
 import sicxesimulator.data.ObjectFile;
 import sicxesimulator.application.model.Model;
-import sicxesimulator.application.model.ObjectFileTableItem;
-import sicxesimulator.application.model.records.MemoryEntry;
+import sicxesimulator.application.model.data.ObjectFileTableItem;
+import sicxesimulator.application.model.data.records.MemoryEntry;
 
-import sicxesimulator.application.model.records.RegisterEntry;
-import sicxesimulator.application.model.records.SymbolEntry;
+import sicxesimulator.application.model.data.records.RegisterEntry;
+import sicxesimulator.application.model.data.records.SymbolEntry;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.Mapper;
 
@@ -27,13 +27,13 @@ import java.util.*;
 
 public class Controller {
     private final Model model;
-    private final MainLayout mainLayout;
-    private final MainViewUpdater updater;
+    private final Layout mainLayout;
+    private final ViewUpdater updater;
 
-    public Controller(Model model, MainLayout mainLayout) {
+    public Controller(Model model, Layout mainLayout) {
         this.model = model;
         this.mainLayout = mainLayout;
-        this.updater = new MainViewUpdater(this, mainLayout);
+        this.updater = new ViewUpdater(this, mainLayout);
         this.model.addListener(this::initializeFilesView);
     }
 
@@ -100,25 +100,19 @@ public class Controller {
             return;
         }
 
-        int loadAddr = 0;
-        boolean fullReloc = false;
+        int loadAddress;
+        boolean fullReloc;
 
         // Se o modo de ligador for ABSOLUTO:
         if (model.getLinkerMode() == Model.LinkerMode.ABSOLUTO) {
             try {
                 // Sempre pergunta o endereço base
-                loadAddr = DialogUtil.askForInteger(
+                loadAddress = DialogUtil.askForInteger(
                         "Endereço de Carga",
                         "Linkagem Absoluta",
                         "Informe o endereço."
                 );
-                // Em absoluto, normalmente sempre é realocação final:
                 fullReloc = true;
-
-                // Se você REALMENTE quiser dar a opção de não realocar,
-                // poderia perguntar aqui, mas isso raramente faz sentido p/ modo absoluto.
-                // Exemplo (opcional):
-                //fullReloc = DialogUtil.askForBoolean("Relocação Final", "Aplicar reloc agora?");
 
             } catch (IOException e) {
                 DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
@@ -126,15 +120,19 @@ public class Controller {
             }
         } else {
             // Modo RELOCÁVEL => Endereço base = 0
-            loadAddr = 0;
+            loadAddress = 0;
 
             // Pergunta se o usuário quer realocar agora ou deixar para o Loader
             fullReloc = DialogUtil.askForBoolean("Relocação Final",
                     "Deseja que o Linker aplique a realocação agora?");
         }
 
+        String outputFileName = DialogUtil.askForString("Nomear arquivo de saída",
+                "Linkagem de Módulos",
+                "Informe o nome do arquivo de saída:");
+
         // Invoca a lógica de linkagem do Model
-        ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddr, fullReloc);
+        ObjectFile linkedObject = model.linkObjectFiles(selectedFiles, loadAddress, fullReloc, outputFileName);
 
         DialogUtil.showInfoDialog("Arquivos Linkados",
                 "Arquivos linkados com sucesso!",
@@ -182,7 +180,7 @@ public class Controller {
             }
             Platform.runLater(() -> mainLayout.getExecutionPanel().getMachineOutput().appendText("Execução concluída!\n"));
         }).start();
-    }
+    } // TODO: buga e trava a interface
 
     public void handleNextAction() {
         if (model.codeLoadedProperty().get() && !model.simulationFinishedProperty().get()) {
@@ -301,20 +299,6 @@ public class Controller {
         mainLayout.getInputPanel().setInputText(content);
     }
 
-    public List<String> getExpandedCode() throws IOException {
-        return model.processCodeMacros(Arrays.asList(mainLayout.getInputPanel().getInputText().split("\\r?\\n")));
-    }
-
-    public byte[] getObjectFileBytes() {
-        ObjectFile selectedFile = model.getLastLoadedCode();
-        return (selectedFile != null) ? selectedFile.getObjectCode() : null;
-    }
-
-    public String getSuggestedFileName(String extension) {
-        ObjectFile lastLoaded = model.getLastLoadedCode();
-        return (lastLoaded != null) ? lastLoaded.getProgramName() + extension : "Programa" + extension;
-    }
-
     public void clearMemory() {
         model.getMachine().getMemory().clearMemory();
         updater.updateMemoryTableView();
@@ -358,10 +342,6 @@ public class Controller {
         updateAllLabels();
     }
 
-
-
-
-
     public void updateAllTables() {
         updater.updateAllTables();
     }
@@ -370,11 +350,11 @@ public class Controller {
         updater.updateAllLabels();
     }
 
-    public MainLayout getMainLayout() {
+    public Layout getMainLayout() {
         return mainLayout;
     }
 
-    public MainViewUpdater getUpdater() {
+    public ViewUpdater getUpdater() {
         return updater;
     }
 

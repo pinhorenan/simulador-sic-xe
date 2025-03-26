@@ -10,7 +10,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import sicxesimulator.application.components.buttons.FileListButtons;
 import sicxesimulator.application.components.tables.FileTable;
-import sicxesimulator.application.model.ObjectFileTableItem;
+import sicxesimulator.application.model.data.ObjectFileTableItem;
 import sicxesimulator.data.ObjectFile;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.util.DialogUtil;

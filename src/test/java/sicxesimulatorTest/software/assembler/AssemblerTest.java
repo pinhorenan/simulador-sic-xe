@@ -1,4 +1,4 @@
-package sicxesimulator.assembler;
+package sicxesimulatorTest.software.assembler;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

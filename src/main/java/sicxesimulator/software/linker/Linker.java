@@ -102,42 +102,69 @@ public class Linker {
             boolean finalRelocation,
             int loadAddress
     ) {
-        int currentBase = loadAddress;
         Map<ObjectFile, Integer> baseMap = new HashMap<>();
         Map<String, Integer> globalSymbols = new HashMap<>();
         Set<String> exportedSymbols = new HashSet<>();
-        int totalSize = 0;
 
-        for (ObjectFile mod : modules) {
-            baseMap.put(mod, currentBase);
+        int totalSize;
+        if (finalRelocation) {
+            // Modo ABSOLUTO: cada módulo usa seu próprio START (interpretado como decimal ou hexadecimal conforme Parser)
+            // TotalSize = (maior (start + tamanho)) - (menor start)
+            int minStart = Integer.MAX_VALUE;
+            int maxEnd = 0;
+            for (ObjectFile mod : modules) {
+                int start = mod.getStartAddress();
+                int end = start + mod.getProgramLength();
+                if (start < minStart) {
+                    minStart = start;
+                }
+                if (end > maxEnd) {
+                    maxEnd = end;
+                }
+                // A base de cada módulo é o próprio seu START
+                baseMap.put(mod, start);
 
-            // Copia símbolos "public" (exportados) do módulo para a tabela global
-            for (Map.Entry<String, Symbol> e : mod.getSymbolTable().getAllSymbols().entrySet()) {
-                String symName = e.getKey();
-                Symbol sym = e.getValue();
-                if (sym.isPublic) {
-                    // Se finalRelocation=true, definimos o endereço global como (base+local)
-                    // Se false, mantemos local. (No final, no buildFinalCodeAndSymbols,
-                    //  somaremos "globalOffset" para unificar.)
-                    int globalAddr = finalRelocation ? (currentBase + sym.address) : sym.address;
-
-                    if (exportedSymbols.contains(symName)) {
-                        throw new IllegalStateException(
-                                "Símbolo " + symName + " exportado por mais de um módulo."
-                        );
+                // Copia símbolos exportados
+                for (var e : mod.getSymbolTable().getAllSymbols().entrySet()) {
+                    String symName = e.getKey();
+                    Symbol sym = e.getValue();
+                    if (sym.isPublic) {
+                        int globalAddr = start + sym.address;
+                        if (!exportedSymbols.add(symName)) {
+                            throw new IllegalStateException("Símbolo " + symName + " exportado por mais de um módulo.");
+                        }
+                        globalSymbols.put(symName, globalAddr);
                     }
-                    exportedSymbols.add(symName);
-                    globalSymbols.put(symName, globalAddr);
                 }
             }
+            totalSize = maxEnd - minStart;
+        } else {
+            // Modo RELOCÁVEL: os módulos são empilhados
+            int maxAddressUsed = 0;
+            for (ObjectFile mod : modules) {
+                int base = maxAddressUsed; // coloca o módulo na sequência
+                baseMap.put(mod, base);
 
-            // Tamanho do programa final: soma dos tamanhos de cada módulo
-            totalSize += mod.getProgramLength();
-            currentBase += mod.getProgramLength();
+                // Copia símbolos exportados (ajustando com o offset global)
+                for (var e : mod.getSymbolTable().getAllSymbols().entrySet()) {
+                    String symName = e.getKey();
+                    Symbol sym = e.getValue();
+                    if (sym.isPublic) {
+                        int globalAddr = maxAddressUsed + sym.address;
+                        if (!exportedSymbols.add(symName)) {
+                            throw new IllegalStateException("Símbolo duplicado: " + symName);
+                        }
+                        globalSymbols.put(symName, globalAddr);
+                    }
+                }
+                maxAddressUsed += mod.getProgramLength();
+            }
+            totalSize = maxAddressUsed;
         }
 
         return new LinkerContext(baseMap, globalSymbols, totalSize);
     }
+
 
     /**
      * Verifica se cada símbolo importado de cada módulo existe em globalSymbols.

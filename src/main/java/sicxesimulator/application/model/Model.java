@@ -3,9 +3,9 @@ package sicxesimulator.application.model;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import sicxesimulator.application.interfaces.ModelListener;
-import sicxesimulator.application.model.records.MemoryEntry;
-import sicxesimulator.application.model.records.RegisterEntry;
-import sicxesimulator.application.model.records.SymbolEntry;
+import sicxesimulator.application.model.data.records.MemoryEntry;
+import sicxesimulator.application.model.data.records.RegisterEntry;
+import sicxesimulator.application.model.data.records.SymbolEntry;
 import sicxesimulator.application.util.DialogUtil;
 import sicxesimulator.application.util.ValueFormatter;
 import sicxesimulator.application.view.ViewConfig;
@@ -35,7 +35,12 @@ public class Model {
     private ObjectFile lastLoadedCode;
     private int memorySize;
     private int simulationSpeed;
+    private LinkerMode linkerMode = LinkerMode.ABSOLUTO;
 
+    public enum LinkerMode {
+        ABSOLUTO,
+        RELOCAVEL
+    }
 
     public Model() {
         this.machine = new Machine();
@@ -48,13 +53,6 @@ public class Model {
         // Verifica a pasta apontada pela constante "SAVE_DIR" e carrega os arquivos de objeto
         loadObjectFilesFromSaveDir();
     }
-
-    public enum LinkerMode {
-        ABSOLUTO,
-        RELOCAVEL
-    }
-
-    private LinkerMode linkerMode = LinkerMode.RELOCAVEL;
 
     public LinkerMode getLinkerMode() {
         return linkerMode;
@@ -179,9 +177,8 @@ public class Model {
 
         // Lê o conteúdo do arquivo expandido usando FileUtils
         String expandedContent = FileUtils.readFile(Constants.TEMP_DIR + "/" + "MASMAPRG.ASM");
-        List<String> expanded = Arrays.asList(expandedContent.split("\\r?\\n"));
-        System.out.println("Linhas expandidas (" + expanded.size() + "): " + expanded);
-        return expanded;
+
+        return Arrays.asList(expandedContent.split("\\r?\\n"));
     }
 
     /**
@@ -205,8 +202,8 @@ public class Model {
      * @param fullRelocation Se o ligador deve fazer a realocação completa.
      * @return O arquivo objeto resultante.
      */
-    public ObjectFile linkObjectFiles(List<ObjectFile> files, int loadAddress, boolean fullRelocation) {
-        ObjectFile linkedObj = linker.linkModules(files, fullRelocation, loadAddress, "LinkedProgram");
+    public ObjectFile linkObjectFiles(List<ObjectFile> files, int loadAddress, boolean fullRelocation, String linkedName) {
+        ObjectFile linkedObj = linker.linkModules(files, fullRelocation, loadAddress, linkedName);
         addAndSaveObjectFileToList(linkedObj);
         return linkedObj;
     }
@@ -270,8 +267,6 @@ public class Model {
             notifyListeners();
         }
     }
-
-
 
     /// ===== Manipulação da lista de arquivos objeto =====
 
@@ -389,7 +384,6 @@ public class Model {
         );
     }
 
-
     public void addListener(ModelListener listener) {
         listeners.add(listener);
     }
@@ -399,5 +393,4 @@ public class Model {
             listener.onFilesUpdated();
         }
     }
-
 }

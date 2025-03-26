@@ -1,4 +1,4 @@
-package sicxesimulator.macroprocessor;
+package sicxesimulatorTest.software.macroprocessor;
 
 import org.junit.jupiter.api.Test;
 import sicxesimulator.software.macroprocessor.MacroProcessor;

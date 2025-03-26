@@ -13,9 +13,9 @@ public abstract class Converter {
      */
     public static byte[] intTo3Bytes(int value) {
         byte[] bytes = new byte[3];
-        bytes[0] = (byte)((value >> 16) & 0xFF);
-        bytes[1] = (byte)((value >> 8) & 0xFF);
-        bytes[2] = (byte)(value & 0xFF);
+        bytes[0] = (byte) ((value >> 16) & 0xFF);
+        bytes[1] = (byte) ((value >> 8) & 0xFF);
+        bytes[2] = (byte) (value & 0xFF);
         return bytes;
     }
 
@@ -33,6 +33,7 @@ public abstract class Converter {
 
     /**
      * Converte um valor inteiro para uma string binária de 48 bits, preenchendo com zeros à esquerda se necessário.
+     *
      * @param value O valor a converter.
      * @return String binária com 48 dígitos.
      */
@@ -104,5 +105,23 @@ public abstract class Converter {
             hex.append(String.format("%02X", b));
         }
         return hex.toString();
+    }
+
+    /**
+     * Converte um array de bytes em uma string binária.
+     * Cada byte é convertido para 8 dígitos binários, com zeros à esquerda se necessário.
+     *
+     * @param bytes Array de bytes.
+     * @return String binária representando o array, com comprimento = (número de bytes * 8).
+     */
+    public static String bytesToBinaryString(byte[] bytes) {
+        if (bytes == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0'));
+        }
+        return sb.toString();
     }
 }

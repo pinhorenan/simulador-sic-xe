@@ -1,8 +1,10 @@
-package sicxesimulator.hardware.cpu;
+package sicxesimulatorTest.hardware.cpu;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import sicxesimulator.hardware.Memory;
+import sicxesimulator.hardware.cpu.InstructionDecoder;
+import sicxesimulator.hardware.cpu.RegisterSet;
 import sicxesimulator.hardware.data.Instruction;
 
 public class InstructionDecoderTest {

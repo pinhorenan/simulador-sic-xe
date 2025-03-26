@@ -10,7 +10,7 @@ import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.controller.MenuBarController;
 import sicxesimulator.application.model.Model;
 
-public class MainView extends Application {
+public class View extends Application {
     private static Model injectedModel;
 
     /**
@@ -31,7 +31,7 @@ public class MainView extends Application {
         }
 
         //Criamos o layout principal primeiro
-        MainLayout mainLayout = new MainLayout();
+        Layout mainLayout = new Layout();
 
         // Criamos o Controller e passamos o MainLayout
         Controller mainController = new Controller(injectedModel, mainLayout);

@@ -4,14 +4,14 @@ import javafx.scene.control.Button;
 import sicxesimulator.application.controller.Controller;
 import sicxesimulator.application.interfaces.ButtonBinding;
 import sicxesimulator.application.util.ButtonFactory;
-import sicxesimulator.application.view.MainLayout;
+import sicxesimulator.application.view.Layout;
 
 public class AssemblerButtons implements ButtonBinding {
-    private final MainLayout mainLayout;
+    private final Layout mainLayout;
 
     private final Button assembleButton;
 
-    public AssemblerButtons(Controller controller, MainLayout mainLayout) {
+    public AssemblerButtons(Controller controller, Layout mainLayout) {
         this.mainLayout = mainLayout;
 
         this.assembleButton = ButtonFactory.createButton("Montar", controller::handleAssembleAction);

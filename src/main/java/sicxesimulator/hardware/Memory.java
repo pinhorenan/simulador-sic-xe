@@ -21,7 +21,7 @@ public class Memory {
 	 */
 	public byte[] readWord(int wordIndex) {
 		if (wordIndex * 3 + 3 > memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memória.");
+			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memoria.");
 		}
 		byte[] word = new byte[3];
 		System.arraycopy(memory, wordIndex * 3, word, 0, 3);
@@ -35,7 +35,7 @@ public class Memory {
 	 */
 	public int readByte(int byteAddr) {
 		if (byteAddr >= memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memória.");
+			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memoria.");
 		}
         // Retorna o byte como valor positivo (0-255)
         return memory[byteAddr] & 0xFF;
@@ -51,7 +51,7 @@ public class Memory {
 			throw new IllegalArgumentException("Uma palavra deve ter exatamente 3 bytes.");
 		}
 		if (wordIndex * 3 + 3 > memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memória.");
+			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memoria.");
 		}
 		System.arraycopy(word, 0, memory, wordIndex * 3, 3);
 	}
@@ -63,7 +63,7 @@ public class Memory {
 	 */
 	public void writeByte(int byteAddr, int value) {
 		if (byteAddr >= memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memória.");
+			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memoria.");
 		}
 		memory[byteAddr] = (byte) (value & 0xFF);  // Armazena apenas o byte
 	}

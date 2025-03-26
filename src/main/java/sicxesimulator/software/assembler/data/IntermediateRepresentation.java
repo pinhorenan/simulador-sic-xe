@@ -1,6 +1,6 @@
 package sicxesimulator.software.assembler.data;
 
-import sicxesimulator.data.SymbolTable;
+import sicxesimulator.software.data.SymbolTable;
 import java.util.List;
 import java.util.Set;
 

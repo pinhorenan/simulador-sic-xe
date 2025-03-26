@@ -1,9 +1,9 @@
 package sicxesimulator.software.linker;
 
-import sicxesimulator.data.ObjectFile;
-import sicxesimulator.data.Symbol;
-import sicxesimulator.data.SymbolTable;
-import sicxesimulator.data.records.RelocationRecord;
+import sicxesimulator.software.data.ObjectFile;
+import sicxesimulator.software.data.Symbol;
+import sicxesimulator.software.data.SymbolTable;
+import sicxesimulator.software.data.records.RelocationRecord;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.FileUtils;
 
@@ -11,7 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static sicxesimulator.data.ObjectFile.ObjectFileOrigin.LINKED_MODULES;
+import static sicxesimulator.software.data.ObjectFile.ObjectFileOrigin.LINKED_MODULES;
 
 /**
  * Linker que suporta dois modos:

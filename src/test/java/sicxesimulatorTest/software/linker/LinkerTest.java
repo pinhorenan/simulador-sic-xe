@@ -1,8 +1,8 @@
 package sicxesimulatorTest.software.linker;
 
 import org.junit.jupiter.api.Test;
-import sicxesimulator.data.ObjectFile;
-import sicxesimulator.data.SymbolTable;
+import sicxesimulator.software.data.ObjectFile;
+import sicxesimulator.software.data.SymbolTable;
 import sicxesimulator.software.linker.Linker;
 
 import java.util.Arrays;

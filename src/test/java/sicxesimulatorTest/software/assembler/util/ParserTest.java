@@ -2,7 +2,7 @@ package sicxesimulatorTest.software.assembler.util;
 
 import org.junit.jupiter.api.Test;
 import sicxesimulator.software.assembler.util.Parser;
-import sicxesimulator.data.SymbolTable;
+import sicxesimulator.software.data.SymbolTable;
 
 import static org.junit.jupiter.api.Assertions.*;
 

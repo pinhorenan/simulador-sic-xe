@@ -21,6 +21,8 @@ public abstract class Constants {
             "TIXR"
     ));
 
+    public static final int DEFAULT_MEMORY_SIZE_IN_BYTES = 24576;
+
     /**
      * Mapeamento de mnemônicos para códigos de operação (opcode).
      */

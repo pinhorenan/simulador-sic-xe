@@ -1,6 +1,6 @@
 package sicxesimulator.software.assembler.util;
 
-import sicxesimulator.data.SymbolTable;
+import sicxesimulator.software.data.SymbolTable;
 import sicxesimulator.utils.Converter;
 
 public abstract class Parser {

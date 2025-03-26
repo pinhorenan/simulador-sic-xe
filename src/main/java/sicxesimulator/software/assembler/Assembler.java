@@ -1,7 +1,7 @@
 package sicxesimulator.software.assembler;
 
 import sicxesimulator.software.assembler.data.IntermediateRepresentation;
-import sicxesimulator.data.ObjectFile;
+import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.utils.Constants;
 
 import java.io.File;

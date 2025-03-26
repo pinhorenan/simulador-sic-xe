@@ -1,10 +1,10 @@
 package sicxesimulator.software.loader;
 
 import sicxesimulator.hardware.Memory;
-import sicxesimulator.data.ObjectFile;
-import sicxesimulator.data.Symbol;
-import sicxesimulator.data.SymbolTable;
-import sicxesimulator.data.records.RelocationRecord;
+import sicxesimulator.software.data.ObjectFile;
+import sicxesimulator.software.data.Symbol;
+import sicxesimulator.software.data.SymbolTable;
+import sicxesimulator.software.data.records.RelocationRecord;
 
 /**
  * Carregador de módulos objeto na memória.

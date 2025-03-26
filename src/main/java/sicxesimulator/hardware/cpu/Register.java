@@ -13,7 +13,7 @@ public class Register {
 	 */
 	public Register(String name) {
 		if (!Checker.isValidRegisterName(name)) {
-			throw new IllegalArgumentException("Registrador inválido: " + name);
+			throw new IllegalArgumentException("Registrador invalido: " + name);
 		}
 		this.name = name;
 		this.size = name.equals("F") ? 48 : 24;
@@ -28,14 +28,14 @@ public class Register {
 
 	public int getIntValue() {
 		if (size == 48) {
-			throw new IllegalStateException("O registrador F é de 48 bits. Use getLongValue().");
+			throw new IllegalStateException("O registrador F e de 48 bits. Use getLongValue().");
 		}
 		return (int) (value & 0xFFFFFF);
 	}
 
 	public long getLongValue() {
 		if (size != 48) {
-			throw new IllegalStateException("Esse registrador não é de 48 bits. Use getIntValue().");
+			throw new IllegalStateException("Esse registrador nao e de 48 bits. Use getIntValue().");
 		}
 		return value & 0xFFFFFFFFFFFFL;
 	}

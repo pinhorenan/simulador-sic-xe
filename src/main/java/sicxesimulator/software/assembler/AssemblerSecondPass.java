@@ -4,9 +4,9 @@ import sicxesimulator.software.assembler.data.AssemblyLine;
 import sicxesimulator.software.assembler.data.IntermediateRepresentation;
 import sicxesimulator.software.assembler.util.InstructionSizeCalculator;
 import sicxesimulator.software.assembler.util.Parser;
-import sicxesimulator.data.ObjectFile;
-import sicxesimulator.data.Symbol;
-import sicxesimulator.data.SymbolTable;
+import sicxesimulator.software.data.ObjectFile;
+import sicxesimulator.software.data.Symbol;
+import sicxesimulator.software.data.SymbolTable;
 import sicxesimulator.utils.*;
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static sicxesimulator.data.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
+import static sicxesimulator.software.data.ObjectFile.ObjectFileOrigin.SINGLE_MODULE;
 
 public class AssemblerSecondPass {
     /**
@@ -38,7 +38,7 @@ public class AssemblerSecondPass {
         for (AssemblyLine line : midObject.assemblyLines()) {
             int lineOffset = line.address() - startAddress;
             if (lineOffset < 0 || lineOffset >= machineCode.length) {
-                DetailedLogger.logError("Fora dos limites de endereço: " + line.address(), null);
+                Logger.logError("Fora dos limites de endereco: " + line.address(), null);
                 continue;
             }
 
@@ -80,7 +80,7 @@ public class AssemblerSecondPass {
         try {
             writeTextualObjectFile(programName + ".obj", programName, startAddress, machineCode, modificationList, exportedList, imported);
         } catch (Exception e) {
-            DetailedLogger.logError("Erro ao gravar arquivo .obj", e);
+            Logger.logError("Erro ao gravar arquivo .obj", e);
         }
         return metaFile;
     }
@@ -219,7 +219,7 @@ public class AssemblerSecondPass {
             case 2 -> generateInstructionCodeFormat2(mnemonic, operand);
             case 3 -> generateInstructionCodeFormat3(mnemonic, operand, symbolTable, line);
             case 4 -> generateInstructionCodeFormat4(mnemonic, operand, symbolTable);
-            default -> throw new IllegalArgumentException("Formato de instrução desconhecido para " + mnemonic);
+            default -> throw new IllegalArgumentException("Formato de instrucao desconhecido para " + mnemonic);
         };
     }
 
@@ -233,7 +233,7 @@ public class AssemblerSecondPass {
         int opcode = Mapper.mnemonicToOpcode(mnemonic);
         String[] regs = operand.split(",");
         if (regs.length != 2) {
-            throw new IllegalArgumentException("Instrução de formato 2 requer 2 registradores: " + operand);
+            throw new IllegalArgumentException("Instrucao de formato 2 requer 2 registradores: " + operand);
         }
         int r1 = Mapper.registerNameToNumber(regs[0].trim());
         int r2 = Mapper.registerNameToNumber(regs[1].trim());
@@ -334,7 +334,7 @@ public class AssemblerSecondPass {
         int nextInstructionByteAddr = currentInstructionByteAddr + getInstructionSize(line);
         int disp = operandByteAddr - nextInstructionByteAddr;
         if (disp < -2048 || disp > 2047) {
-            throw new IllegalArgumentException("Deslocamento PC-relativo inválido: " + disp);
+            throw new IllegalArgumentException("Deslocamento PC-relativo invalido: " + disp);
         }
         return disp & 0xFFF;
     }

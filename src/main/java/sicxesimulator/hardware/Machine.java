@@ -1,6 +1,7 @@
 package sicxesimulator.hardware;
 
 import sicxesimulator.hardware.cpu.ControlUnit;
+import sicxesimulator.utils.Constants;
 
 /**
  * Representa a máquina SIC/XE, composta por uma unidade de controle e uma memória.
@@ -10,7 +11,7 @@ public class Machine {
     private Memory memory;
 
     public Machine() {
-        this.memory = new Memory(24576); // Valor arbitrário, parametrizável.
+        this.memory = new Memory(Constants.DEFAULT_MEMORY_SIZE_IN_BYTES); // Valor arbitrário, parametrizável.
         this.controlUnit = new ControlUnit(this.memory);
     }
 
@@ -23,7 +24,7 @@ public class Machine {
         try {
             controlUnit.step();
         } catch (Exception e) {
-            System.err.println("Erro na execucao: " + e.getMessage() + "PC: " + controlUnit.getIntValuePC());
+            System.err.println("Erro na execucao! Endereco da instrucao: " + e.getMessage() + "; PC: " + controlUnit.getIntValuePC());
         }
     }
 

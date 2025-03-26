@@ -5,7 +5,7 @@ module sicxesimulator {
     exports sicxesimulator.hardware.data;
     exports sicxesimulator.software.macroprocessor;
     exports sicxesimulator.software.assembler;
-    exports sicxesimulator.data;
+    exports sicxesimulator.software.data;
     exports sicxesimulator.software.linker;
     requires java.logging;
     requires javafx.controls;

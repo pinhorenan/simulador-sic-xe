@@ -4,8 +4,8 @@ import org.junit.jupiter.api.Test;
 import sicxesimulator.software.assembler.AssemblerFirstPass;
 import sicxesimulator.software.assembler.data.AssemblyLine;
 import sicxesimulator.software.assembler.data.IntermediateRepresentation;
-import sicxesimulator.data.Symbol;
-import sicxesimulator.data.SymbolTable;
+import sicxesimulator.software.data.Symbol;
+import sicxesimulator.software.data.SymbolTable;
 
 import java.util.List;
 

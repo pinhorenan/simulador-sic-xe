@@ -1,4 +1,4 @@
-SAMP02  START   0
+SAMP02  START   0x000000
 BEGIN   LDA     ALPHA
         SUB     BETA
         STA     GAMMA

@@ -1,8 +1,8 @@
-MODULE3  START 300
-         EXTREF ALPHA                ; Para acessar ALPHA
-         EXTDEF CLEARALPHA           ; Exporta a sub-rotina CLEARALPHA
+MODULE3  START 0x000306
+         EXTREF ALPHA
+         EXTDEF CLEARALPHA
 
-CLEARALPHA LDA    #0                 ; Carrega 0
-           STA    ALPHA              ; ALPHA = 0
+CLEARALPHA LDA    #0
+           STA    ALPHA
            RSUB
            END   MODULE3

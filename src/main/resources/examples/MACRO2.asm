@@ -4,7 +4,7 @@ ADDMAC  MACRO
         STA     RESULT
         MEND
 
-MACRO2  START   0
+MACRO2  START   0x000000
         ADDMAC
         RSUB
 NUM1    WORD    10

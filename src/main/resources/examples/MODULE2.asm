@@ -1,11 +1,11 @@
-MODULE2  START   200
-         EXTDEF  BETA, ADDALPHA      ; Exporta BETA e a sub-rotina ADDALPHA
-         EXTREF  ALPHA               ; Para poder ler/escrever ALPHA
+MODULE2  START   0x000204
+         EXTDEF  BETA, ADDALPHA
+         EXTREF  ALPHA
 
-BETA     WORD    10                  ; Uma variável global
+BETA     WORD    10
 
-ADDALPHA LDA     ALPHA               ; Lê ALPHA
-         ADD     BETA                ; Soma BETA
-         STA     ALPHA               ; Salva de volta em ALPHA
-         RSUB                         ; Retorna para quem chamou
+ADDALPHA LDA     ALPHA
+         ADD     BETA
+         STA     ALPHA
+         RSUB
          END     MODULE2

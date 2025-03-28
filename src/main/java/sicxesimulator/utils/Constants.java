@@ -5,6 +5,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Contém definições constantes utilizadas em todO o simulador.
+ *
+ * Inclui:
+ * - Mapeamento de mnemônicos para opcodes.
+ * - Tamanhos e limites do SIC/XE.
+ * - Caracteres e instruções especiais.
+ */
 public abstract class Constants {
 
     /**

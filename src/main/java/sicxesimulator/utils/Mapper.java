@@ -4,7 +4,13 @@ import sicxesimulator.hardware.cpu.Register;
 import sicxesimulator.hardware.cpu.RegisterSet;
 
 /**
- * Classe utilitária para mapeamento de valores.
+ * Classe utilitária para mapeamentos relacionados à arquitetura SIC/XE.
+ *
+ * Inclui:
+ * - Conversão entre nomes de registradores e seus índices.
+ * - Acesso a registradores por número.
+ * - Mapeamento de mnemônicos para opcodes.
+ * - Conversão de velocidades de simulação.
  */
 public abstract class Mapper {
 
@@ -60,21 +66,6 @@ public abstract class Mapper {
             case 8 -> registers.getRegister("PC");
             case 9 -> registers.getRegister("SW");
             default -> throw new IllegalArgumentException("Registrador inválido: " + num);
-        };
-    }
-
-    /**
-     * Retorna um valor em milissegundo correspondente à velocidade de simulação.
-     * @param simulationSpeeed Velocidade de simulação (1 a 4). *Se 0 = default = tempo real.
-     * @return Valor em milissegundo correspondente à velocidade de simulação.
-     */
-    public static int simulationSpeedToCycleDelay(int simulationSpeeed) {
-        return switch (simulationSpeeed) {
-            case 1 -> 1000;
-            case 2 -> 500;
-            case 3 -> 250;
-            case 4 -> 100;
-            default -> 0;
         };
     }
 }

@@ -30,8 +30,8 @@ public class InstructionDecoderTest {
         }
 
         @Override
-        public int readByte(int address) {
-            return data[address] & 0xFF;
+        public int readByte(int byteAddress) {
+            return data[byteAddress] & 0xFF;
         }
 
         @Override

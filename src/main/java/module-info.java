@@ -12,6 +12,9 @@ module sicxesimulator {
 
     opens sicxesimulator.simulation.data to javafx.base;
     exports sicxesimulator.software.assembler.util;
+    exports sicxesimulator.simulation.model;
+    exports sicxesimulator.simulation.data.records;
+    exports sicxesimulator.simulation.data;
 
     requires java.logging;
     requires javafx.base;

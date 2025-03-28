@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import sicxesimulator.hardware.cpu.ExecutionUnit;
 import sicxesimulator.hardware.cpu.RegisterSet;
 import sicxesimulator.hardware.Memory;
-import sicxesimulator.utils.Converter;
+import sicxesimulator.utils.Convert;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,8 +29,8 @@ class ExecutionUnitTest {
         }
 
         @Override
-        public int readByte(int address) {
-            return data[address] & 0xFF;
+        public int readByte(int byteAddress) {
+            return data[byteAddress] & 0xFF;
         }
 
         @Override
@@ -46,8 +46,8 @@ class ExecutionUnitTest {
         }
 
         @Override
-        public void writeByte(int address, int value) {
-            data[address] = (byte) (value & 0xFF);
+        public void writeByte(int byteAddress, int value) {
+            data[byteAddress] = (byte) (value & 0xFF);
         }
     }
 
@@ -61,7 +61,7 @@ class ExecutionUnitTest {
     @Test
     void testExecuteADD() {
         registers.getRegister("A").setValue(10);
-        memory.writeWord(0, Converter.intTo3Bytes(20));
+        memory.writeWord(0, Convert.intTo3Bytes(20));
 
         String log = executionUnit.executeADD(new int[]{0,0,0,0,0,1,1}, false, 0);
         assertEquals(30, registers.getRegister("A").getIntValue());
@@ -90,7 +90,7 @@ class ExecutionUnitTest {
     @Test
     void testExecuteDIV_DivisionByZero() {
         registers.getRegister("A").setValue(10);
-        memory.writeWord(0, Converter.intTo3Bytes(0));
+        memory.writeWord(0, Convert.intTo3Bytes(0));
 
         assertThrows(ArithmeticException.class,
                 () -> executionUnit.executeDIV(new int[]{0,0,0,0,0,1,1}, false, 0));
@@ -118,7 +118,7 @@ class ExecutionUnitTest {
 
     @Test
     void testExecuteLDA_DirectMode() {
-        memory.writeWord(0, Converter.intTo3Bytes(123456));
+        memory.writeWord(0, Convert.intTo3Bytes(123456));
         executionUnit.executeLDA(new int[]{0,0,0,0,0,1,1}, false, 0);
         assertEquals(123456, registers.getRegister("A").getIntValue());
     }
@@ -133,7 +133,7 @@ class ExecutionUnitTest {
     void testExecuteSTA() {
         registers.getRegister("A").setValue(654321);
         executionUnit.executeSTA(new int[]{0,0,0,0,0,1,1}, false, 3);
-        assertArrayEquals(Converter.intTo3Bytes(654321), memory.readWord(1));
+        assertArrayEquals(Convert.intTo3Bytes(654321), memory.readWord(1));
     }
 
     @Test

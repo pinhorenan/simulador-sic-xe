@@ -1,11 +1,11 @@
-package sicxesimulatorTest.simulation.model.data;
+package sicxesimulatorTest.simulation.data;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-import sicxesimulator.simulation.model.data.records.MemoryEntry;
-import sicxesimulator.simulation.model.data.records.RegisterEntry;
-import sicxesimulator.simulation.model.data.records.SymbolEntry;
-import sicxesimulator.simulation.model.data.ObjectFileTableItem;
+import sicxesimulator.simulation.data.records.MemoryEntry;
+import sicxesimulator.simulation.data.records.RegisterEntry;
+import sicxesimulator.simulation.data.records.SymbolEntry;
+import sicxesimulator.simulation.data.ObjectFileTableItem;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.data.SymbolTable;
 

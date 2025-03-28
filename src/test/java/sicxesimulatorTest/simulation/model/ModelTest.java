@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import sicxesimulator.simulation.model.Model;
-import sicxesimulator.simulation.model.data.records.MemoryEntry;
-import sicxesimulator.simulation.model.data.records.RegisterEntry;
+import sicxesimulator.simulation.data.records.MemoryEntry;
+import sicxesimulator.simulation.data.records.RegisterEntry;
 
 public class ModelTest {
 
@@ -56,9 +56,7 @@ public class ModelTest {
         Model model = new Model();
         model.setCodeLoaded(true);
         model.setSimulationFinished(true);
-        model.setSimulationPaused(true);
         assertTrue(model.codeLoadedProperty().get());
         assertTrue(model.simulationFinishedProperty().get());
-        assertTrue(model.simulationPausedProperty().get());
     }
 }

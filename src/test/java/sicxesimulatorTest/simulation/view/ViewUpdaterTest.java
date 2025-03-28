@@ -13,9 +13,9 @@ import sicxesimulator.simulation.controller.Controller;
 import sicxesimulator.simulation.model.Model;
 import sicxesimulator.simulation.view.Layout;
 import sicxesimulator.simulation.view.ViewUpdater;
-import sicxesimulator.simulation.model.data.records.MemoryEntry;
-import sicxesimulator.simulation.model.data.records.RegisterEntry;
-import sicxesimulator.simulation.model.data.records.SymbolEntry;
+import sicxesimulator.simulation.data.records.MemoryEntry;
+import sicxesimulator.simulation.data.records.RegisterEntry;
+import sicxesimulator.simulation.data.records.SymbolEntry;
 
 public class ViewUpdaterTest {
 

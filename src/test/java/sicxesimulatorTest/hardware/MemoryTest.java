@@ -66,12 +66,12 @@ class MemoryTest {
     }
 
     @Test
-    void testClearMemory() {
+    void testReset() {
         // Preenche a memória com 0xFF e depois limpa
         for (int i = 0; i < memory.getSize(); i++) {
             memory.writeByte(i, 0xFF);
         }
-        memory.clearMemory();
+        memory.reset();
         byte[] map = memory.getMemoryMap();
         for (int value : map) {
             assertEquals(0, value);

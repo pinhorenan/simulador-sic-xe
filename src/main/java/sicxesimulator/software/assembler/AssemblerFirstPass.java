@@ -10,16 +10,20 @@ import sicxesimulator.utils.Checker;
 import java.util.*;
 
 /**
- * Classe que realiza a primeira passagem do montador, gerando uma representação intermediária.
+ * Responsável por realizar a primeira passagem do montador SIC/XE.
+ *
+ * Interpreta o código-fonte assembly e constrói uma representação intermediária com as
+ * instruções, símbolos e endereços necessários para a segunda passagem do montador.
  */
-@SuppressWarnings("ClassEscapesDefinedScope")
 public class AssemblerFirstPass {
 
     /**
-     * Processa as linhas de código-fonte e gera uma IntermediateRepresentation.
+     * Processa o código-fonte e gera a representação intermediária necessária
+     * para a montagem do programa.
      *
-     * @param sourceLines Lista de linhas de código assembly.
-     * @return Representação intermediária contendo linhas de assembly, símbolos e endereços.
+     * @param originalSourceLines Linhas originais do código-fonte assembly.
+     * @param sourceLines Linhas processadas (com macros expandidas, sem comentários e espaços irrelevantes).
+     * @return {@link IntermediateRepresentation} contendo as instruções, tabela de símbolos, programa e endereço inicial.
      */
     public IntermediateRepresentation process(List<String> originalSourceLines, List<String> sourceLines) {
         int locationCounter = 0;
@@ -27,28 +31,23 @@ public class AssemblerFirstPass {
         String programName = null;
         int startAddress = 0;
 
-        // Coleções para acumular os dados
         List<AssemblyLine> assemblyLines = new ArrayList<>();
         var symbolTable = new SymbolTable();
         Set<String> importedSymbols = new HashSet<>();
 
-        // Percorre cada linha do código-fonte
         for (int i = 0; i < sourceLines.size(); i++) {
             String originalLine = sourceLines.get(i);
             String line = removeInlineComments(originalLine).trim();
 
-            // Ignorar linhas vazias ou comentadas
             if (line.isEmpty() || line.startsWith(";")) {
                 continue;
             }
 
-            // Dividir a linha em partes
             String[] parts = line.split("\\s+", 3);
             String label = null;
             String mnemonic = null;
             String operand = null;
 
-            // Detecta o mnemônico e, possivelmente, o rótulo
             if (parts.length > 0) {
                 if (Checker.isMnemonic(parts[0])) {
                     mnemonic = parts[0];
@@ -68,9 +67,7 @@ public class AssemblerFirstPass {
                 throw new IllegalArgumentException("Linha invalida na linha " + (i + 1) + ": " + originalLine);
             }
 
-            // Processa diretivas especiais
-            if(processDirectives(mnemonic, line, symbolTable, importedSymbols)) {
-                // Diretivas processadas (START, EXTDEF, EXTREF, END) não geram AssemblyLine
+            if (processDirectives(mnemonic, line, symbolTable, importedSymbols)) {
                 if (mnemonic.equalsIgnoreCase("START")) {
                     try {
                         startAddress = Parser.parseAddress(operand);
@@ -79,8 +76,6 @@ public class AssemblerFirstPass {
                         throw new IllegalArgumentException("Erro ao processar START na linha " + (i + 1) + ": " + operand, e);
                     }
                     if (label != null) {
-                        // Registra o símbolo local e define o nome do programa
-                        symbolTable.addSymbol(label, locationCounter, true);
                         programName = label;
                     }
                     continue;
@@ -91,7 +86,6 @@ public class AssemblerFirstPass {
                 continue;
             }
 
-            // Registra o rótulo (se houver) na tabela de símbolos
             if (label != null) {
                 if (symbolTable.contains(label)) {
                     var symbol = symbolTable.getSymbolInfo(label);
@@ -102,7 +96,6 @@ public class AssemblerFirstPass {
                 }
             }
 
-            // Calcula o tamanho da instrução e registra a AssemblyLine
             int size = InstructionSizeCalculator.calculateSize(mnemonic, operand);
             AssemblyLine asmLine = new AssemblyLine(label, mnemonic, operand, locationCounter);
             assemblyLines.add(asmLine);
@@ -110,10 +103,9 @@ public class AssemblerFirstPass {
         }
 
         if (!endFound) {
-            throw new IllegalArgumentException("Diretiva END nao encontrada.");
+            throw new IllegalArgumentException("Diretiva END não encontrada.");
         }
 
-        // Cria a IntermediateRepresentation utilizando coleções imutáveis
         return new IntermediateRepresentation(
                 Collections.unmodifiableList(assemblyLines),
                 Collections.unmodifiableList(originalSourceLines),
@@ -125,8 +117,9 @@ public class AssemblerFirstPass {
     }
 
     /**
-     * Remove comentários inline delimitados por ";".
-     * @param line Linha original.
+     * Remove comentários inline iniciados por ponto e vírgula (;).
+     *
+     * @param line Linha original do código.
      * @return Linha sem o conteúdo de comentário.
      */
     private String removeInlineComments(String line) {
@@ -135,13 +128,15 @@ public class AssemblerFirstPass {
     }
 
     /**
-     * Processa diretivas especiais (START, EXTDEF, EXTREF).
+     * Processa diretivas especiais do montador: EXTDEF, EXTREF, START e END.
      *
-     * @param mnemonic       Mnemônico da linha.
-     * @param line           Linha completa.
-     * @param symbolTable    Tabela de símbolos a ser atualizada.
-     * @param importedSymbols Conjunto de símbolos importados.
-     * @return true se a diretiva foi processada; false caso contrário.
+     * As diretivas START e END são tratadas em lógica separada dentro do métodO {@link #process}.
+     *
+     * @param mnemonic Mnemônico da linha.
+     * @param line Linha completa do código.
+     * @param symbolTable Tabela de símbolos a ser atualizada.
+     * @param importedSymbols Conjunto de símbolos importados do programa.
+     * @return {@code true} se a diretiva foi reconhecida e processada; {@code false} caso contrário.
      */
     private boolean processDirectives(String mnemonic, String line, SymbolTable symbolTable, Set<String> importedSymbols) {
         String operandFull = line.substring(mnemonic.length()).trim();
@@ -168,7 +163,6 @@ public class AssemblerFirstPass {
             return true;
         }
 
-        // START e END são tratados separadamente em process()
         return mnemonic.equalsIgnoreCase("START") || mnemonic.equalsIgnoreCase("END");
     }
 }

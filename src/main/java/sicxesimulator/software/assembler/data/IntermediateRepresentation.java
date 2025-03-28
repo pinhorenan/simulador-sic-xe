@@ -5,8 +5,20 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Representação intermediária do código-fonte após a primeira passagem do montador.
+ * Representa o resultado da primeira passagem do montador.
+ *
+ * Essa estrutura contém todas as informações necessárias para a segunda
+ * passagem, incluindo as linhas de assembly analisadas, tabela de símbolos,
+ * símbolos importados, nome do programa e endereço de início.
+ *
+ * @param assemblyLines Lista de linhas de código montadas.
+ * @param rawSourceLines Código-fonte original (para referência e exibição).
+ * @param symbolTable Tabela de símbolos contendo definições locais e globais.
+ * @param importedSymbols Conjunto de símbolos externos referenciados.
+ * @param programName Nome do programa (rótulo START).
+ * @param startAddress Endereço de início do programa.
  */
+
 public record IntermediateRepresentation(
         List<AssemblyLine> assemblyLines,
         List<String> rawSourceLines,

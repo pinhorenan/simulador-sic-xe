@@ -8,10 +8,11 @@ import java.io.File;
 import java.util.List;
 
 /**
- * Classe orquestradora do processo de montagem.
- * Executa a primeira e segunda passagens, gera os arquivos de saída e retorna o ObjectFile final.
+ * Classe principal responsável por orquestrar o processo completo de montagem.
+ *
+ * Executa a primeira e segunda passagens do montador e gera os arquivos de
+ * saída (como .meta e .obj) a partir do código-fonte assembly fornecido.
  */
-@SuppressWarnings("ClassEscapesDefinedScope")
 public class Assembler {
     private final AssemblerFirstPass firstPass;
     private final AssemblerSecondPass secondPass;
@@ -22,13 +23,11 @@ public class Assembler {
     }
 
     /**
-     * Realiza o processo completo de montagem:
-     * 1ª passagem: Gera a IntermediateRepresentation.
-     * 2ª passagem: Gera o código objeto e os arquivos associados.
+     * Executa o processo completo de montagem.
      *
-     * @param originalSource  Código-fonte original.
-     * @param expandedSource  Código-fonte com macros expandidas.
-     * @return ObjectFile contendo o código objeto final.
+     * @param originalSource Código-fonte original (sem macros expandidas).
+     * @param expandedSource Código-fonte com macros expandidas.
+     * @return {@link ObjectFile} representando o código objeto final.
      */
     public ObjectFile assemble(List<String> originalSource, List<String> expandedSource) {
         // 1ª passagem
@@ -46,19 +45,22 @@ public class Assembler {
     }
 
     /**
-     * Chama a primeira passagem do montador.
-     * @param originalSourceCode Código-fonte original (utilizado para exibir depois na interface).
-     * @param sourceCodeWithMacrosExpanded Código-fonte com macros expandidas.
-     * @return IntermediateRepresentation gerada na primeira passagem.
+     * Executa a primeira passagem, gerando a representação intermediária.
+     *
+     * @param originalSourceCode Código original (exibição e referência).
+     * @param sourceCodeWithMacrosExpanded Código com macros resolvidas.
+     * @return {@link IntermediateRepresentation} gerada.
      */
     public IntermediateRepresentation firstPass(List<String> originalSourceCode, List<String> sourceCodeWithMacrosExpanded) {
         return firstPass.process(originalSourceCode, sourceCodeWithMacrosExpanded);
     }
 
+
     /**
-     * Chama a segunda passagem do montador.
-     * @param midCode Representação intermediária.
-     * @return ObjectFile final.
+     * Executa a segunda passagem a partir da representação intermediária.
+     *
+     * @param midCode {@link IntermediateRepresentation} gerada na primeira passagem.
+     * @return {@link ObjectFile} final.
      */
     public ObjectFile secondPass(IntermediateRepresentation midCode) {
         return secondPass.generateObjectFile(midCode);

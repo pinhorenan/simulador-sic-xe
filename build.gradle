@@ -1,6 +1,7 @@
 plugins {
+    id 'java'
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.14'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 java {
@@ -9,11 +10,21 @@ java {
     }
 }
 
+application {
+    mainClass = 'src/main/java/sicxesimulator.Main'
+}
+
+javafx {
+    version = "24"
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.swing']
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
+    // testes
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
     testImplementation 'org.junit.platform:junit-platform-suite-api:1.9.3'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
@@ -30,14 +41,4 @@ sourceSets {
     test {
         java.srcDirs = ['src/test/java']
     }
-}
-
-javafx {
-    version = "21.0.1"
-    modules = ['javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.base', 'javafx.graphics']
-}
-
-application {
-    mainClass = 'sicxesimulator.Main'
-    mainModule = 'sicxesimulator'
 }

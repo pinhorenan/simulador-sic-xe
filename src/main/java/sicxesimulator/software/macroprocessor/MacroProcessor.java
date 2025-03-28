@@ -7,18 +7,22 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Processador de macros para o montador SIC/XE.
+ * Processador de macros do montador SIC/XE.
+ *
+ * <p>Responsável por detectar definições de macros, armazená-las e expandi-las
+ * no arquivo-fonte. Também realiza substituição de parâmetros formais por argumentos reais.</p>
  */
 public class MacroProcessor {
     private final Map<String, MacroDefinition> macroTable = new HashMap<>();
 
     /**
-     * Processa o arquivo de entrada e gera o arquivo de saída com as macros expandidas.
-     * Utiliza os métodos de FileUtils para as operações de I/O.
+     * Processa o arquivo-fonte, detectando e expandindo macros.
      *
-     * @param inputFile  Nome do arquivo-fonte de entrada.
-     * @param outputFile Nome do arquivo de saída, especificado como "MASMAPRG.ASM" (ou outro).
-     * @throws IOException Se ocorrer um erro de leitura/escrita.
+     * <p>O conteúdo expandido é salvo em {@code outputFile}, dentro de {@link Constants#TEMP_DIR}.</p>
+     *
+     * @param inputFile Nome do arquivo-fonte de entrada (com macros).
+     * @param outputFile Nome do arquivo de saída (ex: "MASMAPRG.ASM").
+     * @throws IOException Em caso de falha na leitura ou escrita de arquivos.
      */
     public void process(String inputFile, String outputFile) throws IOException {
         // Limpa definições antigas
@@ -100,16 +104,16 @@ public class MacroProcessor {
 
         String expandedContent = String.join("\n", filtered);
 
-
         // Salva o arquivo de saída no diretório TEMP_DIR utilizando FileUtils
         FileUtils.writeFileInDir(Constants.TEMP_DIR, outputFile, expandedContent);
         // TODO: Adicionar log de sucesso
     }
 
     /**
-     * Expande recursivamente uma linha, tratando chamadas de macro com ou sem parâmetros.
-     * @param line Linha a ser expandida.
-     * @return Lista de linhas resultantes da expansão.
+     * Tenta expandir uma linha caso ela seja uma chamada de macro.
+     *
+     * @param line Linha original do código-fonte.
+     * @return Lista de linhas expandidas ou a linha original.
      */
     private List<String> expandLine(String line) {
         String trimmed = line.trim();
@@ -151,18 +155,18 @@ public class MacroProcessor {
     }
 
     /**
-     * Expande a macro dada, aplicando substituição de parâmetros, se necessário.
-     * @param macro MacroDefinition a ser expandida.
-     * @param args Lista de argumentos passados na chamada (pode ser vazia).
-     * @param label Rótulo opcional a ser adicionado na primeira linha da expansão.
-     * @return Lista de linhas expandidas.
+     * Expande uma macro substituindo parâmetros por argumentos reais.
+     *
+     * @param macro Definição da macro.
+     * @param args Argumentos passados na chamada (pode estar vazio).
+     * @param label Rótulo opcional que será aplicado à primeira linha expandida.
+     * @return Linhas expandidas da macro.
      */
     private List<String> expandMacro(MacroDefinition macro, List<String> args, String label) {
         List<String> expanded = new ArrayList<>();
         Map<String, String> paramMap = new HashMap<>();
         List<String> params = macro.getParameters();
 
-        // Se a macro tiver parâmetros, mapeia cada parâmetro ao argumento correspondente.
         if (!params.isEmpty()) {
             if (args.size() != params.size()) {
                 throw new IllegalArgumentException("Numero de argumentos (" + args.size() +
@@ -175,17 +179,13 @@ public class MacroProcessor {
         boolean firstLine = true;
         for (String macroLine : macro.getBody()) {
             String expandedLine = macroLine;
-            // Se houver parâmetros, substitui todas as ocorrências dos parâmetros pelos argumentos correspondentes.
             for (Map.Entry<String, String> entry : paramMap.entrySet()) {
-                // Substitui ocorrências de parâmetro. Assumimos que os parâmetros são identificados por um prefixo (por exemplo, &)
                 expandedLine = expandedLine.replace(entry.getKey(), entry.getValue());
             }
             if (firstLine && label != null && !label.isEmpty()) {
-                // Precede a primeira linha com o rótulo original.
                 expandedLine = label + " " + expandedLine;
                 firstLine = false;
             }
-            // Expande recursivamente a linha, se necessário.
             expanded.addAll(expandLine(expandedLine));
         }
         return expanded;

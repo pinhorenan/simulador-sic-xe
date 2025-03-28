@@ -53,7 +53,7 @@ public class ViewUpdater {
         var symbolsMap = objectFile.getSymbolTable().getAllSymbols();
         symbolsMap.forEach((name, info) -> {
             int byteAddress = info.address;
-            symbolTable.getItems().add(new SymbolEntry(name, Convert.intToBinaryString24((byteAddress))));
+            symbolTable.getItems().add(new SymbolEntry(name, Convert.intToHexString24((byteAddress))));
         });
     }
 

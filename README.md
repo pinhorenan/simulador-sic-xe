@@ -98,6 +98,17 @@ Por restrições do projeto, não há suporte para:
 
 Essas instruções possuem placeholders (stubs) que geram logs informativos indicando sua ausência de implementação.
 
+## 📚 Documentação das Principais Classes
+
+| Classe                                                                                       | Descrição                                      |
+|----------------------------------------------------------------------------------------------|------------------------------------------------|
+| [`ControlUnit`](src/main/java/sicxesimulator/hardware/cpu/ControlUnit.java)                  | Busca, decodifica e despacha instruções.       |
+| [`InstructionDecoder`](src/main/java/sicxesimulator/hardware/cpu/InstructionDecoder.java)    | Decodifica instruções SIC/XE.                  |
+| [`ExecutionUnit`](src/main/java/sicxesimulator/hardware/cpu/ExecutionUnit.java)              | Executa instruções do conjunto SIC/XE.         |
+| [`MacroProcessor`](src/main/java/sicxesimulator/software/macroprocessor/MacroProcessor.java) | Expande macros definidas no código fonte.      |
+| [`Assembler`](src/main/java/sicxesimulator/software/assembler/Assembler.java)                | Coordena as fases da montagem do programa.     |
+| [`Linker`](src/main/java/sicxesimulator/software/linker/Linker.java)                         | Realiza a ligação de módulos objeto.           |
+| [`Loader`](src/main/java/sicxesimulator/software/loader/Loader.java)                         | Realiza a carga de arquivos `.obj` na memória. |
 
 ## Licença
 

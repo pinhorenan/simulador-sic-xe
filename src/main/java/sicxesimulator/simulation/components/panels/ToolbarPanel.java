@@ -1,26 +1,27 @@
 package sicxesimulator.simulation.components.panels;
 
 import javafx.scene.control.*;
-import sicxesimulator.simulation.controller.MenuBarController;
+import sicxesimulator.simulation.controller.Controller;
+
 
 public class ToolbarPanel {
     private final MenuBar menuBar;
 
-    public ToolbarPanel(MenuBarController menuBarController) {
-        this.menuBar = createMenuBar(menuBarController);
+    public ToolbarPanel(Controller controller) {
+        this.menuBar = createMenuBar(controller);
     }
 
     public MenuBar getMenuBar() {
         return menuBar;
     }
 
-    private MenuBar createMenuBar(MenuBarController menuBarController) {
+    private MenuBar createMenuBar(Controller controller) {
         MenuBar menuBar = new MenuBar();
 
         // Menu "Arquivo"
         Menu fileMenu = new Menu("Arquivo");
         MenuItem openAsmFile = new MenuItem("Abrir Arquivo .ASM");
-        openAsmFile.setOnAction(e -> menuBarController.handleImportASM());
+        openAsmFile.setOnAction(e -> controller.handleImportASM());
 
         fileMenu.getItems().addAll(openAsmFile);
 
@@ -28,31 +29,31 @@ public class ToolbarPanel {
         Menu assemblerMenu = new Menu("Montador");
 
         MenuItem showObjectCode = new MenuItem("Mostrar código objeto");
-        showObjectCode.setOnAction(e -> menuBarController.handleShowObjectCode());
+        showObjectCode.setOnAction(e -> controller.handleShowObjectCode());
 
         assemblerMenu.getItems().add(showObjectCode);
 
         // Menu do Ligador
         Menu linkerMenu = new Menu("Ligador");
         MenuItem setLinkerMode = new MenuItem("Selecionar Modo");
-        setLinkerMode.setOnAction(e -> menuBarController.handleSetLinkerModeAction());
+        setLinkerMode.setOnAction(e -> controller.handleSetLinkerModeAction());
 
         linkerMenu.getItems().addAll(setLinkerMode);
 
         // Menu "Memória"
         Menu memoryMenu = new Menu("Memória");
         MenuItem clearMemoryItem = new MenuItem("Limpar Memória");
-        clearMemoryItem.setOnAction(e -> menuBarController.handleClearMemoryAction());
+        clearMemoryItem.setOnAction(e -> controller.handleClearMemoryAction());
 
         MenuItem changeMemorySizeItem = new MenuItem("Tamanho da Memória");
-        changeMemorySizeItem.setOnAction(e -> menuBarController.handleChangeMemorySizeAction());
+        changeMemorySizeItem.setOnAction(e -> controller.handleChangeMemorySizeAction());
 
         memoryMenu.getItems().addAll(clearMemoryItem, changeMemorySizeItem);
 
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
         MenuItem helpItem = new MenuItem("Abrir janela de ajuda");
-        helpItem.setOnAction(e -> menuBarController.handleHelpAction());
+        helpItem.setOnAction(e -> controller.handleHelpAction());
 
         helpMenu.getItems().add(helpItem);
 

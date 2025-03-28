@@ -6,8 +6,17 @@ import sicxesimulator.simulation.components.buttons.AssemblerButtons;
 import sicxesimulator.simulation.components.buttons.ExecutionButtons;
 import sicxesimulator.simulation.components.buttons.FileListButtons;
 import sicxesimulator.simulation.controller.Controller;
-import sicxesimulator.simulation.controller.MenuBarController;
 import sicxesimulator.simulation.components.panels.*;
+
+/**
+ * Responsável por construir e organizar os painéis gráficos principais da interface.
+ *
+ * <p>Define a estrutura visual do simulador, conectando os componentes da interface
+ * como painéis de memória, registradores, símbolos, entrada, execução, barra de ferramentas
+ * e lista de arquivos.</p>
+ *
+ * <p>Fornece métodos para integração com controladores, botões e atualização de painéis.</p>
+ */
 
 public class Layout {
     private final BorderPane root;
@@ -21,8 +30,7 @@ public class Layout {
     private LabelsPanel labelsPanel;
     private FileListPanel objectFilePanel;
 
-    private Controller mainController;
-    private MenuBarController menuBarController;
+    private Controller controller;
 
     public Layout() {
         this.root = new BorderPane();
@@ -52,25 +60,13 @@ public class Layout {
     }
 
     public void setController(Controller mainController) {
-        this.mainController = mainController;
+        this.controller = mainController;
         this.objectFilePanel = new FileListPanel(mainController);
 
         VBox filesAndSymbols = new VBox(5, objectFilePanel.getPane(), symbolPanel.getPane());
         VBox.setVgrow(inputPanel.getPane(), Priority.ALWAYS);
 
         leftPane.getChildren().setAll(filesAndSymbols);
-    }
-
-    public void setMenuBarController(MenuBarController menuBarController) {
-        this.menuBarController = menuBarController;
-        updateToolbar();
-    }
-
-    private void updateToolbar() {
-        if (menuBarController != null) {
-            ToolbarPanel toolbarPanel = new ToolbarPanel(menuBarController);
-            root.setTop(toolbarPanel.getMenuBar());
-        }
     }
 
     public void setButtons(FileListButtons fileListButtons, ExecutionButtons executionButtons, AssemblerButtons assemblerButtons) {
@@ -86,9 +82,16 @@ public class Layout {
         }
     }
 
+    public void updateToolbar() {
+        if (controller != null) {
+            ToolbarPanel toolbarPanel = new ToolbarPanel(controller);
+            root.setTop(toolbarPanel.getMenuBar());
+        }
+    }
+
     public void updateLabelsPanel() {
         if (labelsPanel == null) {
-            labelsPanel = new LabelsPanel(mainController);
+            labelsPanel = new LabelsPanel(controller);
             root.setBottom(labelsPanel.getPane());
         }
     }

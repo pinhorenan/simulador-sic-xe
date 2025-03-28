@@ -6,8 +6,19 @@ import javafx.scene.layout.Region;
 import java.io.IOException;
 import java.util.Optional;
 
+/**
+ * Classe utilitária para exibição de diálogos na interface JavaFX.
+ *
+ * <p>Oferece métodos estáticos para mostrar alertas de erro, informações, solicitações de entrada de
+ * inteiros, strings e confirmações booleanas.</p>
+ *
+ * <p>Ideal para facilitar a comunicação com o usuário durante a simulação.</p>
+ */
 public abstract class DialogUtil {
 
+    /**
+     * Exibe um diálogo de informação com título, cabeçalho e mensagem.
+     */
     public static void showInfoDialog(String title, String header, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -17,6 +28,9 @@ public abstract class DialogUtil {
         alert.showAndWait();
     }
 
+    /**
+     * Exibe um alerta de erro com a mensagem informada.
+     */
     public static void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Erro");
@@ -26,6 +40,12 @@ public abstract class DialogUtil {
         alert.showAndWait();
     }
 
+    /**
+     * Solicita ao usuário um valor inteiro (decimal ou hexadecimal).
+     *
+     * @throws IOException Se o usuário cancelar ou inserir valor inválido.
+     * @return Valor inteiro digitado.
+     */
     public static int askForInteger(String title, String header, String content) throws IOException {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle(title);
@@ -49,6 +69,11 @@ public abstract class DialogUtil {
         }
     }
 
+    /**
+     * Mostra um diálogo de confirmação (Sim/Não) e retorna a escolha do usuário.
+     *
+     * @return true se o usuário escolher "Sim", false caso contrário.
+     */
     public static boolean askForBoolean(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle(title);
@@ -64,6 +89,11 @@ public abstract class DialogUtil {
         return result.isPresent() && result.get() == btnYes;
     }
 
+    /**
+     * Solicita ao usuário uma entrada textual simples.
+     *
+     * @return String digitada ou null se cancelado.
+     */
     public static String askForString(String title, String header, String content) {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle(title);

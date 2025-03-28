@@ -9,6 +9,16 @@ import sicxesimulator.simulation.components.tables.SymbolTable;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.utils.Convert;
 
+/**
+ * Classe responsável por atualizar dinamicamente a interface gráfica (JavaFX).
+ *
+ * <p>Sincroniza os dados da memória, registradores e símbolos com os componentes visuais,
+ * garantindo que os dados apresentados ao usuário reflitam o estado atual do simulador.</p>
+ *
+ * <p>Utiliza {@link Platform#runLater} para garantir que as atualizações sejam executadas na thread de UI.</p>
+ *
+ * <p>Também atualiza rótulos de status como tamanho da memória e modo de ligação (linker).</p>
+ */
 public class ViewUpdater {
     private final Controller controller;
     private final Layout mainLayout;

@@ -4,6 +4,7 @@ import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.data.Symbol;
 import sicxesimulator.software.data.SymbolTable;
 import sicxesimulator.software.data.records.RelocationRecord;
+import sicxesimulator.software.loader.Loader;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.FileUtils;
 
@@ -14,39 +15,44 @@ import java.util.*;
 import static sicxesimulator.software.data.ObjectFile.ObjectFileOrigin.LINKED_MODULES;
 
 /**
- * Linker que suporta dois modos:
- *   - finalRelocation=true  => Aplica a realocação final (corrige o array de bytes).
- *                             O arquivo resultante fica totalmente resolvido.
- *   - finalRelocation=false => Gera um arquivo parcial, deixando relocations pendentes
- *                              para serem aplicados pelo Loader em tempo de carga.
+ * Responsável por combinar múltiplos módulos objeto em um único {@link ObjectFile} final.
+ *
+ * <p>Suporta dois modos de operação:</p>
+ * <ul>
+ *   <li><b>finalRelocation=true:</b> Aplica realocação final diretamente no array de bytes.
+ *       Gera um objeto totalmente resolvido, pronto para execução.</li>
+ *   <li><b>finalRelocation=false:</b> Gera um objeto com realocações pendentes,
+ *       que serão aplicadas posteriormente pelo {@link Loader}.</li>
+ * </ul>
+ *
+ * <p>Durante o processo de linkedição, os seguintes passos são realizados:</p>
+ * <ol>
+ *   <li>Atribuição de endereços base a cada módulo</li>
+ *   <li>Validação de símbolos importados</li>
+ *   <li>Geração do array de byte final (com ou sem relocação final)</li>
+ *   <li>Construção da tabela global de símbolos</li>
+ *   <li>Geração de registros H/D/T/M/E no formato textual</li>
+ *   <li>Escrita dos arquivos .obj e .meta no disco</li>
+ * </ol>
  */
 public class Linker {
 
     /**
-     * Linka uma lista de módulos em um único ObjectFile final.
+     * Executa o processo de linkedição de uma lista de módulos em um único objeto final.
      *
-     * @param modules         Lista de módulos a serem linkados.
-     * @param finalRelocation true se o Linker já deve realizar toda a realocação
-     *                        diretamente no array de bytes. false para gerar relocations
-     *                        que serão aplicados depois pelo Loader.
-     * @param loadAddress     Endereço base de carga a ser usado se finalRelocation=true.
-     *                        Se finalRelocation=false, este valor não afeta a realocação final
-     *                        mas pode ser usado na “costura” interna.
-     * @param outputFileName  Nome do arquivo .obj resultante (sem extensão).
-     * @return Objeto final linkado (ObjectFile).
+     * @param modules Lista de módulos {@link ObjectFile} a serem linkados.
+     * @param finalRelocation Indica se a realocação final deve ser aplicada diretamente.
+     * @param loadAddress Endereço base para carga, usado apenas se finalRelocation=true.
+     * @param outputFileName Nome base do arquivo .obj resultante (sem extensão).
+     * @return Objeto final {@link ObjectFile} resultante do processo.
      */
-    public ObjectFile linkModules(
-            List<ObjectFile> modules,
-            boolean finalRelocation,
-            int loadAddress,
-            String outputFileName
-    ) {
+    public ObjectFile linkModules(List<ObjectFile> modules, boolean finalRelocation, int loadAddress, String outputFileName) {
         if (modules.isEmpty()) {
-            throw new IllegalArgumentException("Nenhum módulo para linkar.");
+            throw new IllegalArgumentException("Nenhum modulo para linkar.");
         }
 
         // Passo 1: Atribuir base para cada módulo e montar tabela global de símbolos
-        LinkerContext context = assignBasesAndGlobalSymbols(modules, finalRelocation, loadAddress);
+        LinkerContext context = assignBasesAndGlobalSymbols(modules, finalRelocation);
 
         // Passo 2: Validar símbolos importados (ver se todos existem em "globalSymbols")
         verifyImportedSymbols(modules, context.globalSymbols);
@@ -60,7 +66,7 @@ public class Linker {
         // poderíamos reaproveitar o do primeiro módulo. Aqui fica a critério do design.
         int finalStart = finalRelocation
                 ? loadAddress
-                : modules.get(0).getStartAddress();
+                : modules.getFirst().getStartAddress();
 
         // Combina os fontes de todos módulos (opcional, serve para fins de debug)
         List<String> combinedSource = combineModuleSources(modules);
@@ -94,14 +100,19 @@ public class Linker {
     }
 
     /**
-     * Atribui endereços-base para cada módulo, constrói a tabela global de símbolos
-     * e calcula tamanho total do programa.
+     * Atribui endereços base para os módulos e constrói a tabela global de símbolos exportados.
+     *
+     * <p>O comportamento varia conforme o modo de realocação:</p>
+     * <ul>
+     *   <li><b>finalRelocation=true:</b> Cada módulo usa seu próprio START. Os símbolos exportados
+     *   são ajustados com base nesse START.</li>
+     *   <li><b>finalRelocation=false:</b> Módulos são empilhados sequencialmente, e o endereço de cada símbolo
+     *   exportado é ajustado com o offset global.</li>
+     * </ul>
+     *
+     * @return {@link LinkerContext} contendo as informações globais necessárias para a montagem do objeto final.
      */
-    private LinkerContext assignBasesAndGlobalSymbols(
-            List<ObjectFile> modules,
-            boolean finalRelocation,
-            int loadAddress
-    ) {
+    private LinkerContext assignBasesAndGlobalSymbols(List<ObjectFile> modules, boolean finalRelocation) {
         Map<ObjectFile, Integer> baseMap = new HashMap<>();
         Map<String, Integer> globalSymbols = new HashMap<>();
         Set<String> exportedSymbols = new HashSet<>();
@@ -165,9 +176,10 @@ public class Linker {
         return new LinkerContext(baseMap, globalSymbols, totalSize);
     }
 
-
     /**
-     * Verifica se cada símbolo importado de cada módulo existe em globalSymbols.
+     * Valida se todos os símbolos importados por cada módulo existem na tabela global.
+     *
+     * @throws IllegalArgumentException se algum símbolo importado não for resolvido.
      */
     private void verifyImportedSymbols(List<ObjectFile> modules, Map<String, Integer> globalSymbols) {
         for (ObjectFile mod : modules) {
@@ -182,16 +194,14 @@ public class Linker {
     }
 
     /**
-     * Concatena e constrói o código final.
-     * Se finalRelocation=true, já aplica reloc no array de bytes.
-     * Caso contrário, realoca apenas o offset e gera novos RelocationRecords agregados.
+     * Constrói o array de bytes final e a tabela de símbolos global.
+     *
+     * <p>Aplica a realocação se finalRelocation=true, ou gera {@link RelocationRecord} com offsets ajustados.</p>
+     *
+     * @return {@link FinalCodeData} com os dados de saída do processo de linkagem.
      */
-    private FinalCodeData buildFinalCodeAndSymbols(
-            List<ObjectFile> modules,
-            LinkerContext ctx,
-            boolean finalRelocation
-    ) {
-        byte[] finalCode = new byte[ctx.totalSize];
+    private FinalCodeData buildFinalCodeAndSymbols(List<ObjectFile> modules, LinkerContext context, boolean finalRelocation) {
+        byte[] finalCode = new byte[context.totalSize];
         SymbolTable finalSymTab = new SymbolTable();
         List<RelocationRecord> finalRecs = new ArrayList<>();
 
@@ -199,12 +209,12 @@ public class Linker {
 
         for (ObjectFile mod : modules) {
             byte[] code = mod.getObjectCode();
-            int base = ctx.baseMap.get(mod);
+            int base = context.baseMap.get(mod);
 
             // Se finalRelocation=true, corrigimos cada RelocationRecord no array do módulo
             if (finalRelocation) {
                 for (RelocationRecord rec : mod.getRelocationRecords()) {
-                    fixAddressInCode(code, rec, mod, base, ctx.globalSymbols);
+                    fixAddressInCode(code, rec, mod, base, context.globalSymbols);
                 }
             } else {
                 // Gera novos relocation records com offset somado
@@ -242,17 +252,14 @@ public class Linker {
     }
 
     /**
-     * Realocação "final" diretamente no array de bytes.
-     * Consulta o endereço do símbolo (resolvido em globalSymbols) e soma.
-     * Se pcRelative, subtrai 3 (ou 4, conforme formato).
+     * Aplica a realocação diretamente no array de bytes do módulo.
+     *
+     * <p>Resolve o símbolo, soma seu valor ao campo indicado, e grava o valor realocado
+     * de volta no array. Se o campo for relativo ao PC, aplica o ajuste (-3 ou -4).</p>
+     *
+     * @throws IllegalArgumentException se o offset da relocação estiver fora do array.
      */
-    private void fixAddressInCode(
-            byte[] code,
-            RelocationRecord rec,
-            ObjectFile module,
-            int moduleBase,
-            Map<String, Integer> globalSymbols
-    ) {
+    private void fixAddressInCode(byte[] code, RelocationRecord rec, ObjectFile module, int moduleBase, Map<String, Integer> globalSymbols) {
         int offset = rec.offset();
         int length = rec.length();
         if (offset + length > code.length) {
@@ -293,7 +300,16 @@ public class Linker {
     }
 
     /**
-     * Combina as linhas de código-fonte de todos módulos. (Opcional, para depuração)
+     * Combina as linhas de código-fonte de todos os módulos em uma única lista.
+     *
+     * <p>Este métodO é opcional e utilizado principalmente para fins de depuração,
+     * permitindo rastrear a origem do código montado a partir dos diferentes módulos.</p>
+     *
+     * <p>Para cada módulo com código-fonte original disponível ({@code getRawSourceCode() != null}),
+     * suas linhas são adicionadas à lista, seguidas por um comentário delimitador com o nome do programa.</p>
+     *
+     * @param modules Lista de módulos {@link ObjectFile} contendo os códigos-fonte originais.
+     * @return Lista combinada de todas as linhas de código-fonte, separadas por marcações de fim de módulo.
      */
     private List<String> combineModuleSources(List<ObjectFile> modules) {
         List<String> combined = new ArrayList<>();
@@ -307,15 +323,15 @@ public class Linker {
     }
 
     /**
-     * Gera o arquivo .obj textual (formato H/D/T/M/E) do objeto final.
-     * Se finalRelocation=false, inclui M records para que o Loader possa realocar.
+     * Gera o conteúdo textual do arquivo .obj no formato H/D/T/M/E e grava no disco.
+     *
+     * @param finalObj Objeto final {@link ObjectFile} contendo os dados a serem salvos.
+     * @param outputFileName Nome base do arquivo (sem extensão).
+     * @param finalRelocation Indica se relocations devem ser incluídos.
+     * @throws IOException Em caso de falha ao escrever no disco.
      */
-    private void writeLinkedObjectFile(
-            ObjectFile finalObj,
-            String outputFileName,
-            boolean finalRelocation
-    ) throws IOException {
-        int startAddr = finalObj.getStartAddress();
+    private void writeLinkedObjectFile(ObjectFile finalObj, String outputFileName, boolean finalRelocation) throws IOException {
+        int startAddress = finalObj.getStartAddress();
         byte[] code = finalObj.getObjectCode();
         int progLen = code.length;
         String progName = finalObj.getProgramName();
@@ -324,7 +340,7 @@ public class Linker {
         StringBuilder content = new StringBuilder();
         // H record (Header)
         content.append(
-                String.format("H^%-6s^%06X^%06X\n", fitProgramName(progName), startAddr, progLen)
+                String.format("H^%-6s^%06X^%06X\n", fitProgramName(progName), startAddress, progLen)
         );
 
         // D record (Define) - símbolos exportados
@@ -346,7 +362,7 @@ public class Linker {
         }
 
         // T records (Text)
-        List<TBlock> tblocks = buildTextRecords(startAddr, code);
+        List<TBlock> tblocks = buildTextRecords(startAddress, code);
         for (TBlock b : tblocks) {
             StringBuilder hex = new StringBuilder();
             for (byte bb : b.data) {
@@ -361,7 +377,7 @@ public class Linker {
         // M records (Modification) - só se finalRelocation=false
         if (!finalRelocation) {
             for (RelocationRecord rec : finalObj.getRelocationRecords()) {
-                int address = startAddr + rec.offset();
+                int address = startAddress + rec.offset();
                 int halfBytes = rec.length() * 2;
                 // +SÍMBOLO
                 String mLine = String.format(
@@ -372,19 +388,41 @@ public class Linker {
         }
 
         // E record (End)
-        content.append(String.format("E^%06X\n", startAddr));
+        content.append(String.format("E^%06X\n", startAddress));
 
         // Grava no disco
         FileUtils.writeFileInDir(Constants.SAVE_DIR, outputFileName, content.toString());
     }
 
+    /**
+     * Garante que o nome do programa tenha no máximo 6 caracteres.
+     *
+     * <p>Este métodO é usado para gerar o cabeçalho do arquivo objeto (registro H),
+     * onde o nome do programa é limitado a 6 posições.</p>
+     *
+     * <p>Se o nome for {@code null}, retorna o identificador "NONAME".
+     * Caso contrário, <b>trunca o nome para 6 caracteres</b> ou o mantém como está.</p>
+     *
+     * @param name Nome original do programa.
+     * @return Nome ajustado com no máximo 6 caracteres.
+     */
     private String fitProgramName(String name) {
         if (name == null) return "NONAME";
         return (name.length() > 6) ? name.substring(0, 6) : name;
     }
 
     /**
-     * Divide o array de bytes em blocos (máx 30) para gerar T records.
+     * Constrói os registros de texto (T) para o arquivo objeto.
+     *
+     * <p>Divide o array de bytes em blocos de até 30 bytes cada, como especificado pelo
+     * formato dos registros de texto no SIC/XE.</p>
+     *
+     * <p>Cada bloco resultante é armazenado em um {@link TBlock}, contendo o endereço inicial
+     * e a sequência de bytes correspondente.</p>
+     *
+     * @param start Endereço base onde o código será carregado.
+     * @param code Array de bytes do código final.
+     * @return Lista de blocos T prontos para serem gravados no .obj.
      */
     private List<TBlock> buildTextRecords(int start, byte[] code) {
         List<TBlock> blocks = new ArrayList<>();
@@ -402,9 +440,16 @@ public class Linker {
         return blocks;
     }
 
-    // ---------------------------------------------------------------
-    // Classes auxiliares internas
-    // ---------------------------------------------------------------
+    /**
+     * Armazena o contexto intermediário da linkedição.
+     *
+     * <p>Contém informações como:</p>
+     * <ul>
+     *   <li>Mapa de endereços base para cada módulo</li>
+     *   <li>Tabela global de símbolos exportados</li>
+     *   <li>Tamanho total acumulado do código</li>
+     * </ul>
+     */
     private static class LinkerContext {
         Map<ObjectFile, Integer> baseMap;
         Map<String, Integer> globalSymbols;
@@ -417,6 +462,12 @@ public class Linker {
         }
     }
 
+    /**
+     * Estrutura de saída do processo de linkagem.
+     *
+     * <p>Contém o código final montado, a tabela de símbolos consolidada e
+     * os registros de relocação (se finalRelocation=false).</p>
+     */
     private static class FinalCodeData {
         byte[] code;
         SymbolTable symbolTable;
@@ -429,6 +480,12 @@ public class Linker {
         }
     }
 
+    /**
+     * Representa um bloco de texto (registro T) do arquivo objeto SIC/XE.
+     *
+     * <p>Armazena o endereço inicial do bloco e os dados em formato de lista de bytes.
+     * Cada bloco corresponde a no máximo 30 bytes, conforme especificação do montador.</p>
+     */
     public static class TBlock {
         int startAddress;
         List<Byte> data = new ArrayList<>();

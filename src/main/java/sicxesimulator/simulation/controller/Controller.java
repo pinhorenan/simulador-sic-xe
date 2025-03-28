@@ -144,7 +144,7 @@ public class Controller {
                 String log = model.getMachine().getControlUnit().getLastExecutionLog();
                 mainLayout.getExecutionPanel().getMachineOutput().appendText(log + "\n");
                 updater.updateAllTables();
-                model.setSimulationFinished(model.getMachine().getControlUnit().isProcessorHalted());
+                model.setSimulationFinished(model.getMachine().getControlUnit().isHalted());
                 // Aguarda a atualização da interface antes de capturar o estado detalhado:
                 Platform.runLater(() -> model.logDetailedState("Após execução de instrução em handleNextAction()"));
             } catch (Exception e) {

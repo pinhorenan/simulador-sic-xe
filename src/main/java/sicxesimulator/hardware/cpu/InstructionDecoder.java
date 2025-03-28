@@ -2,8 +2,14 @@ package sicxesimulator.hardware.cpu;
 
 import sicxesimulator.hardware.Memory;
 import sicxesimulator.hardware.data.Instruction;
-import sicxesimulator.utils.Converter;
+import sicxesimulator.utils.Convert;
 
+/**
+ * Responsável por decodificar instruções da memória a partir do endereço apontado pelo registrador PC.
+ *
+ * Implementa a lógica de identificação de formato (1, 2, 3 ou 4), extração dos campos relevantes
+ * da instrução e cálculo do endereço efetivo (EA) para execução.
+ */
 public class InstructionDecoder {
     private final Memory memory;
     private final RegisterSet registers;
@@ -15,7 +21,13 @@ public class InstructionDecoder {
     }
 
     /**
-     * Decodifica a instrução a partir do valor atual de PC, lendo os bytes diretamente da memória.
+     * Decodifica a instrução na posição atual do PC, lendo diretamente da memória.
+     *
+     * Atualiza internamente o programCounter e, quando necessário, avança o PC.
+     * Identifica o formato da instrução e extrai campos como opcode, registradores,
+     * bits de modo (n, i, x, b, p, e) e o endereço efetivo.
+     *
+     * @return {@link Instruction} completamente decodificada.
      */
     public Instruction decodeInstruction() {
         // Atualiza o PC a partir dos registradores.
@@ -72,8 +84,13 @@ public class InstructionDecoder {
     }
 
     /**
-     * Determina o formato da instrução.
-     * Para instruções em formato 2, utiliza o byte completo; para formato 3/4, analisamos o bit 'e'.
+     * Determina o formato da instrução a partir do primeiro byte.
+     *
+     * Formato 1 e 2 são identificados diretamente por opcode.
+     * Para formatos 3 e 4, o segundo byte da instrução é analisado para obter o bit 'e'.
+     *
+     * @param fullByte Primeiro byte da instrução.
+     * @return 1, 2, 3 ou 4, dependendo do formato identificado.
      */
     private int determineInstructionFormat(int fullByte) {
         // Verifica se o opcode corresponde a instruções de formato 1
@@ -95,8 +112,11 @@ public class InstructionDecoder {
     }
 
     /**
-     * Decodifica instruções em formato 2 (2 bytes).
-     * O segundo byte contém dois registradores (4 bits cada).
+     * Decodifica uma instrução de formato 2 (2 bytes).
+     *
+     * O segundo byte contém dois registradores codificados em 4 bits cada.
+     *
+     * @return Array [r1, r2] com os códigos dos registradores envolvidos.
      */
     private int[] decodeFormat2() {
         // Lê o segundo byte da instrução (offset 1 a partir do PC)
@@ -107,23 +127,14 @@ public class InstructionDecoder {
     }
 
     /**
-     * Decodifica instruções em formato 3/4.
-     * Estrutura (formato 3):
-     *  - Byte 1: bits 7..2 = opcode; bits 1..0 = n e i
-     *  - Byte 2: bit 7 = x; bit 6 = b; bit 5 = p; bit 4 = e; bits 3..0 = 4 bits altos do deslocamento
-     *  - Byte 3: 8 bits baixos do deslocamento
-     * Estrutura (formato 4, e=1):
-     *  - Byte 1: bits 7..2 = opcode; bits 1..0 = n e i
-     *  - Byte 2: bit 7 = x; bit 6 = b; bit 5 = p; bit 4 = e; bits 3..0 = 4 bits altos do addr20
-     *  - Byte 3: 8 bits médios do addr20
-     *  - Byte 4: 8 bits baixos do addr20
-     *  Retorna um array com:
-     *  [0]=disp/addr (12 ou 20 bits), [1]=x, [2]=b, [3]=p, [4]=e, [5]=n, [6]=i
+     * Decodifica instruções nos formatos 3 ou 4, extraindo bits de controle e deslocamento/endereço.
      *
-     * @param n         bit n
-     * @param i         bit i
-     * @param format    formato da instrução (3 ou 4)
-     * @return          Array de inteiros: [0]=disp/addr (12 ou 20 bits), [1]=x, [2]=b, [3]=p, [4]=e, [5]=n, [6]=i
+     * @param n bit n (modo de endereçamento)
+     * @param i bit i (modo de endereçamento)
+     * @param format Formato da instrução (3 ou 4)
+     * @return Array de inteiros:
+     *         [0] = disp (12 bits) ou addr (20 bits),
+     *         [1..6] = bits x, b, p, e, n, i (nessa ordem)
      */
     private int[] decodeFormat3Or4(int n, int i, int format) {
         // Lê o segundo byte
@@ -154,24 +165,19 @@ public class InstructionDecoder {
     }
 
     /**
-     * Calcula o endereço efetivo (EA) a partir do deslocamento e dos bits de modo.
-     * - Se p == 1 (PC-relativo): EA = (PC_original + tamanhoInstrução) + disp (com sinal)
-     * - Se b == 1 (Base-relativo): EA = (valor do registrador B) + disp
-     * - Caso contrário: EA = disp (endereço absoluto)
-     * - Se x == 1: EA += (valor do registrador X)
-     * Para endereçamento indireto (n=1, i=0):
-     *  - Ler a memória nesse EA para obter o endereço final.
-     * Para endereçamento imediato (n=0, i=1):
-     *  - O EA representa diretamente o operando (apenas extensão de sinal para formato 3, se necessário).
+     * Calcula o endereço efetivo (EA) da instrução com base no deslocamento/endereço
+     * e nos bits de modo (x, b, p, e, n, i).
      *
-     * @param dispOrAddr    deslocamento (formato3, 12 bits) ou addr (formato4, 20 bits)
-     * @param x             bit x
-     * @param b             bit b
-     * @param p             bit p
-     * @param e             bit e (0=Form3, 1=Form4)
-     * @param n             bit n
-     * @param i             bit i
-     * @return              O endereço efetivo da instrução
+     * Aplica os modos PC-relative, base-relative, indexado, imediato e indireto conforme necessário.
+     *
+     * @param dispOrAddr Campo de endereço (12 bits para formato 3 ou 20 bits para formato 4).
+     * @param x Bit de indexação.
+     * @param b Bit de base-relative.
+     * @param p Bit de PC-relative.
+     * @param e Bit que indica o formato (0 = Form3, 1 = Form4).
+     * @param n Bit 'n' de endereçamento.
+     * @param i Bit 'i' de endereçamento.
+     * @return Endereço efetivo resultante da decodificação.
      */
     private int calculateEffectiveAddress(int dispOrAddr, int x, int b, int p, int e, int n, int i) {
         // Se for modo imediato (n==0, i==1), devolve o valor literal (aplicando extensão de sinal para formato 3, se necessário)
@@ -211,17 +217,15 @@ public class InstructionDecoder {
                 throw new IllegalArgumentException("Endereço indireto não alinhado: " + addressBase);
             }
             byte[] wordBytes = memory.readWord(addressBase / 3);
-            return Converter.bytesToInt(wordBytes);
+            return Convert.bytesToInt(wordBytes);
         }
 
         // Caso seja endereçamento direto (n==1, i==1), retorna o endereço calculado
         return addressBase;
     }
 
-
-
     /**
-     * Limpa ou zera o programCounter interno
+     * Reinicia o contador de programa (PC) para zero, tanto no registrador quanto internamente.
      */
     public void resetProgramCounter() {
         // Reseta o registrador PC para 0 e atualiza o programCounter interno

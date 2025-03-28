@@ -4,7 +4,10 @@ import sicxesimulator.hardware.cpu.ControlUnit;
 import sicxesimulator.utils.Constants;
 
 /**
- * Representa a máquina SIC/XE, composta por uma unidade de controle e uma memória.
+ * Representa a máquina SIC/XE completa, composta por memória e unidade de controle.
+ *
+ * Responsável por executar ciclos, resetar o estado, alterar a memória
+ * e expor os principais componentes da arquitetura.
  */
 public class Machine {
     private final ControlUnit controlUnit;
@@ -16,10 +19,13 @@ public class Machine {
     }
 
     /**
-     * Executa um ciclo de máquina, avançando a execução em uma instrução.
+     * Executa um único ciclo de máquina, avançando a execução em uma instrução.
+     *
+     * Se o processador estiver em estado de parada, o ciclo é ignorado.
+     * Caso ocorra exceção durante a execução da instrução, um erro é reportado no console.
      */
     public void runCycle() {
-        if (controlUnit.isProcessorHalted()) return;
+        if (controlUnit.isHalted()) return;
 
         try {
             controlUnit.step();
@@ -29,38 +35,44 @@ public class Machine {
     }
 
     /**
-     * Reinicia a máquina, limpando a memória e resetando a unidade de controle.
+     * Reinicia completamente o estado da máquina:
+     * - Limpa a memória
+     * - Reseta a unidade de controle
      */
     public void reset() {
-        memory.clearMemory();
+        memory.reset();
         controlUnit.reset();
     }
 
     /**
-     * Altera o tamanho da memória da máquina.
-     * @param newSizeInBytes O novo tamanho da memória, em bytes.
+     * Aloca nova memória para a máquina com o tamanho especificado.
+     *
+     * @param newSizeInBytes Novo tamanho da memória, em bytes.
      */
     public void changeMemorySize(int newSizeInBytes) {
         this.memory = new Memory(newSizeInBytes);
     }
 
     /**
-     * Retorna a memória da máquina.
-     * @return A memória.
+     * Retorna a instância atual de memória da máquina.
+     *
+     * @return Objeto {@link Memory} usado pela máquina.
      */
     public Memory getMemory() { return this.memory; }
 
     /**
-     * Retorna o tamanho da memória da máquina (em bytes).
-     * @return O tamanho da memória.
+     * Retorna o tamanho atual da memória da máquina (em bytes).
+     *
+     * @return Tamanho da memória.
      */
     public int getMemorySize() {
         return memory.getSize();
     }
 
     /**
-     * Retorna a unidade de controle da máquina.
-     * @return  A unidade de controle.
+     * Retorna a unidade de controle responsável pela execução de instruções.
+     *
+     * @return Objeto {@link ControlUnit} associado à máquina.
      */
     public ControlUnit getControlUnit() { return controlUnit; }
 }

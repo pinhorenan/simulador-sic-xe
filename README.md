@@ -71,16 +71,33 @@ java -jar build/libs/sicxesimulator.jar
   - Carrega programas objeto para memória virtual
   - Aplica realocação pendente (quando necessária)
 
-## Conjunto de Instruções
+## 📋 Conjunto de Instruções do SIC/XE
 
-### Instruções Suportadas
-Em geral, não foram implementadas instruções que lidam com input/output e instruções de ponto flutuante.
+Este simulador implementa parcialmente o conjunto de instruções SIC/XE conforme a especificação oficial, com algumas limitações de escopo educacional:
 
-- **Formato 1**: Não há suporte à instruções de formato 1.
-- **Formato 2**: ADDR, CLEAR, COMPR, DIVR, MULR, RMO, SHIFTL, SHIFRT, SUBR, TIXR.
-- **Formato 3/4**: ADD, AND, COMP, DIV, J, JEQ, JGT, JLT, JSUB, LDA, LDB, LDCH, LDL, LDS, LDT, LDX, MUL, OR, RSUB, STA, STB, STCH, STL, STS, STT, STX, SUB, TIX.
+### 🟢 Instruções Implementadas
 
-- **Instruções Não implementadas:** ADDF, COMPF, DIVF, FIX, FLOAT, HIO, LPS, MULF, NORM, RD, SIO, SSK, STF, STI, STSW, SUBF, SVC, TD, TIO, WD.
+- **Formato 2 (registradores):**  
+  `ADDR`, `CLEAR`, `COMPR`, `DIVR`, `MULR`, `RMO`, `SHIFTL`, `SHIFTR`, `SUBR`, `TIXR`
+
+- **Formato 3/4 (memória e imediato):**  
+  `ADD`, `AND`, `COMP`, `DIV`, `J`, `JEQ`, `JGT`, `JLT`, `JSUB`, `LDA`, `LDB`, `LDCH`, `LDL`, `LDS`, `LDT`, `LDX`, `MUL`, `OR`, `RSUB`, `STA`, `STB`, `STCH`, `STL`, `STS`, `STT`, `STX`, `SUB`, `TIX`
+
+### 🔴 Instruções NÃO Implementadas (Presentes como STUB)
+
+Por restrições do projeto, não há suporte para:
+
+- **Formato 1 e Instruções especiais:**  
+  `FIX`, `FLOAT`, `NORM`, `HIO`, `SIO`, `TIO`
+
+- **Instruções de ponto flutuante:**  
+  `ADDF`, `COMPF`, `DIVF`, `LDF`, `MULF`, `STF`, `SUBF`
+
+- **Controle do sistema e operações I/O:**  
+  `LPS`, `RD`, `SSK`, `STI`, `STSW`, `SVC`, `TD`, `WD`
+
+Essas instruções possuem placeholders (stubs) que geram logs informativos indicando sua ausência de implementação.
+
 
 ## Licença
 

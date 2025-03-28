@@ -3,11 +3,14 @@ package sicxesimulator.hardware;
 import java.util.Arrays;
 
 /**
- * Representa a memória do computador, que é um array de bytes.
+ * Representa a memória da máquina SIC/XE.
+ *
+ * A memória é tratada como um vetor de bytes, acessível por palavras (3 bytes)
+ * ou bytes individuais. Oferece métodos de leitura, escrita, reset e mapeamento.
  */
 public class Memory {
-	private final byte[] memory;  // Memória em bytes
-	private final int memorySize; // Tamanho da memória
+	private final byte[] memory;
+	private final int memorySize;
 
 	public Memory(int size) {
 		this.memorySize = size;
@@ -15,9 +18,11 @@ public class Memory {
 	}
 
 	/**
-	 * Lê uma palavra de memória, composta por 3 bytes (palavra de 24 bits).
-	 * @param wordIndex Índice da palavra a ser lida
-	 * @return Um array de 3 bytes representando a palavra de memória
+	 * Lê uma palavra (3 bytes) a partir do índice especificado.
+	 *
+	 * @param wordIndex Índice da palavra (base 0).
+	 * @return Vetor de 3 bytes lidos da memória.
+	 * @throws IndexOutOfBoundsException Se a leitura ultrapassar os limites da memória.
 	 */
 	public byte[] readWord(int wordIndex) {
 		if (wordIndex * 3 + 3 > memorySize) {
@@ -29,22 +34,27 @@ public class Memory {
 	}
 
 	/**
-	 * Lê um byte específico da memória, dado um endereço em bytes.
-	 * @param byteAddr O endereço do byte a ser lido
-	 * @return O valor do byte no endereço especificado
+	 * Lê um único byte da memória no endereço especificado.
+	 *
+	 * @param byteAddress Endereço do byte.
+	 * @return Valor do byte lido, como inteiro (0 a 255).
+	 * @throws IndexOutOfBoundsException Se o endereço for inválido.
 	 */
-	public int readByte(int byteAddr) {
-		if (byteAddr >= memorySize) {
+	public int readByte(int byteAddress) {
+		if (byteAddress >= memorySize) {
 			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memoria.");
 		}
         // Retorna o byte como valor positivo (0-255)
-        return memory[byteAddr] & 0xFF;
+        return memory[byteAddress] & 0xFF;
 	}
 
 	/**
-	 * Escreve uma palavra de 3 bytes na memória, dado um índice de palavra.
-	 * @param wordIndex Índice da palavra a ser escrita
-	 * @param word A palavra de 3 bytes a ser escrita
+	 * Escreve uma palavra (3 bytes) na memória no índice especificado.
+	 *
+	 * @param wordIndex Índice da palavra.
+	 * @param word Array de 3 bytes a serem gravados.
+	 * @throws IllegalArgumentException Se o array não tiver exatamente 3 bytes.
+	 * @throws IndexOutOfBoundsException Se a escrita ultrapassar o limite da memória.
 	 */
 	public void writeWord(int wordIndex, byte[] word) {
 		if (word.length != 3) {
@@ -57,48 +67,58 @@ public class Memory {
 	}
 
 	/**
-	 * Escreve um byte na memória em um endereço específico.
-	 * @param byteAddr O endereço do byte a ser escrito
-	 * @param value O valor do byte a ser escrito
+	 * Escreve um único byte na memória.
+	 *
+	 * @param byteAddress Endereço de escrita.
+	 * @param value Valor a ser escrito (apenas o byte menos significativo será usado).
+	 * @throws IndexOutOfBoundsException Se o endereço for inválido.
 	 */
-	public void writeByte(int byteAddr, int value) {
-		if (byteAddr >= memorySize) {
+	public void writeByte(int byteAddress, int value) {
+		if (byteAddress >= memorySize) {
 			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memoria.");
 		}
-		memory[byteAddr] = (byte) (value & 0xFF);  // Armazena apenas o byte
+		memory[byteAddress] = (byte) (value & 0xFF);  // Armazena apenas o byte
 	}
 
 	/**
-	 * Retorna o tamanho total da memória em bytes.
-	 * @return O tamanho da memória em bytes
+	 * Retorna o tamanho da memória em bytes.
+	 *
+	 * @return Tamanho total da memória.
 	 */
 	public int getSize() {
 		return memorySize;
 	}
 
 	/**
-	 * Retorna o mapa de memória para depuração, ou seja, uma cópia completa do array de bytes.
-	 * @return Cópia do array de bytes que representa a memória
-	 */
-	public byte[] getMemoryMap() {
-		return Arrays.copyOf(memory, memory.length);
-	}
-
-	/**
-	 * Retorna o número total de palavras da memória (cada palavra possui 3 bytes).
-	 * @return Número de palavras
+	 * Retorna a quantidade de palavras de 3 bytes que cabem na memória.
+	 *
+	 * @return Quantidade de palavras (memorySize / 3).
 	 */
 	public int getAddressRange() {
 		return memorySize / 3;
 	}
 
 	/**
-	 * Reinicializa a memória, zerando todos os bytes.
+	 * Retorna uma cópia do mapa de memória completo.
+	 *
+	 * @return Array de bytes representando toda a memória.
 	 */
-	public void clearMemory() {
+	public byte[] getMemoryMap() {
+		return Arrays.copyOf(memory, memory.length);
+	}
+
+	/**
+	 * Zera toda a memória.
+	 */
+	public void reset() {
 		Arrays.fill(memory, (byte) 0);
 	}
 
+	/**
+	 * Retorna uma representação em string da memória em formato hexadecimal.
+	 *
+	 * @return String formatada da memória.
+	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

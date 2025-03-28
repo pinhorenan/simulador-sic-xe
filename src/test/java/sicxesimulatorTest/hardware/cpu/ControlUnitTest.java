@@ -34,41 +34,8 @@ public class ControlUnitTest {
 
         assertEquals(0x1000 + 3, cu.getIntValuePC(), "PC deve ser incrementado em 3");
         assertEquals("RSUB executed - HALT", cu.getLastExecutionLog());
-        assertTrue(cu.isProcessorHalted(), "Processador deve estar halted após RSUB");
+        assertTrue(cu.isHalted(), "Processador deve estar halted após RSUB");
         assertTrue(cu.getExecutionHistory().contains("RSUB executed - HALT"), "Histórico deve conter RSUB executed - HALT");
-    }
-
-    @Test
-    void testFormat2_CLEAR_LDX() throws Exception {
-        Memory dummyMemory = new DummyMemory();
-        ControlUnit cu = new ControlUnit(dummyMemory);
-        cu.setIntValuePC(0x2000);
-
-        // Cria uma instrução dummy de formato 2 com opcode 0x04 (CLEAR_LDX)
-        Instruction instrClear = new Instruction(0x04, new int[]{1, 2}, 2, false, 0);
-        DummyInstructionDecoder decoder = new DummyInstructionDecoder(cu.getRegisterSet(), dummyMemory, instrClear);
-        Field decoderField = ControlUnit.class.getDeclaredField("decoder");
-        decoderField.setAccessible(true);
-        decoderField.set(cu, decoder);
-
-        // Cria um ExecutionUnit dummy que sobrescreve executeCLEAR_LDX
-        DummyExecutionUnit dummyExec = new DummyExecutionUnit(cu.getRegisterSet(), dummyMemory) {
-            @Override
-            public String executeCLEAR_LDX(Instruction instr, int[] operands) {
-                return "CLEAR_LDX executed";
-            }
-        };
-        Field execField = ControlUnit.class.getDeclaredField("executionUnit");
-        execField.setAccessible(true);
-        execField.set(cu, dummyExec);
-
-        cu.step();
-
-        // Para instrução de formato 2, o tamanho é 2 bytes
-        assertEquals(0x2000 + 2, cu.getIntValuePC(), "PC deve ser incrementado em 2");
-        assertEquals("CLEAR_LDX executed", cu.getLastExecutionLog());
-        assertFalse(cu.isProcessorHalted());
-        assertTrue(cu.getExecutionHistory().contains("CLEAR_LDX executed"));
     }
 
     @Test
@@ -100,7 +67,7 @@ public class ControlUnitTest {
         // Para instrução de formato 2, o tamanho é 2 bytes
         assertEquals(0x3000 + 2, cu.getIntValuePC(), "PC deve ser incrementado em 2");
         assertEquals("ADDR executed", cu.getLastExecutionLog());
-        assertFalse(cu.isProcessorHalted());
+        assertFalse(cu.isHalted());
         assertTrue(cu.getExecutionHistory().contains("ADDR executed"));
     }
 
@@ -133,7 +100,7 @@ public class ControlUnitTest {
         // Para instrução de formato 3, o tamanho é 3 bytes
         assertEquals(0x4000 + 3, cu.getIntValuePC(), "PC deve ser incrementado em 3");
         assertEquals("ADD executed", cu.getLastExecutionLog());
-        assertFalse(cu.isProcessorHalted());
+        assertFalse(cu.isHalted());
         assertTrue(cu.getExecutionHistory().contains("ADD executed"));
     }
 
@@ -161,7 +128,7 @@ public class ControlUnitTest {
         cu.reset();
 
         assertNull(cu.getLastExecutionLog(), "lastExecutionLog deve ser null após reset");
-        assertFalse(cu.isProcessorHalted(), "Processador deve estar ativo após reset");
+        assertFalse(cu.isHalted(), "Processador deve estar ativo após reset");
         // Após reset, os registradores são limpos; assumindo que o PC é zerado
         assertEquals(0, cu.getIntValuePC(), "PC deve ser 0 após reset");
     }

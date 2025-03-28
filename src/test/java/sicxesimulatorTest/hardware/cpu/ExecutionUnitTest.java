@@ -82,7 +82,7 @@ class ExecutionUnitTest {
     void testExecuteSUB_ImmediateMode() {
         registers.getRegister("A").setValue(50);
 
-        String log = executionUnit.executeSUB(new int[]{0,0,0,0,0,0,1}, false, 30);
+        String log = executionUnit.executeSUB(new int[]{0,0,0,0,0,0,1}, 30);
         assertEquals(20, registers.getRegister("A").getIntValue());
         assertTrue(log.contains("SUB"));
     }
@@ -93,46 +93,46 @@ class ExecutionUnitTest {
         memory.writeWord(0, Convert.intTo3Bytes(0));
 
         assertThrows(ArithmeticException.class,
-                () -> executionUnit.executeDIV(new int[]{0,0,0,0,0,1,1}, false, 0));
+                () -> executionUnit.executeDIV(new int[]{0,0,0,0,0,0,1}, 0));
     }
 
     @Test
     void testExecuteJ() {
-        executionUnit.executeJ(new int[0], false, 0x300);
+        executionUnit.executeJ(0x300);
         assertEquals(0x300, registers.getRegister("PC").getIntValue());
     }
 
     @Test
     void testExecuteJEQ_ConditionTrue() {
         registers.getRegister("SW").setValue(0);
-        executionUnit.executeJEQ(new int[0], false, 0x200);
+        executionUnit.executeJEQ(0x200);
         assertEquals(0x200, registers.getRegister("PC").getIntValue());
     }
 
     @Test
     void testExecuteJEQ_ConditionFalse() {
         registers.getRegister("SW").setValue(1);
-        executionUnit.executeJEQ(new int[0], false, 0x200);
+        executionUnit.executeJEQ(0x200);
         assertNotEquals(0x200, registers.getRegister("PC").getIntValue());
     }
 
     @Test
     void testExecuteLDA_DirectMode() {
         memory.writeWord(0, Convert.intTo3Bytes(123456));
-        executionUnit.executeLDA(new int[]{0,0,0,0,0,1,1}, false, 0);
+        executionUnit.executeLDA(new int[]{0,0,0,0,0,1,1}, 0);
         assertEquals(123456, registers.getRegister("A").getIntValue());
     }
 
     @Test
     void testExecuteLDA_ImmediateMode() {
-        executionUnit.executeLDA(new int[]{0,0,0,0,0,0,1}, false, 789);
+        executionUnit.executeLDA(new int[]{0,0,0,0,0,0,1}, 789);
         assertEquals(789, registers.getRegister("A").getIntValue());
     }
 
     @Test
     void testExecuteSTA() {
         registers.getRegister("A").setValue(654321);
-        executionUnit.executeSTA(new int[]{0,0,0,0,0,1,1}, false, 3);
+        executionUnit.executeSTA(3);
         assertArrayEquals(Convert.intTo3Bytes(654321), memory.readWord(1));
     }
 
@@ -156,7 +156,7 @@ class ExecutionUnitTest {
     void testExecuteLDCH() {
         memory.writeByte(5, 0x7F);
         registers.getRegister("A").setValue(0xFFFFFF);
-        executionUnit.executeLDCH(new int[]{0,0,0,0,0,1,1}, false, 5);
+        executionUnit.executeLDCH(new int[]{0,0,0,0,0,1,1}, 5);
         assertEquals(0xFFFF7F, registers.getRegister("A").getIntValue());
     }
 
@@ -189,23 +189,5 @@ class ExecutionUnitTest {
         registers.getRegister("X").setValue(100);
         executionUnit.executeCOMPR(new int[]{0, 1});
         assertEquals(1, registers.getRegister("SW").getIntValue());
-    }
-
-    @Test
-    void testExecuteMULF() {
-        registers.getRegister("F").setValue(2);
-        memory.writeWord(0, new byte[]{0,0,0});
-        memory.writeWord(1, new byte[]{0,0,5}); // valor 5 em 48 bits
-        executionUnit.executeMULF(new int[0], false, 0);
-        assertEquals(10, registers.getRegister("F").getLongValue());
-    }
-
-    @Test
-    void testExecuteDIVF_DivisionByZero() {
-        registers.getRegister("F").setValue(123456);
-        memory.writeWord(0, new byte[]{0,0,0});
-        memory.writeWord(1, new byte[]{0,0,0}); // divisor zero
-        assertThrows(ArithmeticException.class,
-                () -> executionUnit.executeDIVF(new int[0], false, 0));
     }
 }

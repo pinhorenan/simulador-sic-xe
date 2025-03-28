@@ -177,14 +177,14 @@ public class Controller {
         ObjectFile selectedFile = selectedItems.getFirst().getObjectFile();
         int userLoadAddress;
 
-        // Se o objeto final já está totalmente realocado e possui um start address diferente de 0,
+        // Se o objeto final já está totalmente realocado (modo absoluto),
         // usamos esse endereço diretamente.
-        if (selectedFile.isFullyRelocated() && selectedFile.getStartAddress() != 0) {
+        if (selectedFile.isFullyRelocated()) {
             userLoadAddress = selectedFile.getStartAddress();
         } else {
             // Caso contrário, solicita ao usuário o endereço de carga.
             try {
-                userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador", "Informe o endereço onde carregar:");
+                userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador", "Informe o endereço onde carregar (em HEX, use '0xNUMEROHEX'):");
             } catch (IOException e) {
                 DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
                 return;

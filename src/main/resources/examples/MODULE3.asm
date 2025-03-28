@@ -1,8 +1,0 @@
-MODULE3  START 0x000306
-         EXTREF ALPHA
-         EXTDEF CLEARALPHA
-
-CLEARALPHA LDA    #0
-           STA    ALPHA
-           RSUB
-           END   MODULE3

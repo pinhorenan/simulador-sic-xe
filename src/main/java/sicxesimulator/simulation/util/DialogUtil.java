@@ -1,6 +1,5 @@
 package sicxesimulator.simulation.util;
 
-import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.Region;
 
@@ -16,16 +15,6 @@ public abstract class DialogUtil {
         alert.setContentText(message);
         alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
         alert.showAndWait();
-    }
-
-    public static void showAlert(Alert.AlertType type, String title, String header, String content) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(type);
-            alert.setTitle(title);
-            alert.setHeaderText(header);
-            alert.setContentText(content);
-            alert.showAndWait();
-        });
     }
 
     public static void showError(String message) {
@@ -46,7 +35,7 @@ public abstract class DialogUtil {
         // Exibe o diálogo
         Optional<String> result = dialog.showAndWait();
         if (result.isEmpty()) {
-            throw new IOException("Usuário cancelou a entrada de inteiro.");
+            throw new IOException("Usuario cancelou a entrada de inteiro.");
         }
         String input = result.get().trim();
         try {

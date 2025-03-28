@@ -36,12 +36,10 @@ public class ExecutionPanel {
      * @param executionButtons Instância de ExecutionButtons
      */
     public void setButtons(ExecutionButtons executionButtons) {
-        Button runButton = executionButtons.getRunButton();
-        Button pauseButton = executionButtons.getPauseButton();
         Button nextButton = executionButtons.getNextButton();
         Button loadButton = executionButtons.getLoadButton();
         Button restartButton = executionButtons.getRestartButton();
-        controlsPane.getChildren().setAll(runButton, pauseButton, nextButton, loadButton, restartButton);
+        controlsPane.getChildren().setAll(loadButton, restartButton, nextButton);
     }
 
     public BorderPane getPane() {

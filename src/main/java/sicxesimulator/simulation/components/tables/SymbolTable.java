@@ -1,6 +1,6 @@
 package sicxesimulator.simulation.components.tables;
 
-import sicxesimulator.simulation.model.data.records.SymbolEntry;
+import sicxesimulator.simulation.data.records.SymbolEntry;
 
 public class SymbolTable extends BaseTableView<SymbolEntry> {
     public SymbolTable() {

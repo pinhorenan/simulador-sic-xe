@@ -3,12 +3,10 @@ package sicxesimulator.simulation.model;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import sicxesimulator.simulation.interfaces.ModelListener;
-import sicxesimulator.simulation.model.data.records.MemoryEntry;
-import sicxesimulator.simulation.model.data.records.RegisterEntry;
-import sicxesimulator.simulation.model.data.records.SymbolEntry;
+import sicxesimulator.simulation.data.records.MemoryEntry;
+import sicxesimulator.simulation.data.records.RegisterEntry;
+import sicxesimulator.simulation.data.records.SymbolEntry;
 import sicxesimulator.simulation.util.DialogUtil;
-import sicxesimulator.simulation.util.ValueFormatter;
-import sicxesimulator.simulation.view.ViewConfig;
 import sicxesimulator.hardware.cpu.Register;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.assembler.Assembler;
@@ -29,13 +27,9 @@ public class Model {
     private final Assembler assembler;
     private final MacroProcessor macroProcessor;
     private final BooleanProperty codeLoaded = new SimpleBooleanProperty(false);
-    private final BooleanProperty simulationPaused = new SimpleBooleanProperty(false);
     private final BooleanProperty simulationFinished = new SimpleBooleanProperty(false);
     private final List<ModelListener> listeners = new ArrayList<>();
-    private final ViewConfig viewConfig = new ViewConfig();
     private ObjectFile lastLoadedCode;
-    private int memorySize;
-    private int simulationSpeed;
     private LinkerMode linkerMode = LinkerMode.ABSOLUTO;
 
     public enum LinkerMode {
@@ -45,7 +39,6 @@ public class Model {
 
     public Model() {
         this.machine = new Machine();
-        this.memorySize = machine.getMemorySize();
         this.loader = new Loader();
         this.macroProcessor = new MacroProcessor();
         this.assembler = new Assembler();
@@ -63,20 +56,12 @@ public class Model {
         this.linkerMode = newMode;
     }
 
-    public int getSimulationSpeed() {
-        return simulationSpeed;
-    }
-
     public int getMemorySize() {
-        return memorySize;
+        return machine.getMemorySize();
     }
 
     public Machine getMachine() {
         return machine;
-    }
-
-    public ViewConfig getViewConfig() {
-        return viewConfig;
     }
 
     public ObjectFile getLastLoadedCode() {
@@ -88,9 +73,8 @@ public class Model {
         var memory = machine.getMemory();
         for (int wordIndex = 0; wordIndex < memory.getAddressRange(); wordIndex++) {
             byte[] word = memory.readWord(wordIndex);
-            int byteAddress = wordIndex * 3;
-            String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
-            entries.add(new MemoryEntry(formattedAddress, Converter.bytesToHex(word)));
+            String address = Convert.intToHexString24(wordIndex * 3);
+            entries.add(new MemoryEntry(address, Convert.bytesToHex(word)));
         }
         return entries;
     }
@@ -99,9 +83,15 @@ public class Model {
         List<RegisterEntry> entries = new ArrayList<>();
         var registers = machine.getControlUnit().getRegisterSet().getAllRegisters();
         for (Register register : registers) {
-            String value = ValueFormatter.formatRegisterValue(register, viewConfig.getAddressFormat());
+            String value;
+            if (register.getName().equals("F")) {
+                value = Convert.longToHexString48(register.getLongValue());
+            } else {
+                value = Convert.intToHexString24(register.getIntValue());
+            }
             entries.add(new RegisterEntry(register.getName(), value));
         }
+
         return entries;
     }
 
@@ -109,13 +99,10 @@ public class Model {
         List<SymbolEntry> entries = new ArrayList<>();
         ObjectFile objectFile = getLastLoadedCode();
         if (objectFile != null) {
-            // Usa getAllSymbols(), que retorna Map<String, SymbolInfo>
             var symbolsMap = objectFile.getSymbolTable().getAllSymbols();
             symbolsMap.forEach((name, info) -> {
-                // Agora info.address já é em bytes
-                int byteAddress = info.address;
-                String formattedAddress = ValueFormatter.formatAddress(byteAddress, viewConfig.getAddressFormat());
-                entries.add(new SymbolEntry(name, formattedAddress));
+                String address = Convert.intToHexString24(info.address);
+                entries.add(new SymbolEntry(name, address));
             });
         }
         return entries;
@@ -129,20 +116,8 @@ public class Model {
         return simulationFinished;
     }
 
-    public BooleanProperty simulationPausedProperty() {
-        return simulationPaused;
-    }
-
-    public void setSimulationSpeed(int newSimulationSpeed) {
-        if (newSimulationSpeed >= 0 && newSimulationSpeed <= 4) {
-            this.simulationSpeed = newSimulationSpeed;
-        } else {
-            throw new IllegalArgumentException("Velocidade inválida. Use 0 (tempo real), 1 (muito lento), 2 (lento), 3 (médio), ou 4 (rápido).");
-        }
-    }
-
     public void setMemorySize(int newMemorySize) {
-        this.memorySize = newMemorySize;
+        machine.changeMemorySize(newMemorySize);
     }
 
     public void setCodeLoaded(boolean loaded) {
@@ -153,16 +128,6 @@ public class Model {
         simulationFinished.set(finished);
     }
 
-    public void setSimulationPaused(boolean paused) {
-        simulationPaused.set(paused);
-    }
-
-    /**
-     * Processa as macros no código fonte fornecido.
-     * @param rawSourceLines O código-fonte original, com as definições de macro.
-     * @return O código-fonte processado, sem as definições de macro e com todos os macros expandidos.
-     * @throws IOException Se ocorrer um erro de I/O.
-     */
     public List<String> processCodeMacros(List<String> rawSourceLines) throws IOException {
         // Usa a constante TEMP_DIR definida em Constants
         FileUtils.ensureDirectoryExists(Constants.TEMP_DIR);
@@ -182,13 +147,6 @@ public class Model {
         return Arrays.asList(expandedContent.split("\\r?\\n"));
     }
 
-    /**
-     * Monta o código fonte fornecido e retorna o arquivo objeto resultante.
-     * @param rawSourceLines O código-fonte original, com as definições de macro (passado aqui para exibir na interface).
-     * @param preProcessedSourceCode O código-fonte processado, sem as definições de macro e com todos os macros expandidos (que realmente é a base para a montagem).
-     * @return O arquivo objeto resultante.
-     * @throws IOException Se ocorrer um erro de I/O.
-     */
     public ObjectFile assembleCode(List<String> rawSourceLines, List<String> preProcessedSourceCode) throws IOException {
         ObjectFile machineCode = assembler.assemble(rawSourceLines, preProcessedSourceCode);
         addAndSaveObjectFileToList(machineCode);
@@ -196,61 +154,22 @@ public class Model {
         return machineCode;
     }
 
-    /**
-     * Liga os arquivos objeto fornecidos e retorna o arquivo objeto resultante.
-     * @param files Lista de arquivos objeto a serem ligados.
-     * @param loadAddress Endereço de carga do programa.
-     * @param fullRelocation Se o ligador deve fazer a realocação completa.
-     * @return O arquivo objeto resultante.
-     */
     public ObjectFile linkObjectFiles(List<ObjectFile> files, int loadAddress, boolean fullRelocation, String linkedName) {
         ObjectFile linkedObj = linker.linkModules(files, fullRelocation, loadAddress, linkedName);
         addAndSaveObjectFileToList(linkedObj);
         return linkedObj;
     }
 
-    /// Controle de execução do programa
-
-    /**
-     * Chama o runCycle() da máquina para executar a próxima instrução.
-     */
     public void runNextInstruction() {
         machine.runCycle();
     }
 
-    /**
-     * Aplica um delay conforme a velocidade de simulação atual.
-     * Se a velocidade for 0, o retorna imediatamente.
-     * Se a velocidade for 1 a 4, o dorme por um tempo proporcional à velocidade.
-     * Esse delay só se aplica quando tentamos executar inteiramente o programa, sem passo a passo.
-     */
-    public void applyCycleDelay() {
-        if (simulationSpeed > 0) {
-            try {
-                long delay = Mapper.simulationSpeedToCycleDelay(simulationSpeed);
-                Thread.sleep(delay);
-            } catch (InterruptedException e) {
-                System.err.println("Execução interrompida: " + e.getMessage());
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
-     * Reinicia a máquina.
-     * Isso limpa a memória e os registradores e redefine o estado da máquina.
-     */
     public void restartMachine() {
         setCodeLoaded(false);
         setSimulationFinished(false);
         machine.reset();
     }
 
-    /**
-     * Carrega o programa do arquivo objeto fornecido na memória da máquina.
-     * @param selectedFile O arquivo objeto a ser carregado.
-     * @param baseAddress O endereço base de carga do programa.
-     */
     public void loadProgramToMachine(ObjectFile selectedFile, int baseAddress) {
         if (selectedFile != null) {
             // Carrega o objeto na memória
@@ -268,8 +187,6 @@ public class Model {
             notifyListeners();
         }
     }
-
-    /// ===== Manipulação da lista de arquivos objeto =====
 
     public void addAndSaveObjectFileToList(ObjectFile objectFile) {
         File savedDir = new File(Constants.SAVE_DIR);
@@ -336,17 +253,6 @@ public class Model {
         }
     }
 
-    /**
-     * Loga o estado detalhado da máquina para auxiliar na depuração.
-     * São registrados:
-     * - A memória: endereços (a cada 3 bytes) que possuem valor diferente de zero,
-     *   no formato "Endereço -> Valor".
-     * - O estado de todos os registradores.
-     * - O código objeto carregado (texto).
-     * - A tabela de símbolos: mapeamento do símbolo para seu endereço.
-     *
-     * @param contextMessage Uma mensagem de contexto indicando onde o log foi invocado.
-     */
     public void logDetailedState(String contextMessage) {
         String objectCodeText = "(Nenhum objeto carregado)";
         Map<String, Integer> symbolMap = new HashMap<>();

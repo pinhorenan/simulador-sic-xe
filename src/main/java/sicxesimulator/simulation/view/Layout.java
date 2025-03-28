@@ -27,26 +27,20 @@ public class Layout {
     public Layout() {
         this.root = new BorderPane();
 
-        // Criamos os painéis que não dependem do Controller
         this.inputPanel = new InputPanel();
         this.executionPanel = new ExecutionPanel();
         this.memoryPanel = new MemoryPanel();
         this.registerPanel = new RegisterPanel();
         this.symbolPanel = new SymbolPanel();
 
-        // Criamos o container rightPane (que não depende do ObjectFilePanel)
         HBox memoryAndRegisterTables = new HBox(10, memoryPanel.getPane(), registerPanel.getPane());
         VBox rightPane = new VBox(5, executionPanel.getPane(), memoryAndRegisterTables);
         rightPane.setPrefWidth(400);
         VBox.setVgrow(executionPanel.getPane(), Priority.ALWAYS);
 
-        // Criar um centerPane para o inputPanel
         VBox inputContainer = new VBox(inputPanel.getPane());
         HBox centerPane = new HBox(inputContainer);
 
-        // Criamos o leftPane inicialmente sem o ObjectFilePanel
-        // Usamos um VBox para agrupar (temporariamente) o symbolPanel; depois, quando o Controller for definido,
-        // substituiremos esse grupo por um VBox contendo o ObjectFilePanel e o symbolPanel.
         VBox filesAndSymbols = new VBox(symbolPanel.getPane());
         leftPane = new HBox(filesAndSymbols);
 
@@ -59,14 +53,11 @@ public class Layout {
 
     public void setController(Controller mainController) {
         this.mainController = mainController;
-        // Cria o ObjectFilePanel usando o Controller já criado
         this.objectFilePanel = new FileListPanel(mainController);
 
-        // Atualiza o container que agrupa o ObjectFilePanel e o SymbolPanel
         VBox filesAndSymbols = new VBox(5, objectFilePanel.getPane(), symbolPanel.getPane());
         VBox.setVgrow(inputPanel.getPane(), Priority.ALWAYS);
 
-        // Atualiza o leftPane com os novos componentes, mantendo o padding original
         leftPane.getChildren().setAll(filesAndSymbols);
     }
 
@@ -79,7 +70,6 @@ public class Layout {
         if (menuBarController != null) {
             ToolbarPanel toolbarPanel = new ToolbarPanel(menuBarController);
             root.setTop(toolbarPanel.getMenuBar());
-            // Atualizamos o inputPanel com os MainButtons também
         }
     }
 

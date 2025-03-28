@@ -49,26 +49,6 @@ public class ToolbarPanel {
 
         memoryMenu.getItems().addAll(clearMemoryItem, changeMemorySizeItem);
 
-        // Menu "Execução"
-        Menu executionMenu = new Menu("Execução");
-        MenuItem executionSpeedItem = new MenuItem("Velocidade de execução");
-        executionSpeedItem.setOnAction(e -> menuBarController.handleChangeRunningSpeedAction(3));
-
-        executionMenu.getItems().add(executionSpeedItem);
-
-        // Menu "Exibição"
-        Menu viewMenu = new Menu("Exibição");
-        MenuItem hexView = new MenuItem("Hexadecimal");
-        hexView.setOnAction(e -> menuBarController.handleSetHexViewAction());
-
-        MenuItem octView = new MenuItem("Octal");
-        octView.setOnAction(e -> menuBarController.handleSetOctalViewAction());
-
-        MenuItem decView = new MenuItem("Decimal");
-        decView.setOnAction(e -> menuBarController.handleSetDecimalViewAction());
-
-        viewMenu.getItems().addAll(hexView, octView, decView);
-
         // Menu "Ajuda"
         Menu helpMenu = new Menu("Ajuda");
         MenuItem helpItem = new MenuItem("Abrir janela de ajuda");
@@ -76,7 +56,7 @@ public class ToolbarPanel {
 
         helpMenu.getItems().add(helpItem);
 
-        menuBar.getMenus().addAll(fileMenu, assemblerMenu, linkerMenu, memoryMenu, executionMenu, viewMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, assemblerMenu, linkerMenu, memoryMenu, helpMenu);
         return menuBar;
     }
 }

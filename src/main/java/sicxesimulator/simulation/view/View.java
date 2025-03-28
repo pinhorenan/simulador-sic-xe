@@ -13,18 +13,13 @@ import sicxesimulator.simulation.model.Model;
 public class View extends Application {
     private static Model injectedModel;
 
-    /**
-     * Inicializa a aplicação JavaFX.
-     *
-     * @param primaryStage O palco principal da aplicação
-     */
     @Override
     public void start(Stage primaryStage) {
 
         // Configurações da janela
         primaryStage.setResizable(false);
         primaryStage.setTitle("Simulador SIC/XE");
-        primaryStage.getIcons().add(new javafx.scene.image.Image("icon.png"));
+        primaryStage.getIcons().add(new javafx.scene.image.Image("ferrugem.png"));
 
         // Verifica se o model foi injetado
         if (injectedModel == null) {
@@ -71,11 +66,6 @@ public class View extends Application {
         assemblerButtons.setupBindings();
     }
 
-    /**
-     * Define o model a ser injetado na aplicação.
-     *
-     * @param model O model a ser injetado
-     */
     public static void setModel(Model model) {
         injectedModel = model;
     }

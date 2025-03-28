@@ -25,16 +25,13 @@ public class MenuBarController {
         ObjectFile obj = sel.get(0).getObjectFile();
 
         String textual = obj.getObjectCodeAsString();  // Implementar no ObjectFile
-        controller.getMainLayout().getInputPanel().getExpandedCodeArea().setText("=== OBJ TEXT ===\n" + textual + "\n");
+        controller.getMainLayout().getInputPanel().getExpandedCodeArea().setText("=== Código Objeto ===\n" + textual + "\n");
     }
 
     public MenuBarController(Controller controller) {
         this.controller = controller;
     }
 
-    /// ===================== MENU SUPERIOR ===================== ///
-
-    // Ação do menuItem "Importar código-fonte"
     public void handleImportASM() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Arquivos Assembly", "*.asm"));
@@ -53,14 +50,10 @@ public class MenuBarController {
         }
     }
 
-    /// ===================== MENU MEMÓRIA ===================== ///
-
-    // Ação do menuItem "Limpar memória"
     public void handleClearMemoryAction() {
-        controller.clearMemory();
+        controller.handleClearMemory();
     }
 
-    // Ação do menuItem "Alterar tamanho da memória"
     public void handleChangeMemorySizeAction() {
         int newSizeInBytes;
         try {
@@ -68,10 +61,8 @@ public class MenuBarController {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        controller.changeMemorySize(newSizeInBytes);
+        controller.handleChangeMemorySize(newSizeInBytes);
     }
-
-    /// ===================== MENU LIGADOR ===================== ///
 
     public void handleSetLinkerModeAction() {
         // Pega o modo atual do Model
@@ -90,27 +81,6 @@ public class MenuBarController {
             controller.setLinkerMode(newMode);
         }
     }
-
-
-    public void handleChangeRunningSpeedAction(int newSimulationSpeed) {
-        controller.setSimulationSpeed(newSimulationSpeed);
-    }
-
-    /// ===================== MENU EXIBIÇÃO ===================== ///
-
-    public void handleSetHexViewAction() {
-        controller.setViewFormat("HEX");
-    }
-
-    public void handleSetOctalViewAction() {
-        controller.setViewFormat("OCT");
-    }
-
-    public void handleSetDecimalViewAction() {
-        controller.setViewFormat("DEC");
-    }
-
-    /// ===================== MENU AJUDA ===================== ///
 
     public void handleHelpAction() {
         controller.showHelpWindow();

@@ -9,7 +9,7 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
-import sicxesimulator.simulation.model.data.ObjectFileTableItem;
+import sicxesimulator.simulation.data.ObjectFileTableItem;
 import sicxesimulator.software.data.ObjectFile;
 
 import java.util.List;
@@ -31,15 +31,11 @@ public class FileTable extends TableView<ObjectFileTableItem> {
                 if (!row.isEmpty() && event.getClickCount() == 2) {
                     ObjectFileTableItem clickedItem = row.getItem();
                     System.out.println("Duplo clique em " + clickedItem.getProgramName());
-                    // TODO: Não é aqui, mas preciso lidar com a exibição do conteúdo de arquivos gerados pela ligação de vários módulos.
-                    // TODO: Atualmente, quando dou duplo clique em um arquivo linkado, ele exibe dialog informando que o arquivo não possui código fonte.
                 }
             });
             return row;
         });
 
-        // TODO: Verificar a necessidade dessas colunas.
-        // Criação das colunas (removemos a coluna "Selecionado")
         TableColumn<ObjectFileTableItem, String> nameCol = new TableColumn<>("Programa");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("programName"));
         nameCol.setPrefWidth(80);
@@ -89,7 +85,7 @@ public class FileTable extends TableView<ObjectFileTableItem> {
     }
 
     public void addEntry(ObjectFileTableItem entry) {
-        if (!entries.contains(entry)) {  // Evita duplicação
+        if (!entries.contains(entry)) {
             entries.add(entry);
         }
     }

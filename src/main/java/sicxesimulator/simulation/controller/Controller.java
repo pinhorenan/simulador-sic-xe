@@ -14,13 +14,12 @@ import sicxesimulator.simulation.view.Layout;
 import sicxesimulator.simulation.view.ViewUpdater;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.simulation.model.Model;
-import sicxesimulator.simulation.model.data.ObjectFileTableItem;
-import sicxesimulator.simulation.model.data.records.MemoryEntry;
+import sicxesimulator.simulation.data.ObjectFileTableItem;
+import sicxesimulator.simulation.data.records.MemoryEntry;
 
-import sicxesimulator.simulation.model.data.records.RegisterEntry;
-import sicxesimulator.simulation.model.data.records.SymbolEntry;
+import sicxesimulator.simulation.data.records.RegisterEntry;
+import sicxesimulator.simulation.data.records.SymbolEntry;
 import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.Mapper;
 
 import java.io.*;
 import java.util.*;
@@ -47,27 +46,6 @@ public class Controller {
                 objectFileTable.addEntry(new ObjectFileTableItem(file));
             }
         }
-    }
-
-    private List<ObjectFile> loadSavedObjectFiles() {
-        List<ObjectFile> objectFiles = new ArrayList<>();
-        File savedDir = new File(Constants.SAVE_DIR);
-
-        if (savedDir.exists() && savedDir.isDirectory()) {
-            // Carrega arquivos .meta (serializados)
-            File[] metaFiles = savedDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".meta"));
-            if (metaFiles != null) {
-                for (File file : metaFiles) {
-                    try {
-                        ObjectFile objectFile = ObjectFile.loadFromFile(file); // desserializa
-                        objectFiles.add(objectFile);
-                    } catch (IOException e) {
-                        DialogUtil.showError("Erro ao carregar arquivo meta: " + file.getName());
-                    }
-                }
-            }
-        }
-        return objectFiles;
     }
 
     public void handleAssembleAction() {
@@ -159,29 +137,6 @@ public class Controller {
         }
     }
 
-    public void handleRunAction() {
-        new Thread(() -> {
-            while (!model.simulationFinishedProperty().get() && !model.simulationPausedProperty().get()) {
-                try {
-                    model.runNextInstruction();
-                    Platform.runLater(() -> {
-                        mainLayout.getExecutionPanel().getMachineOutput().appendText(
-                                model.getMachine().getControlUnit().getLastExecutionLog() + "\n"
-                        );
-                        updater.updateAllTables();
-                    });
-                } catch (Exception ex) {
-                    // Registra o estado detalhado ao ocorrer erro durante a execução contínua
-                    model.logDetailedState("Erro em handleRunAction()");
-                    Platform.runLater(() -> DialogUtil.showError("Erro na execução: " + ex.getMessage()));
-                    break;
-                }
-                model.applyCycleDelay();
-            }
-            Platform.runLater(() -> mainLayout.getExecutionPanel().getMachineOutput().appendText("Execução concluída!\n"));
-        }).start();
-    } // TODO: buga e trava a interface
-
     public void handleNextAction() {
         if (model.codeLoadedProperty().get() && !model.simulationFinishedProperty().get()) {
             try {
@@ -200,18 +155,6 @@ public class Controller {
             }
         } else {
             DialogUtil.showError("Nenhum programa montado ou simulação já concluída!");
-        }
-    }
-
-    public void handlePauseAction() {
-        if (model.codeLoadedProperty().get()) {
-            boolean isPaused = model.simulationPausedProperty().get();
-            model.setSimulationPaused(!isPaused);
-
-            String message = isPaused ? "Execução retomada!" : "Execução pausada!";
-            mainLayout.getExecutionPanel().getMachineOutput().appendText(message + "\n");
-        } else {
-            DialogUtil.showError("Nenhum programa carregado para pausar!");
         }
     }
 
@@ -262,17 +205,8 @@ public class Controller {
         return model;
     }
 
-    public String getAddressFormat() {
-        return model.getViewConfig().getAddressFormat();
-    }
-
     public int getMemorySize() {
         return model.getMemorySize();
-    }
-
-    public String getCycleDelay() {
-        int simulationSpeed = model.getSimulationSpeed();
-        return Mapper.simulationSpeedToCycleDelay(simulationSpeed)+ "ms";
     }
 
     public List<MemoryEntry> getMemoryEntries() {
@@ -299,41 +233,27 @@ public class Controller {
         mainLayout.getInputPanel().setInputText(content);
     }
 
-    public void clearMemory() {
-        model.getMachine().getMemory().clearMemory();
+    public void handleClearMemory() {
+        model.getMachine().getMemory().reset();
         updater.updateMemoryTableView();
         mainLayout.getExecutionPanel().getMachineOutput().appendText("Memória limpa!\n");
         // Atualiza a label da bottom bar
         if (mainLayout.getLabelsPanel() != null) {
-            mainLayout.getLabelsPanel().updateMemoryLabel();
+            mainLayout.getLabelsPanel().updateMemorySizeLabel();
         }
     }
 
-    public void changeMemorySize(int newSizeInBytes) {
+    public void handleChangeMemorySize(int newSizeInBytes) {
         try {
             model.getMachine().changeMemorySize(newSizeInBytes);
             model.setMemorySize(newSizeInBytes);
             mainLayout.getExecutionPanel().getMachineOutput().appendText("Memória alterada para " + newSizeInBytes + " bytes.\n");
             updater.updateMemoryTableView();
             if (mainLayout.getLabelsPanel() != null) {
-                mainLayout.getLabelsPanel().updateMemoryLabel();
+                mainLayout.getLabelsPanel().updateMemorySizeLabel();
             }
         } catch (Exception e) {
             DialogUtil.showError("Erro ao alterar o tamanho da memória: " + e.getMessage());
-        }
-    }
-
-    public void setSimulationSpeed(int speed) {
-        model.setSimulationSpeed(speed);
-        if (mainLayout.getLabelsPanel() != null) {
-            mainLayout.getLabelsPanel().updateSpeedLabel();
-        }
-    }
-
-    public void setViewFormat(String format) {
-        model.getViewConfig().setAddressFormat(format);
-        if (mainLayout.getLabelsPanel() != null) {
-            mainLayout.getLabelsPanel().updateFormatLabel();
         }
     }
 
@@ -369,6 +289,27 @@ public class Controller {
         VBox section = new VBox(5, titleLabel, bodyLabel);
         section.setStyle("-fx-background-color: #fafafa; -fx-padding: 10px; -fx-border-radius: 5px; -fx-effect: dropshadow(gaussian, #cccccc, 10, 0, 0, 2);");
         return section;
+    }
+
+    private List<ObjectFile> loadSavedObjectFiles() {
+        List<ObjectFile> objectFiles = new ArrayList<>();
+        File savedDir = new File(Constants.SAVE_DIR);
+
+        if (savedDir.exists() && savedDir.isDirectory()) {
+            // Carrega arquivos .meta (serializados)
+            File[] metaFiles = savedDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".meta"));
+            if (metaFiles != null) {
+                for (File file : metaFiles) {
+                    try {
+                        ObjectFile objectFile = ObjectFile.loadFromFile(file); // desserializa
+                        objectFiles.add(objectFile);
+                    } catch (IOException e) {
+                        DialogUtil.showError("Erro ao carregar arquivo meta: " + file.getName());
+                    }
+                }
+            }
+        }
+        return objectFiles;
     }
 
     public void showHelpWindow() {

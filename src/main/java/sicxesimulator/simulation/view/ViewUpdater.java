@@ -2,12 +2,12 @@ package sicxesimulator.simulation.view;
 
 import javafx.application.Platform;
 import sicxesimulator.simulation.controller.Controller;
-import sicxesimulator.simulation.model.data.records.SymbolEntry;
+import sicxesimulator.simulation.data.records.SymbolEntry;
 import sicxesimulator.simulation.components.tables.MemoryTable;
 import sicxesimulator.simulation.components.tables.RegisterTable;
 import sicxesimulator.simulation.components.tables.SymbolTable;
 import sicxesimulator.software.data.ObjectFile;
-import sicxesimulator.simulation.util.ValueFormatter;
+import sicxesimulator.utils.Convert;
 
 public class ViewUpdater {
     private final Controller controller;
@@ -53,28 +53,17 @@ public class ViewUpdater {
         var symbolsMap = objectFile.getSymbolTable().getAllSymbols();
         symbolsMap.forEach((name, info) -> {
             int byteAddress = info.address;
-            String formattedAddress = ValueFormatter.formatAddress(byteAddress, controller.getModel().getViewConfig().getAddressFormat());
-            symbolTable.getItems().add(new SymbolEntry(name, formattedAddress));
+            symbolTable.getItems().add(new SymbolEntry(name, Convert.intToBinaryString24((byteAddress))));
         });
     }
 
     public void updateAllLabels() {
         updateMemorySizeLabel();
-        updateAddressFormatLabel();
-        updateCycleDelayLabel();
         updateLinkerModeLabel();
     }
 
     public void updateMemorySizeLabel() {
-        mainLayout.getLabelsPanel().updateMemoryLabel();
-    }
-
-    public void updateAddressFormatLabel() {
-        mainLayout.getLabelsPanel().updateFormatLabel();
-    }
-
-    public void updateCycleDelayLabel() {
-        mainLayout.getLabelsPanel().updateSpeedLabel();
+        mainLayout.getLabelsPanel().updateMemorySizeLabel();
     }
 
     public void updateLinkerModeLabel() {

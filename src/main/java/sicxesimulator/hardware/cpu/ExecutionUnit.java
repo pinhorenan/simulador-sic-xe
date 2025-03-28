@@ -2,7 +2,7 @@ package sicxesimulator.hardware.cpu;
 
 import sicxesimulator.hardware.Memory;
 import sicxesimulator.hardware.data.Instruction;
-import sicxesimulator.utils.Converter;
+import sicxesimulator.utils.Convert;
 import sicxesimulator.utils.Mapper;
 
 import java.util.logging.Logger;
@@ -40,18 +40,18 @@ public class ExecutionUnit {
     // Retorna o valor (int)
     // ===============================
     private int getValueOrImmediate(int[] operands, int effectiveAddress) {
-        // n=operands[5], i=operands[6]
-        int n = operands[5];
-        int i = operands[6];
-        // Modo imediato => retorna EA diretamente
-        if (n == 0 && i == 1) {
+        int n = operands[5], i = operands[6];
+
+        if (n == 0 && i == 1) {  // imediato
             return effectiveAddress;
-        } else {
-            // Modo direto => lê da memória
-            byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-            return Converter.bytesToInt(wordBytes);
+        } else if (n == 1 && i == 0) {  // indireto
+            int addrFromMem = Convert.bytesToInt(memory.readWord(toWordAddress(effectiveAddress)));
+            return Convert.bytesToInt(memory.readWord(toWordAddress(addrFromMem)));
+        } else {  // direto padrão SIC/XE (n=1,i=1) ou SIC/nãoXE (n=0,i=0)
+            return Convert.bytesToInt(memory.readWord(toWordAddress(effectiveAddress)));
         }
     }
+
 
     /// ===============================================================
     /// Métodos para operações aritméticas e lógicas (inteiras)
@@ -155,7 +155,7 @@ public class ExecutionUnit {
     public String executeDIV(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int divisor = Converter.bytesToInt(wordBytes);
+        int divisor = Convert.bytesToInt(wordBytes);
         if (divisor == 0) {
             throw new ArithmeticException("Divisão por zero");
         }
@@ -196,7 +196,7 @@ public class ExecutionUnit {
     public String executeMUL(int[] operands, boolean indexed, int effectiveAddress) {
         Register A = registers.getRegister("A");
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int operandValue = Converter.bytesToInt(wordBytes);
+        int operandValue = Convert.bytesToInt(wordBytes);
         int result = A.getIntValue() * operandValue;
         A.setValue(result);
         updateConditionCode(result);
@@ -305,6 +305,7 @@ public class ExecutionUnit {
      * @param effectiveAddress Endereço efetivo da operação.
      * @return Mensagem de log com o resultado da operação.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public String executeDIVF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -332,6 +333,7 @@ public class ExecutionUnit {
      * @param effectiveAddress Endereço efetivo da operação.
      * @return Mensagem de log com o resultado da operação.
      */
+    @SuppressWarnings("UnusedReturnValue")
     public String executeMULF(int[] operands, boolean indexed, int effectiveAddress) {
         Register F = registers.getRegister("F");
         int wordAddr = toWordAddress(effectiveAddress);
@@ -600,7 +602,7 @@ public class ExecutionUnit {
      */
     public String executeLDL(int[] operands, boolean indexed, int effectiveAddress) {
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int value = Converter.bytesToInt(wordBytes);
+        int value = Convert.bytesToInt(wordBytes);
         registers.getRegister("L").setValue(value);
         String log = String.format("LDL: L ← %06X", value);
         logger.info(log);
@@ -641,7 +643,7 @@ public class ExecutionUnit {
         } else { // LDX
             int effectiveAddress = instruction.effectiveAddress();
             byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-            int value = Converter.bytesToInt(wordBytes);
+            int value = Convert.bytesToInt(wordBytes);
             registers.getRegister("X").setValue(value);
             String log = String.format("LDX: Carregado %06X", value);
             logger.info(log);
@@ -739,7 +741,7 @@ public class ExecutionUnit {
 
     public String executeLDX(int[] operands, boolean indexed, int effectiveAddress) {
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int value = Converter.bytesToInt(wordBytes);
+        int value = Convert.bytesToInt(wordBytes);
         registers.getRegister("X").setValue(value);
         String log = String.format("LDX: X ← %06X", value);
         logger.info(log);
@@ -754,7 +756,7 @@ public class ExecutionUnit {
 
     public String executeSTA(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("A").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STA: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -762,7 +764,7 @@ public class ExecutionUnit {
 
     public String executeSTB(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("B").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STB: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -801,7 +803,7 @@ public class ExecutionUnit {
 
     public String executeSTL(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("L").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STL: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -809,7 +811,7 @@ public class ExecutionUnit {
 
     public String executeSTS(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("S").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STS: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -817,7 +819,7 @@ public class ExecutionUnit {
 
     public String executeSTSW(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("SW").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STSW: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -825,7 +827,7 @@ public class ExecutionUnit {
 
     public String executeSTT(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("T").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STT: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -833,7 +835,7 @@ public class ExecutionUnit {
 
     public String executeSTX(int[] operands, boolean indexed, int effectiveAddress) {
         int value = registers.getRegister("X").getIntValue();
-        memory.writeWord(toWordAddress(effectiveAddress), Converter.intTo3Bytes(value));
+        memory.writeWord(toWordAddress(effectiveAddress), Convert.intTo3Bytes(value));
         String log = String.format("STX: Mem[%06X] ← %06X", effectiveAddress, value);
         logger.info(log);
         return log;
@@ -886,7 +888,7 @@ public class ExecutionUnit {
         Register X = registers.getRegister("X");
         X.setValue(X.getIntValue() + 1);
         byte[] wordBytes = memory.readWord(toWordAddress(effectiveAddress));
-        int memValue = Converter.bytesToInt(wordBytes);
+        int memValue = Convert.bytesToInt(wordBytes);
         int comparison = X.getIntValue() - memValue;
         updateConditionCode(comparison);
         String log = String.format("TIX: X=%06X vs Mem[%06X]=%06X => %s",

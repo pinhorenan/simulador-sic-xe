@@ -12,8 +12,6 @@ public class ExecutionButtons implements ButtonBinding {
     private final Layout mainLayout;
     private final Controller controller;
 
-    private final Button runButton;
-    private final Button pauseButton;
     private final Button nextButton;
     private final Button loadButton;
     private final Button restartButton;
@@ -22,8 +20,6 @@ public class ExecutionButtons implements ButtonBinding {
         this.controller = controller;
         this.mainLayout = mainLayout;
 
-        this.runButton = ButtonFactory.createButton("Executar", controller::handleRunAction);
-        this.pauseButton = ButtonFactory.createButton("Pausar", controller::handlePauseAction);
         this.nextButton = ButtonFactory.createButton("Próximo", controller::handleNextAction);
         this.loadButton = ButtonFactory.createButton("Carregar", controller::handleLoadObjectFileAction);
         this.restartButton = ButtonFactory.createButton("Reiniciar", controller::handleRestartAction);
@@ -39,20 +35,14 @@ public class ExecutionButtons implements ButtonBinding {
         BooleanBinding executionAllowed = controller.getCodeLoadedProperty()
                 .and(controller.getSimulationFinishedProperty().not());
 
-        // Os botões: runButton, pauseButton, nextButton são habilitados quando o código foi carregado e a simulação não foi finalizada.
-        runButton.disableProperty().bind(executionAllowed.not());
-        pauseButton.disableProperty().bind(executionAllowed.not()); // TODO: Habilitar apenas quando a execução está "em andamento" (botão executar pressionado).
+        // O botão "Próximo" deve ser habilitado se a execução for permitida.
         nextButton.disableProperty().bind(executionAllowed.not());
 
-        // O loadButton ("Carregar") deve ser habilitado se houver exatamente 1 item selecionado.
+        // O botão "Carregar" deve ser habilitado se EXATAMENTE 1 item estiver selecionado.
         loadButton.disableProperty().bind(
                 oneSelected.not()
         );
     }
-
-    public Button getRunButton() { return runButton; }
-
-    public Button getPauseButton() { return pauseButton; }
 
     public Button getNextButton() { return nextButton;}
 

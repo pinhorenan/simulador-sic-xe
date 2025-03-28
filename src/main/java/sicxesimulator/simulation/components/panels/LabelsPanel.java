@@ -9,20 +9,16 @@ import sicxesimulator.simulation.controller.Controller;
 public class LabelsPanel {
     private final HBox pane;
     private final Controller controller;
-    private final Label memoryLabel;
-    private final Label formatLabel;
-    private final Label speedLabel;
+    private final Label memorySizeLabel;
     private final Label linkerModeLabel;
 
     public LabelsPanel(Controller controller) {
         this.controller = controller;
 
-        memoryLabel = new Label("Memória: ");
-        formatLabel = new Label("Formato: ");
-        speedLabel = new Label("Velocidade: ");
+        memorySizeLabel = new Label("Tamanho da Memória: ");
         linkerModeLabel = new Label("Modo Ligador: ");
 
-        pane = new HBox(20, memoryLabel, formatLabel, speedLabel, linkerModeLabel);
+        pane = new HBox(20, memorySizeLabel, linkerModeLabel);
         pane.setPadding(new Insets(10));
         pane.setAlignment(Pos.CENTER_LEFT);
         pane.setStyle("-fx-background-color: #EEE; -fx-border-color: #CCC; -fx-padding: 5px;");
@@ -40,18 +36,8 @@ public class LabelsPanel {
         }
     }
 
-    public void updateMemoryLabel() {
+    public void updateMemorySizeLabel() {
         int memorySize = controller.getMemorySize();
-        memoryLabel.setText("Tamanho da memória: " + memorySize + " bytes");
-    }
-
-    public void updateFormatLabel() {
-        String addressFormat = controller.getAddressFormat();
-        formatLabel.setText("Formato de exibição de endereços: " + addressFormat);
-    }
-
-    public void updateSpeedLabel() {
-        String cycleDelay = controller.getCycleDelay();
-        speedLabel.setText("Atraso de Ciclo: " + cycleDelay);
+        memorySizeLabel.setText("Tamanho da memória: " + memorySize + " bytes");
     }
 }

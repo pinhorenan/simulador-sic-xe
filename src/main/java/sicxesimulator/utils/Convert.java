@@ -3,7 +3,7 @@ package sicxesimulator.utils;
 /**
  * Classe utilitária para conversões de valores.
  */
-public abstract class Converter {
+public abstract class Convert {
     /**
      * Converte um inteiro para um array de 3 bytes (24 bits) em ordem big-endian.
      * Se o valor ultrapassar o intervalo de 24 bits, ele será truncado.
@@ -124,4 +124,24 @@ public abstract class Converter {
         }
         return sb.toString();
     }
+
+    /**
+     * Converte um valor inteiro para uma string hexadecimal de 24 bits (6 dígitos),
+     * preenchendo com zeros à esquerda se necessário.
+     *
+     * @param value O valor a converter.
+     * @return String hexadecimal com 6 dígitos.
+     */
+    public static String intToHexString24(int value) {
+        int masked = value & 0xFFFFFF; // considera apenas os 24 bits
+        return String.format("%06X", masked);
+    }
+
+    public static String longToHexString48(long value) {
+        long masked = value & 0xFFFFFFFFFFFFL;
+        return String.format("%012X", masked);
+    }
+
+
+
 }

@@ -11,7 +11,7 @@ public class MemoryPanel {
         this.memoryTable = new MemoryTable();
         this.memoryPane = new TitledPane("Memória", memoryTable);
         memoryPane.setCollapsible(false);
-        memoryPane.setPrefHeight(150); // 🔹 Reduzimos a altura do painel
+        memoryPane.setPrefHeight(150);
     }
 
     public TitledPane getPane() {

@@ -83,7 +83,7 @@ public class Logger {
         int numWords = memory.getAddressRange();
         for (int i = 0; i < numWords; i++) {
             byte[] word = memory.readWord(i);
-            int value = Converter.bytesToInt(word);
+            int value = Convert.bytesToInt(word);
             if (value != 0) {
                 int address = i * 3;
                 sb.append(String.format("%06X  | %06X\n", address, value));

@@ -62,7 +62,7 @@ java -jar build/libs/sicxesimulator.jar
   - Suporte à macros aninhadas
 - Montador SIC/XE completo:
   - Suporte às diretivas padrão: `START`, `END`, `WORD`, `BYTE`, `RESB`, `RESW`, `EXTDEF`, `EXTREF`
-  - Geração de arquivos objeto (`.obj`) estilo SIC/XE com registros `H/T/M/E/D/R`
+  - Geração de arquivos objeto (`.obj`) estilo SIC/XE com registros `H/D/R/T/M/E`
   - Geração de arquivo binário serializado (`.meta`) para retenção de metadados
 - Ligador (Linker) multi-módulo:
   - Realiza linkagem absoluta ou relocável entre múltiplos módulos
@@ -71,11 +71,11 @@ java -jar build/libs/sicxesimulator.jar
   - Carrega programas objeto para memória virtual
   - Aplica realocação pendente (quando necessária)
 
-## 📋 Conjunto de Instruções do SIC/XE
+## Conjunto de Instruções do SIC/XE
 
 Este simulador implementa parcialmente o conjunto de instruções SIC/XE conforme a especificação oficial, com algumas limitações de escopo educacional:
 
-### 🟢 Instruções Implementadas
+### Instruções Implementadas
 
 - **Formato 2 (registradores):**  
   `ADDR`, `CLEAR`, `COMPR`, `DIVR`, `MULR`, `RMO`, `SHIFTL`, `SHIFTR`, `SUBR`, `TIXR`
@@ -83,7 +83,7 @@ Este simulador implementa parcialmente o conjunto de instruções SIC/XE conform
 - **Formato 3/4 (memória e imediato):**  
   `ADD`, `AND`, `COMP`, `DIV`, `J`, `JEQ`, `JGT`, `JLT`, `JSUB`, `LDA`, `LDB`, `LDCH`, `LDL`, `LDS`, `LDT`, `LDX`, `MUL`, `OR`, `RSUB`, `STA`, `STB`, `STCH`, `STL`, `STS`, `STT`, `STX`, `SUB`, `TIX`
 
-### 🔴 Instruções NÃO Implementadas (Presentes como STUB)
+### Instruções NÃO Implementadas (Presentes como STUB)
 
 Por restrições do projeto, não há suporte para:
 

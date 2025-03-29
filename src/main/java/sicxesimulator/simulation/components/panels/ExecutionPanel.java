@@ -18,14 +18,15 @@ public class ExecutionPanel {
 
         // Área de saída da máquina
         machineOutput = new TextArea();
-        machineOutput.setPromptText("Saída da Máquina");
+        machineOutput.setPromptText("O trabalho duro supera o talento natural!");
         machineOutput.setEditable(false);
+        machineOutput.setWrapText(true);
         machineOutput.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-text-fill: green;");
         pane.setCenter(machineOutput);
 
         // Painel inferior para os botões de controle
         controlsPane = new HBox(5);
-        controlsPane.setPadding(new Insets(5, 0, 0, 0));
+        controlsPane.setPadding(new Insets(10, 0, 0, 0));
         controlsPane.setAlignment(Pos.CENTER);
         pane.setBottom(controlsPane);
     }

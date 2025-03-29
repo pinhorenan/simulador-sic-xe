@@ -1,12 +1,19 @@
 package sicxesimulator.simulation.view;
 
+import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.util.Duration;
 import sicxesimulator.simulation.components.buttons.AssemblerButtons;
 import sicxesimulator.simulation.components.buttons.ExecutionButtons;
 import sicxesimulator.simulation.components.buttons.FileListButtons;
 import sicxesimulator.simulation.controller.Controller;
 import sicxesimulator.simulation.components.panels.*;
+
+import java.util.Objects;
 
 /**
  * Responsável por construir e organizar os painéis gráficos principais da interface.
@@ -17,7 +24,6 @@ import sicxesimulator.simulation.components.panels.*;
  *
  * <p>Fornece métodos para integração com controladores, botões e atualização de painéis.</p>
  */
-
 public class Layout {
     private final BorderPane root;
     private final MemoryPanel memoryPanel;
@@ -27,11 +33,13 @@ public class Layout {
     private final InputPanel inputPanel;
     private final HBox leftPane;
 
+    private final StackPane executionStackPane;
+    private final VBox splashContainer;
+
     private LabelsPanel labelsPanel;
     private FileListPanel objectFilePanel;
 
     private Controller controller;
-
     public Layout() {
         this.root = new BorderPane();
 
@@ -42,7 +50,26 @@ public class Layout {
         this.symbolPanel = new SymbolPanel();
 
         HBox memoryAndRegisterTables = new HBox(10, memoryPanel.getPane(), registerPanel.getPane());
-        VBox rightPane = new VBox(5, executionPanel.getPane(), memoryAndRegisterTables);
+
+        // StackPane para a área de saída
+        executionStackPane = new StackPane();
+        executionStackPane.getChildren().add(executionPanel.getPane());
+
+        // Configura o splash image e container
+        ImageView splashImage = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/rock_lee.png"))));
+        splashImage.setFitWidth(350);
+        splashImage.setPreserveRatio(true);
+        splashImage.setMouseTransparent(true);
+
+        splashContainer = new VBox(splashImage);
+        splashContainer.setAlignment(Pos.TOP_CENTER);
+        splashContainer.setPadding(new Insets(30, 0, 0, 0));
+        splashContainer.setMouseTransparent(true);
+
+        executionStackPane.getChildren().add(splashContainer);
+        VBox.setVgrow(executionStackPane, Priority.ALWAYS);
+
+        VBox rightPane = new VBox(5, executionStackPane, memoryAndRegisterTables);
         rightPane.setPrefWidth(400);
         VBox.setVgrow(executionPanel.getPane(), Priority.ALWAYS);
 
@@ -58,6 +85,35 @@ public class Layout {
         root.setCenter(mainContent);
         root.setPadding(new Insets(0));
     }
+
+    public void hideSplash() {
+        if (splashContainer != null && executionStackPane.getChildren().contains(splashContainer)) {
+            controller.playDattebayoSound();
+            FadeTransition fade = new FadeTransition(Duration.seconds(0.4), splashContainer);
+            fade.setFromValue(1.0);
+            fade.setToValue(0.0);
+            fade.setOnFinished(e -> executionStackPane.getChildren().remove(splashContainer));
+            fade.play();
+        }
+    }
+
+    public void showSplash() {
+        // Garante que o splash está fora antes de reexibir
+        executionStackPane.getChildren().remove(splashContainer);
+
+        splashContainer.setOpacity(0.0);
+        executionStackPane.getChildren().add(splashContainer);
+
+        FadeTransition fade = new FadeTransition(Duration.seconds(0.2), splashContainer);
+        fade.setFromValue(0.0);
+        fade.setToValue(1.0);
+        fade.play();
+
+        if (controller != null) {
+            controller.playJustuSound();
+        }
+    }
+
 
     public void setController(Controller mainController) {
         this.controller = mainController;

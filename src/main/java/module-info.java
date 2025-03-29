@@ -3,7 +3,7 @@ module sicxesimulator {
     exports sicxesimulator.hardware;
     exports sicxesimulator.hardware.cpu;
     exports sicxesimulator.hardware.data;
-    exports sicxesimulator.software.data;
+    exports sicxesimulator.software.data.records;
     exports sicxesimulator.software.linker;
     exports sicxesimulator.software.assembler;
     exports sicxesimulator.software.assembler.data;
@@ -26,4 +26,5 @@ module sicxesimulator {
     requires javafx.controls;
     requires javafx.graphics;
     requires javafx.swing;
+    requires javafx.media;
 }

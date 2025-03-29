@@ -10,4 +10,3 @@ public class Main {
         javafx.application.Application.launch(View.class, args);
     }
 }
-

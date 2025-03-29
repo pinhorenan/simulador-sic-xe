@@ -8,6 +8,7 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.AudioClip;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -23,6 +24,7 @@ import sicxesimulator.simulation.data.records.RegisterEntry;
 import sicxesimulator.simulation.data.records.SymbolEntry;
 import sicxesimulator.utils.Constants;
 import sicxesimulator.utils.FileUtils;
+
 
 import java.io.*;
 import java.util.*;
@@ -73,7 +75,7 @@ public class Controller {
             mainLayout.getExecutionPanel().clearOutput();
             mainLayout.getInputPanel().setInputText(rawSourceText);
 
-            mainLayout.getExecutionPanel().getMachineOutput().appendText("Programa montado com sucesso!\n" + objectFile + "\n");
+            DialogUtil.showInfoDialog("Programa montado", "Montagem concluída!", "O arquivo " + objectFile.getProgramName() + " foi montado com sucesso!");
 
             initializeFilesView();
 
@@ -114,8 +116,28 @@ public class Controller {
     public void handleRestartAction() {
         model.restartMachine();
         mainLayout.getExecutionPanel().getMachineOutput().clear();
-        mainLayout.getExecutionPanel().getMachineOutput().appendText("Máquina reiniciada!\n");
+
+        // Frases de efeito estilo Naruto
+        List<String> frasesDeEfeito = List.of(
+                "\"O Naruto pode ser duro às vezes, impaciente e até meio idiota... mas eu o considero um ninja incrível!\" - Hatake, Kakashi",
+                "\"Aqueles que não conseguem reconhecer seu próprio valor são os verdadeiros perdedores.\" - Hoshigaki, Kisame",
+                "\"A solidão é o pior tipo de dor.\" - Uzumaki, Naruto",
+                "\"Eu nunca volto atrás com a minha palavra. Esse é o meu jeito ninja!\" - Uzumaki, Naruto",
+                "\"Aonde alguém sonha em ir, esse é o lugar que ele pertence.\" - Jiraiya, o Sábio Tarado",
+                "\"O fracasso não é motivo para se envergonhar. O verdadeiro fracasso é não tentar.\" - Hyuga, Neji",
+                "\"Aqueles que quebram as regras são lixo, mas aqueles que abandonam seus amigos são pior que lixo.\" - Hatake, Kakashi",
+                "\"A arte é uma explosão!\" - Deidara",
+                "\"Você e eu somos diferentes. Você segue o caminho da vingança... e eu, o caminho do amor.\" - Uzumaki, Naruto",
+                "\"O ódio é a única emoção que me restou.\" - Uchiha, Sasuke",
+                "\"Enquanto houver laços, sempre haverá dor... mas também força.\" - Uchiha, Itachi"
+        );
+
+        // Escolhe uma aleatória
+        String frase = frasesDeEfeito.get(new Random().nextInt(frasesDeEfeito.size()));
+        mainLayout.getExecutionPanel().getMachineOutput().appendText(frase + "\n");
+
         updateAllTables();
+        mainLayout.showSplash();
     }
 
     /**
@@ -201,6 +223,8 @@ public class Controller {
      * <p>Solicita endereço de carga se necessário.</p>
      */
     public void handleLoadObjectFileAction() {
+
+
         var table = mainLayout.getObjectFilePanel().getObjectFileTable();
         List<ObjectFileTableItem> selectedItems = new ArrayList<>(table.getSelectionModel().getSelectedItems());
 
@@ -219,7 +243,7 @@ public class Controller {
         } else {
             // Caso contrário, solicita ao usuário o endereço de carga.
             try {
-                userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador", "Informe o endereço onde carregar (em HEX, use '0xNUMEROHEX'):");
+                userLoadAddress = DialogUtil.askForInteger("Endereço de Carga", "Carregador", "Informe o endereço onde carregar:");
             } catch (IOException e) {
                 DialogUtil.showError("Operação cancelada ou inválida: " + e.getMessage());
                 return;
@@ -228,6 +252,8 @@ public class Controller {
 
         model.loadProgramToMachine(selectedFile, userLoadAddress);
         updateAllTables();
+
+        mainLayout.hideSplash();
         mainLayout.getExecutionPanel().getMachineOutput().clear();
         mainLayout.getExecutionPanel().getMachineOutput().appendText("Programa carregado com sucesso!\n" + selectedFile + "\n");
     }
@@ -571,5 +597,23 @@ public class Controller {
             }
         }
         return objectFiles;
+    }
+
+    public void playDattebayoSound() {
+        try {
+            AudioClip sound = new AudioClip(Objects.requireNonNull(getClass().getResource("/dattebayo.mp3")).toExternalForm());
+            sound.play();
+        } catch (Exception e) {
+            System.err.println("Erro ao tocar som: " + e.getMessage());
+        }
+    }
+
+    public void playJustuSound() {
+        try {
+            AudioClip sound = new AudioClip(Objects.requireNonNull(getClass().getResource("/jutsu.mp3")).toExternalForm());
+            sound.play();
+        } catch (Exception e) {
+            System.err.println("Erro ao tocar som: " + e.getMessage());
+        }
     }
 }

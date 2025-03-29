@@ -7,9 +7,9 @@ MAC2    MACRO
         ADD     Y
         MEND
 
-MACRO3  START   0x000000
+MACMAC  START   0x000000
         MAC2
         RSUB
 X       WORD    3
 Y       WORD    4
-        END     MACRO3
+        END     MACMAC

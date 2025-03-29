@@ -41,7 +41,7 @@ public class ObjectFile implements Serializable {
                       String fileName,
                       List<String> rawSourceCode,
                       Set<String> importedSymbols,
-                      @SuppressWarnings("ClassEscapesDefinedScope") List<RelocationRecord> relocationRecords) {
+                      List<RelocationRecord> relocationRecords) {
         if (machineCode == null || symbolTable == null || fileName == null) {
             throw new IllegalArgumentException("Nenhum parametro pode ser nulo.");
         }
@@ -81,7 +81,6 @@ public class ObjectFile implements Serializable {
         }
     }
 
-
     public boolean isFullyRelocated() {
         return fullyRelocated;
     }
@@ -102,7 +101,6 @@ public class ObjectFile implements Serializable {
         return rawSourceCode;
     }
 
-    @SuppressWarnings("ClassEscapesDefinedScope")
     public List<RelocationRecord> getRelocationRecords() {
         return relocationRecords;
     }

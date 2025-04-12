@@ -117,27 +117,8 @@ public class Controller {
         model.restartMachine();
         mainLayout.getExecutionPanel().getMachineOutput().clear();
 
-        // Frases de efeito estilo Naruto
-        List<String> frasesDeEfeito = List.of(
-                "\"O Naruto pode ser duro às vezes, impaciente e até meio idiota... mas eu o considero um ninja incrível!\" - Hatake, Kakashi",
-                "\"Aqueles que não conseguem reconhecer seu próprio valor são os verdadeiros perdedores.\" - Hoshigaki, Kisame",
-                "\"A solidão é o pior tipo de dor.\" - Uzumaki, Naruto",
-                "\"Eu nunca volto atrás com a minha palavra. Esse é o meu jeito ninja!\" - Uzumaki, Naruto",
-                "\"Aonde alguém sonha em ir, esse é o lugar que ele pertence.\" - Jiraiya, o Sábio Tarado",
-                "\"O fracasso não é motivo para se envergonhar. O verdadeiro fracasso é não tentar.\" - Hyuga, Neji",
-                "\"Aqueles que quebram as regras são lixo, mas aqueles que abandonam seus amigos são pior que lixo.\" - Hatake, Kakashi",
-                "\"A arte é uma explosão!\" - Deidara",
-                "\"Você e eu somos diferentes. Você segue o caminho da vingança... e eu, o caminho do amor.\" - Uzumaki, Naruto",
-                "\"O ódio é a única emoção que me restou.\" - Uchiha, Sasuke",
-                "\"Enquanto houver laços, sempre haverá dor... mas também força.\" - Uchiha, Itachi"
-        );
-
-        // Escolhe uma aleatória
-        String frase = frasesDeEfeito.get(new Random().nextInt(frasesDeEfeito.size()));
-        mainLayout.getExecutionPanel().getMachineOutput().appendText(frase + "\n");
-
+        mainLayout.getExecutionPanel().getMachineOutput().appendText("Máquina reiniciada!\n");
         updateAllTables();
-        mainLayout.showSplash();
     }
 
     /**
@@ -253,7 +234,6 @@ public class Controller {
         model.loadProgramToMachine(selectedFile, userLoadAddress);
         updateAllTables();
 
-        mainLayout.hideSplash();
         mainLayout.getExecutionPanel().getMachineOutput().clear();
         mainLayout.getExecutionPanel().getMachineOutput().appendText("Programa carregado com sucesso!\n" + selectedFile + "\n");
     }
@@ -599,21 +579,4 @@ public class Controller {
         return objectFiles;
     }
 
-    public void playDattebayoSound() {
-        try {
-            AudioClip sound = new AudioClip(Objects.requireNonNull(getClass().getResource("/dattebayo.mp3")).toExternalForm());
-            sound.play();
-        } catch (Exception e) {
-            System.err.println("Erro ao tocar som: " + e.getMessage());
-        }
-    }
-
-    public void playJustuSound() {
-        try {
-            AudioClip sound = new AudioClip(Objects.requireNonNull(getClass().getResource("/jutsu.mp3")).toExternalForm());
-            sound.play();
-        } catch (Exception e) {
-            System.err.println("Erro ao tocar som: " + e.getMessage());
-        }
-    }
 }

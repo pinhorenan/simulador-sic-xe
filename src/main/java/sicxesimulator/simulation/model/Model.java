@@ -44,7 +44,6 @@ public class Model {
         this.assembler = new Assembler();
         this.linker = new Linker();
 
-        // Verifica a pasta apontada pela constante "SAVE_DIR" e carrega os arquivos de objeto
         loadObjectFilesFromSaveDir();
     }
 
@@ -128,21 +127,22 @@ public class Model {
         simulationFinished.set(finished);
     }
 
+    // TODO: *REVIEW*
     public List<String> processCodeMacros(List<String> rawSourceLines) throws IOException {
         // Usa a constante TEMP_DIR definida em Constants
         FileUtils.ensureDirectoryExists(Constants.TEMP_DIR);
 
         // Define os caminhos completos para os arquivos temporários
-        String tempInputFile = Constants.TEMP_DIR + "/temp.asm";
+        String tempInputFile = Constants.TEMP_DIR + "/temp.asm"; // TODO: *REMOVER*
 
         // Escreve o código fonte original no arquivo de entrada usando FileUtils
-        FileUtils.writeFile(tempInputFile, String.join("\n", rawSourceLines));
+        FileUtils.writeFile(tempInputFile, String.join("\n", rawSourceLines)); // TODO: *REMOVER*
 
-        // Processa as macros: o MacroProcessor lê o arquivo de entrada e gera o arquivo expandido
-        macroProcessor.process(tempInputFile, "MASMAPRG.ASM");
+        // Processa as macros: o MacroProcessor lê o arquivo de entrada e gera o arquivo expandido *REMOVER*
+        macroProcessor.process(tempInputFile, "MASMAPRG.ASM"); // TODO: *REMOVER*
 
         // Lê o conteúdo do arquivo expandido usando FileUtils
-        String expandedContent = FileUtils.readFile(Constants.TEMP_DIR + "/" + "MASMAPRG.ASM");
+        String expandedContent = FileUtils.readFile(Constants.TEMP_DIR + "/" + "MASMAPRG.ASM"); // TODO: *REMOVER*
 
         return Arrays.asList(expandedContent.split("\\r?\\n"));
     }
@@ -172,17 +172,13 @@ public class Model {
 
     public void loadProgramToMachine(ObjectFile selectedFile, int baseAddress) {
         if (selectedFile != null) {
-            // Carrega o objeto na memória
             loader.loadObjectFile(selectedFile, machine.getMemory(), baseAddress);
-            // Atualiza o PC para o startAddress definido no objeto final.
-            // Assim, se o header indica E^000100, o PC passa a ser 0x100.
             machine.getControlUnit().setIntValuePC(selectedFile.getStartAddress());
 
             setCodeLoaded(true);
             lastLoadedCode = selectedFile;
 
-            // Loga o estado logo após a carga para depuração.
-            logDetailedState("Programa carregado em loadProgramToMachine()");
+            logDetailedState("Programa carregado em loadProgramToMachine()"); // LOG
 
             notifyListeners();
         }
@@ -196,6 +192,8 @@ public class Model {
                 return;
             }
         }
+
+        // TODO: REVIEW 
 
         // Use .meta em vez de .obj
         File saveFile = new File(savedDir, objectFile.getProgramName() + ".meta");
@@ -212,22 +210,17 @@ public class Model {
     public void loadObjectFilesFromSaveDir() {
         File savedDir = new File(Constants.SAVE_DIR);
 
-        // Verifica se o diretório existe
         if (savedDir.exists() && savedDir.isDirectory()) {
             File[] files = savedDir.listFiles((dir, name) -> name.endsWith(".meta"));
             if (files != null) {
                 for (File file : files) {
                     try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-                        // Carrega o ObjectFile do arquivo
                         ois.readObject();
                     } catch (IOException | ClassNotFoundException e) {
-                        // Agendar a exibição do erro na thread do JavaFX, se necessário
                         if (javafx.application.Platform.isFxApplicationThread()) {
-                            DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());
+                            DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage());                                                // Error message
                         } else {
-                            javafx.application.Platform.runLater(() ->
-                                    DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage())
-                            );
+                            javafx.application.Platform.runLater(() -> DialogUtil.showError("Erro ao carregar arquivo: " + e.getMessage()));    // Error message
                         }
                     }
                 }
@@ -237,50 +230,37 @@ public class Model {
 
     public void deleteSavedProgram(ObjectFile objectFile) {
         File objFile = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".obj");
-
-        // Verifica se o arquivo existe e o deleta (para os .obj)
-        if (objFile.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            objFile.delete();
-        }
-
+        if (objFile.exists()) objFile.delete();
         File metaFile = new File(Constants.SAVE_DIR, objectFile.getProgramName() + ".meta");
-
-        // Verifica se o arquivo existe e o deleta (para os .meta)
-        if (metaFile.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            metaFile.delete();
-        }
+        if (metaFile.exists()) metaFile.delete();
     }
 
     public void logDetailedState(String contextMessage) {
-        String objectCodeText = "(Nenhum objeto carregado)";
         Map<String, Integer> symbolMap = new HashMap<>();
+
+        String objectCodeText = "(Nenhum objeto carregado)";
         String sourceCodeText = "(Nenhum código fonte disponível)";
 
         if (lastLoadedCode != null) {
             objectCodeText = lastLoadedCode.getObjectCodeAsString();
 
-            // Converte o SymbolTable para Map<String, Integer>
             Map<String, Symbol> symbols = lastLoadedCode.getSymbolTable().getAllSymbols();
             for (Map.Entry<String, Symbol> entry : symbols.entrySet()) {
                 symbolMap.put(entry.getKey(), entry.getValue().address);
             }
 
-            // Junta o código-fonte (rawSourceCode) em uma única String
             List<String> rawSource = lastLoadedCode.getRawSourceCode();
             if (rawSource != null && !rawSource.isEmpty()) {
                 sourceCodeText = String.join("\n", rawSource);
             }
         }
 
-        // Captura o histórico da execução (caso haja)
         String executionOutput = machine.getControlUnit().getExecutionHistory();
         if (executionOutput == null || executionOutput.isEmpty()) {
             executionOutput = "(Sem saída de execução)";
         }
 
-        Logger.logMachineState(
+        Logger.logMachineState(                             
                 machine.getMemory(),
                 machine.getControlUnit().getRegisterSet(),
                 objectCodeText,
@@ -288,7 +268,7 @@ public class Model {
                 sourceCodeText,
                 executionOutput,
                 contextMessage
-        );
+        ); // LOG
     }
 
     public void addListener(ModelListener listener) {

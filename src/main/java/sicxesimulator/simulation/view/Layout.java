@@ -51,22 +51,6 @@ public class Layout {
 
         HBox memoryAndRegisterTables = new HBox(10, memoryPanel.getPane(), registerPanel.getPane());
 
-        // StackPane para a área de saída
-        executionStackPane = new StackPane();
-        executionStackPane.getChildren().add(executionPanel.getPane());
-
-        // Configura o splash image e container
-        ImageView splashImage = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/rock_lee.png"))));
-        splashImage.setFitWidth(350);
-        splashImage.setPreserveRatio(true);
-        splashImage.setMouseTransparent(true);
-
-        splashContainer = new VBox(splashImage);
-        splashContainer.setAlignment(Pos.TOP_CENTER);
-        splashContainer.setPadding(new Insets(30, 0, 0, 0));
-        splashContainer.setMouseTransparent(true);
-
-        executionStackPane.getChildren().add(splashContainer);
         VBox.setVgrow(executionStackPane, Priority.ALWAYS);
 
         VBox rightPane = new VBox(5, executionStackPane, memoryAndRegisterTables);
@@ -85,35 +69,6 @@ public class Layout {
         root.setCenter(mainContent);
         root.setPadding(new Insets(0));
     }
-
-    public void hideSplash() {
-        if (splashContainer != null && executionStackPane.getChildren().contains(splashContainer)) {
-            controller.playDattebayoSound();
-            FadeTransition fade = new FadeTransition(Duration.seconds(0.4), splashContainer);
-            fade.setFromValue(1.0);
-            fade.setToValue(0.0);
-            fade.setOnFinished(e -> executionStackPane.getChildren().remove(splashContainer));
-            fade.play();
-        }
-    }
-
-    public void showSplash() {
-        // Garante que o splash está fora antes de reexibir
-        executionStackPane.getChildren().remove(splashContainer);
-
-        splashContainer.setOpacity(0.0);
-        executionStackPane.getChildren().add(splashContainer);
-
-        FadeTransition fade = new FadeTransition(Duration.seconds(0.2), splashContainer);
-        fade.setFromValue(0.0);
-        fade.setToValue(1.0);
-        fade.play();
-
-        if (controller != null) {
-            controller.playJustuSound();
-        }
-    }
-
 
     public void setController(Controller mainController) {
         this.controller = mainController;

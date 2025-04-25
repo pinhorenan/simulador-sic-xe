@@ -1,116 +1,182 @@
-# Simulador SIC/XE
+# SIC/XE Simulator · Simulador SIC/XE
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE) [![Java](https://img.shields.io/badge/Java-17%2B-red)](https://openjdk.org/) [![Gradle](https://img.shields.io/badge/Build-Gradle-blueviolet)](https://gradle.org/)
 
-Este projeto é um simulador acadêmico da arquitetura SIC/XE (Simplified Instructional Computer with Extra Equipment), desenvolvido com Java e JavaFX. O programa permite escrever código assembly SIC/XE, montar programas em linguagem simbólica, realizar ligação (linkagem) de múltiplos módulos e carregá-los na memória virtual, simulando sua execução.
+> **EN version below** • **Versão em português acima**
 
-O simulador conta com uma interface gráfica intuitiva que permite ao usuário:
-- Editar, montar e visualizar o código-fonte assembly.
-- Visualizar e editar arquivos objeto gerados (.obj).
-- Realizar a ligação entre múltiplos módulos objeto, com suporte à relocação absoluta ou relocável.
-- Carregar programas gerados na máquina virtual SIC/XE simulada.
-- Acompanhar o estado dos registradores, memória e execução passo-a-passo.
+## Índice
+- [Sobre o Projeto](#sobre-o-projeto)
+- [Demonstração](#demonstra%C3%A7%C3%A3o)
+- [Funcionalidades](#funcionalidades)
+- [Arquitetura](#arquitetura)
+- [Getting Started](#getting-started)
+  - [Pré‑requisitos](#pré‑requisitos)
+  - [Instalação](#instalação)
+  - [Executando](#executando)
+  - [Gerando JAR](#gerando-jar)
+- [Conjunto de Instruções](#conjunto-de-instruções)
+- [Roadmap](#roadmap)
+- [Contribuindo](#contribuindo)
+- [Histórico & Agradecimentos](#hist%C3%B3rico--agradecimentos)
+- [Licença](#licença)
+- [Contato](#contato)
+- [English](#english)
 
-## Pré-requisitos
+## Sobre o Projeto
+O **Simulador SIC/XE** é uma ferramenta educacional que implementa **montador**, **ligador**, **carregador** e **máquina virtual** da arquitetura [SIC/XE](https://en.wikipedia.org/wiki/SIC/XE) (Simplified Instructional Computer + Extra Equipment).
+Ele foi concebido inicialmente como trabalho acadêmico colaborativo na Universidade Federal de Pelotas.
+Desde 2025, o projeto segue mantido e expandido **individualmente por [Renan Pinho](https://github.com/pinhorenan)**.
 
-- Java 17 ou superior
-- Gradle (wrapper incluso no projeto)
+**Objetivos:**
+* Fornecer ao estudante um ambiente gráfico para experimentar assembly SIC/XE;
+* Servir como base de estudos sobre montadores, ligadores e execução de código de baixo nível;
+* Demonstrar boas práticas de engenharia de software em **Java 17 & JavaFX 20**.
 
-## Como Usar
+---
 
-### 1. Clonando o Repositório
+## Demonstração
+| Edição de código | Execução passo‑a‑passo |
+| :---: | :---: |
+| TODO |
 
-Clone o repositório e acesse a pasta do projeto:
+---
 
+## Funcionalidades
+- **Processador de Macros** com suporte a macros aninhadas  
+- **Montador completo** para SIC/XE com diretivas `START/END`, registros `H/D/R/T/M/E`, geração de `.obj` e `.meta`  
+- **Ligador** multi‑módulo (relocável ou absoluto)  
+- **Carregador** com relocação final opcional  
+- **Máquina Virtual** com execução passo‑a‑passo, breakpoints e inspeção de registradores/memória  
+- **Interface Gráfica em JavaFX** incluindo editor de código com destaque de sintaxe  
+- **Logs estruturados** (`SLF4J`) e **testes unitários** (`JUnit 5`)
+
+---
+
+## Arquitetura
+```
++---------------------------+
+|       JavaFX GUI          |
++---------------------------+
+          |
+          v
++---------------------------+
+|     Application Core      |
+|  (Assembler/Linker/VM)    |
++---------------------------+
+          |
+          v
++---------------------------+
+|        Hardware           |
+|  (CPU, Memory, Devices)   |
++---------------------------+
+```
+> Cada camada expõe APIs bem‑definidas, facilitando testes e extensões. Consulte o diagrama completo em *TODO*).
+
+---
+
+## Getting Started
+
+### Pré‑requisitos
+* **Java 17** ou superior  
+* **Git** 2.40+  
+* Não é necessário ter Gradle instalado – o wrapper (`gradlew`) já acompanha o repositório.
+
+### Instalação
 ```bash
-git clone https://github.com/pinhorenan/Simulador_SIC-XE.git
-cd Simulador_SIC-XE
+git clone https://github.com/pinhorenan/simulador-sic-xe.git
+cd simulador-sic-xe
 ```
 
-### 2. Compilando e Executando com Gradle Wrapper
-
-Utilize o Gradle Wrapper incluso no projeto para compilar e executar o simulador:
-
-- **Linux/Mac:**
-
+### Executando
+Linux / macOS:
 ```bash
 ./gradlew run
 ```
-
-- **Windows:**
-
-```cmd
-gradlew.bat run
+Windows PowerShell:
+```powershell
+.\gradlew.bat run
 ```
 
-## Gerando e Executando o JAR
-
-Se preferir gerar um JAR executável:
-
+### Gerando JAR
 ```bash
 ./gradlew jar
+java -jar build/libs/sicxe-simulator.jar
 ```
 
-O JAR gerado estará localizado em `build/libs`. Para executá-lo, utilize:
+---
 
-```bash
-java -jar build/libs/sicxesimulator.jar
-```
+## Conjunto de Instruções
+**Implementadas**
+<details>
+<summary>Formato 2</summary>
 
-## Funcionalidades Suportadas
+`ADDR, CLEAR, COMPR, DIVR, MULR, RMO, SHIFTL, SHIFTR, SUBR, TIXR`
+</details>
 
-- Processador de Macros:
-  - Realiza um pre-processamento do código antes da montagem, expandindo qualquer macro definida
-  - Suporte à macros aninhadas
-- Montador SIC/XE completo:
-  - Suporte às diretivas padrão: `START`, `END`, `WORD`, `BYTE`, `RESB`, `RESW`, `EXTDEF`, `EXTREF`
-  - Geração de arquivos objeto (`.obj`) estilo SIC/XE com registros `H/D/R/T/M/E`
-  - Geração de arquivo binário serializado (`.meta`) para retenção de metadados
-- Ligador (Linker) multi-módulo:
-  - Realiza linkagem absoluta ou relocável entre múltiplos módulos
-  - Geração de arquivo objeto e binário na mesma estrutura do montador
-- Carregador com relocação final opcional:
-  - Carrega programas objeto para memória virtual
-  - Aplica realocação pendente (quando necessária)
+<details>
+<summary>Formato 3/4</summary>
 
-## Conjunto de Instruções do SIC/XE
+`ADD, AND, COMP, DIV, J, JEQ, JGT, JLT, JSUB, LDA, LDB, LDCH, LDL, LDS, LDT, LDX, MUL, OR, RSUB, STA, STB, STCH, STL, STS, STT, STX, SUB, TIX`
+</details>
 
-Este simulador implementa parcialmente o conjunto de instruções SIC/XE conforme a especificação oficial, com algumas limitações de escopo educacional:
+**Pendentes**  
+`FIX, FLOAT, NORM, HIO, SIO, TIO, ADDF, COMPF, DIVF, LDF, MULF, STF, SUBF, LPS, RD, SSK, STI, STSW, SVC, TD, WD`  
+Chamadas a instruções não implementadas geram logs para facilitar contribuição.
 
-### Instruções Implementadas
+---
 
-- **Formato 2 (registradores):**  
-  `ADDR`, `CLEAR`, `COMPR`, `DIVR`, `MULR`, `RMO`, `SHIFTL`, `SHIFTR`, `SUBR`, `TIXR`
+## Roadmap
+- [ ] Exportar log de execução em JSON
+- [ ] Suporte completo a formato 1 e I/O
+- [ ] Internacionalização (i18n) PT‑BR ↔ EN
+- [ ] Integração contínua no GitHub Actions
 
-- **Formato 3/4 (memória e imediato):**  
-  `ADD`, `AND`, `COMP`, `DIV`, `J`, `JEQ`, `JGT`, `JLT`, `JSUB`, `LDA`, `LDB`, `LDCH`, `LDL`, `LDS`, `LDT`, `LDX`, `MUL`, `OR`, `RSUB`, `STA`, `STB`, `STCH`, `STL`, `STS`, `STT`, `STX`, `SUB`, `TIX`
+---
 
-### Instruções NÃO Implementadas (Presentes como STUB)
+## Contribuindo
+1. *Fork* o projeto
+2. Crie sua *feature branch*: `git checkout -b feature/minha-feature`
+3. *Commit* suas alterações: `git commit -m 'feat: minha nova feature'`
+4. *Push* para o *branch*: `git push origin feature/minha-feature`
+5. Abra um *pull request*
 
-Por restrições do projeto, não há suporte para:
+---
 
-- **Formato 1 e Instruções especiais:**  
-  `FIX`, `FLOAT`, `NORM`, `HIO`, `SIO`, `TIO`
+## Histórico & Agradecimentos
+Este projeto teve origem em **2024** como trabalho em equipe nas disciplinas de Organização e Arquitetura de Computadores da **UFPel**.  
+Contribuíram na versão inicial:
 
-- **Instruções de ponto flutuante:**  
-  `ADDF`, `COMPF`, `DIVF`, `LDF`, `MULF`, `STF`, `SUBF`
+| Nome | GitHub |
+|---|---|
+| Arthur Alves | @arthursa21 |
+| Fabricio Bartz | @FabricioBartz |
+| Gabriel Moura | @gbrimoura |
+| Leonardo Braga | @braga0425 |
+| Luis Eduardo | @LuisEduardoRasch |
+| Renan Pinho | @pinhorenan |
 
-- **Controle do sistema e operações I/O:**  
-  `LPS`, `RD`, `SSK`, `STI`, `STSW`, `SVC`, `TD`, `WD`
+Desde **2025‑04‑25** o desenvolvimento e manutenção passaram a ser conduzidos por **Renan Pinho**.  
+A todos os co‑autores originais: **muito obrigado!**
 
-Essas instruções possuem placeholders (stubs) que geram logs informativos indicando sua ausência de implementação.
-
-## 📚 Documentação das Principais Classes
-
-| Classe                                                                                       | Descrição                                      |
-|----------------------------------------------------------------------------------------------|------------------------------------------------|
-| [`ControlUnit`](src/main/java/sicxesimulator/hardware/cpu/ControlUnit.java)                  | Busca, decodifica e despacha instruções.       |
-| [`InstructionDecoder`](src/main/java/sicxesimulator/hardware/cpu/InstructionDecoder.java)    | Decodifica instruções SIC/XE.                  |
-| [`ExecutionUnit`](src/main/java/sicxesimulator/hardware/cpu/ExecutionUnit.java)              | Executa instruções do conjunto SIC/XE.         |
-| [`MacroProcessor`](src/main/java/sicxesimulator/software/macroprocessor/MacroProcessor.java) | Expande macros definidas no código fonte.      |
-| [`Assembler`](src/main/java/sicxesimulator/software/assembler/Assembler.java)                | Coordena as fases da montagem do programa.     |
-| [`Linker`](src/main/java/sicxesimulator/software/linker/Linker.java)                         | Realiza a ligação de módulos objeto.           |
-| [`Loader`](src/main/java/sicxesimulator/software/loader/Loader.java)                         | Realiza a carga de arquivos `.obj` na memória. |
+---
 
 ## Licença
+Distribuído sob a [licença MIT](LICENSE).
 
-Este projeto é licenciado sob a [MIT License](LICENSE).
+---
+
+## Contato
+Renan Pinho • [LinkedIn](https://www.linkedin.com/in/pinhorenan/) • rmdpinho@inf.ufpel.edu.br • pinhorenan@outlook.com
+
+---
+
+## English
+<details>
+<summary>Click to expand the English version</summary>
+
+### SIC/XE Simulator
+Educational assembler, linker, loader and virtual machine for the SIC/XE architecture, built with **Java 17 + JavaFX**.
+
+*TODO*
+
+</details>
 

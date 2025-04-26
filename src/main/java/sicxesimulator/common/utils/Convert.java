@@ -1,4 +1,4 @@
-package sicxesimulator.utils;
+package sicxesimulator.common.utils;
 
 /**
  * Classe utilitária para conversões de valores.

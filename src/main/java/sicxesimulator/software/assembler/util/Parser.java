@@ -1,7 +1,7 @@
 package sicxesimulator.software.assembler.util;
 
 import sicxesimulator.software.data.SymbolTable;
-import sicxesimulator.utils.Convert;
+import sicxesimulator.common.utils.Convert;
 
 /**
  * Classe utilitária com funções auxiliares para interpretar e converter

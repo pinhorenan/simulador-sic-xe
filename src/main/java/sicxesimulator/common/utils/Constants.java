@@ -1,4 +1,4 @@
-package sicxesimulator.utils;
+package sicxesimulator.common.utils;
 
 import java.util.Arrays;
 import java.util.HashSet;

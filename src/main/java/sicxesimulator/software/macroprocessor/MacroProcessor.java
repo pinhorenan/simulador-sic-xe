@@ -1,7 +1,7 @@
 package sicxesimulator.software.macroprocessor;
 
-import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.FileUtils;
+import sicxesimulator.common.utils.Constants;
+import sicxesimulator.common.utils.FileUtils;
 
 import java.io.IOException;
 import java.util.*;

@@ -1,4 +1,4 @@
-package sicxesimulator.utils;
+package sicxesimulator.common.utils;
 
 import sicxesimulator.hardware.Memory;
 import sicxesimulator.hardware.cpu.core.RegisterSet;
@@ -11,29 +11,26 @@ import java.util.Map;
 import java.util.logging.*;
 
 public class Logger {
-    // Limite de 10MB por arquivo e 10 arquivos rotacionados
     private static final int LIMIT = 10 * 1024 * 1024;
     private static final int COUNT = 10;
 
-    // Logger único para registrar todas as informações detalhadas
     private static final java.util.logging.Logger detailedLogger = java.util.logging.Logger.getLogger("DetailedLogger");
 
     static {
         try {
-            // Cria o diretório "logging" se não existir
             File logDir = new File("logging");
             if (!logDir.exists()) {
-                //noinspection ResultOfMethodCallIgnored
-                logDir.mkdirs();
+                boolean ok = logDir.mkdirs();
+                if (!ok) {
+                    System.err.println("Unable to create logging directory: " + logDir.getAbsolutePath());
+                }
             }
 
-            // Configura o FileHandler para o logger com append = false para substituir o log anterior
             FileHandler detailedHandler = new FileHandler("logging/detailed.log", LIMIT, COUNT, false);
             detailedHandler.setFormatter(new SimpleFormatter());
             detailedLogger.addHandler(detailedHandler);
             detailedLogger.setLevel(Level.ALL);
 
-            // Opcional: remover o ConsoleHandler padrão para evitar duplicação no console
             java.util.logging.Logger rootLogger = java.util.logging.Logger.getLogger("");
             for (Handler handler : rootLogger.getHandlers()) {
                 if (handler instanceof ConsoleHandler) {
@@ -53,7 +50,7 @@ public class Logger {
      * Loga o estado detalhado da máquina para auxiliar na depuração.
      * São registrados:
      * - A memória: endereços (a cada 3 bytes) que possuem valor diferente de zero,
-     *   no formato "Endereço -> Valor".
+     *   no formato "Endereço ⇾ Valor".
      * - O estado de todos os registradores.
      * - O código objeto carregado (texto).
      * - A tabela de símbolos: mapeamento do símbolo para seu endereço.
@@ -77,11 +74,10 @@ public class Logger {
         sb.append("            Contexto: ").append(contextMessage).append("\n");
         sb.append("========================================================\n\n");
 
-        // Memória: endereços com valor diferente de zero
         sb.append("Memória (endereços com valor != 0):\n");
         sb.append(String.format("%-8s | %-8s\n", "Endereço", "Valor"));
         sb.append("----------------------------------------\n");
-        int numWords = memory.getAddressRange();
+        int numWords = memory.getSize() / 3;
         for (int i = 0; i < numWords; i++) {
             byte[] word = memory.readWord(i);
             int value = Convert.bytesToInt(word);
@@ -92,7 +88,6 @@ public class Logger {
         }
         sb.append("\n");
 
-        // Registradores
         sb.append("Registradores:\n");
         sb.append(String.format("%-4s | %-12s\n", "Reg", "Valor"));
         sb.append("-----------------------------\n");
@@ -105,13 +100,11 @@ public class Logger {
         }
         sb.append("\n");
 
-        // Código objeto carregado
         sb.append("Código Objeto Carregado:\n");
         sb.append("--------------------------------------------------------\n");
         sb.append(objectCode).append("\n");
         sb.append("--------------------------------------------------------\n\n");
 
-        // Tabela de Símbolos
         sb.append("Tabela de Símbolos:\n");
         sb.append(String.format("%-15s | %-8s\n", "Símbolo", "Endereço"));
         sb.append("----------------------------------------\n");
@@ -120,13 +113,11 @@ public class Logger {
         }
         sb.append("\n");
 
-        // Código Fonte
         sb.append("Código Fonte:\n");
         sb.append("--------------------------------------------------------\n");
         sb.append(sourceCode).append("\n");
         sb.append("--------------------------------------------------------\n\n");
 
-        // Saída da Execução
         sb.append("Saída da Execução:\n");
         sb.append("--------------------------------------------------------\n");
         sb.append(executionOutput).append("\n");

@@ -3,7 +3,7 @@ package sicxesimulator.hardware.cpu.decoder;
 import sicxesimulator.hardware.Memory;
 import sicxesimulator.hardware.cpu.core.RegisterSet;
 import sicxesimulator.hardware.data.Instruction;
-import sicxesimulator.utils.Convert;
+import sicxesimulator.common.utils.Convert;
 
 /**
  * Decodifica instruções na memória a partir do PC, identificando formato,

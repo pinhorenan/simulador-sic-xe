@@ -11,6 +11,7 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+    withSourcesJar()
     withJavadocJar()
 }
 
@@ -23,15 +24,19 @@ tasks.javadoc {
     }
 }
 
-// configuração da aplicação
 application {
     mainClass.set('sicxesimulator.Main')
 }
 
-// JavaFX
 javafx {
-    version = "21"
-    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.swing', 'javafx.media' ]
+    version = '21'
+    modules = [
+            'javafx.controls',
+            'javafx.fxml',
+            'javafx.graphics',
+            'javafx.swing',
+            'javafx.media'
+    ]
 }
 
 repositories {
@@ -39,12 +44,12 @@ repositories {
 }
 
 dependencies {
-    // testes
-    testImplementation  'org.junit.jupiter:junit-jupiter-api:5.9.3'
-    testImplementation  'org.junit.platform:junit-platform-suite-api:1.9.3'
-    testRuntimeOnly     'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
 }
 
 tasks.test {
     useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }

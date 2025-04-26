@@ -3,7 +3,7 @@ package sicxesimulator.hardware.cpu.exec.logic;
 import sicxesimulator.hardware.cpu.core.BaseExecutor;
 import sicxesimulator.hardware.cpu.core.ExecutionContext;
 import sicxesimulator.hardware.cpu.core.Register;
-import sicxesimulator.utils.Mapper;
+import sicxesimulator.common.utils.Mapper;
 
 public final class SHIFTR extends BaseExecutor {
     @Override

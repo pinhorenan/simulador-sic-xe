@@ -1,4 +1,4 @@
-package sicxesimulator.utils;
+package sicxesimulator.common.utils;
 
 import sicxesimulator.hardware.cpu.core.Register;
 import sicxesimulator.hardware.cpu.core.RegisterSet;

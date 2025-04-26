@@ -21,8 +21,8 @@ import sicxesimulator.ui.data.records.MemoryEntry;
 
 import sicxesimulator.ui.data.records.RegisterEntry;
 import sicxesimulator.ui.data.records.SymbolEntry;
-import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.FileUtils;
+import sicxesimulator.common.utils.Constants;
+import sicxesimulator.common.utils.FileUtils;
 
 
 import java.io.*;

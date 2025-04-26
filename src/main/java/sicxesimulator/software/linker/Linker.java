@@ -5,8 +5,8 @@ import sicxesimulator.software.data.Symbol;
 import sicxesimulator.software.data.SymbolTable;
 import sicxesimulator.software.data.records.RelocationRecord;
 import sicxesimulator.software.loader.Loader;
-import sicxesimulator.utils.Constants;
-import sicxesimulator.utils.FileUtils;
+import sicxesimulator.common.utils.Constants;
+import sicxesimulator.common.utils.FileUtils;
 
 import java.io.File;
 import java.io.IOException;

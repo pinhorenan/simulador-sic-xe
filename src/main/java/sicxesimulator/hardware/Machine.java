@@ -1,7 +1,7 @@
 package sicxesimulator.hardware;
 
 import sicxesimulator.hardware.cpu.core.ControlUnit;
-import sicxesimulator.utils.Constants;
+import sicxesimulator.common.utils.Constants;
 
 /**
  * Representa a máquina SIC/XE completa (CPU + memória).

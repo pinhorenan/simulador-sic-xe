@@ -14,10 +14,10 @@ import sicxesimulator.software.linker.Linker;
 import sicxesimulator.software.loader.Loader;
 import sicxesimulator.software.macroprocessor.MacroProcessor;
 import sicxesimulator.hardware.Machine;
-import sicxesimulator.utils.Convert;
-import sicxesimulator.utils.FileUtils;
-import sicxesimulator.utils.Logger;
-import sicxesimulator.utils.Constants;
+import sicxesimulator.common.utils.Convert;
+import sicxesimulator.common.utils.FileUtils;
+import sicxesimulator.common.utils.Logger;
+import sicxesimulator.common.utils.Constants;
 
 import java.io.*;
 import java.util.*;

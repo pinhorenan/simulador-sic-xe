@@ -2,7 +2,7 @@ package sicxesimulator.hardware.cpu.exec.store;
 
 import sicxesimulator.hardware.cpu.core.BaseExecutor;
 import sicxesimulator.hardware.cpu.core.ExecutionContext;
-import sicxesimulator.utils.Convert;
+import sicxesimulator.common.utils.Convert;
 
 public final class STS extends BaseExecutor {
     @Override

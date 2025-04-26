@@ -31,8 +31,7 @@ public class View extends Application {
     public void start(Stage primaryStage) {
 
         primaryStage.setResizable(false);
-        primaryStage.setTitle("Simulador SIC/XE - ROCK LEE vs GAARA ao som de LINKIN PARK");
-        primaryStage.getIcons().add(new javafx.scene.image.Image("/rock_icon2.jpeg"));
+        primaryStage.setTitle("Simulador SIC/XE");
 
         if (injectedModel == null) {
             throw new IllegalStateException("O model nao foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");

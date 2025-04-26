@@ -1,4 +1,4 @@
-package sicxesimulator.utils;
+package sicxesimulator.common.utils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

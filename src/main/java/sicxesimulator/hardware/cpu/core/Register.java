@@ -1,6 +1,6 @@
 package sicxesimulator.hardware.cpu.core;
 
-import sicxesimulator.utils.Checker;
+import sicxesimulator.common.utils.Checker;
 
 /**
  * Modelo de registrador SIC/XE, com nome, tamanho fixo e controle de bits.

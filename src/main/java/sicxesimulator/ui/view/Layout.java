@@ -26,8 +26,8 @@ public class Layout {
     private final InputPanel inputPanel;
     private final HBox leftPane;
 
-    private final StackPane executionStackPane;
-    private final VBox splashContainer;
+    private StackPane executionStackPane;
+    private VBox splashContainer;
 
     private LabelsPanel labelsPanel;
     private FileListPanel objectFilePanel;

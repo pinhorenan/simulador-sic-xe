@@ -1,6 +1,6 @@
 package sicxesimulator.hardware.cpu.core;
 
-import sicxesimulator.utils.Convert;
+import sicxesimulator.common.utils.Convert;
 
 public abstract class BaseExecutor implements InstructionExecutor {
 

@@ -1,6 +1,6 @@
-package sicxesimulator.utils;
+package sicxesimulator.common.utils;
 
-import static sicxesimulator.utils.Constants.VALID_REGISTERS;
+import static sicxesimulator.common.utils.Constants.VALID_REGISTERS;
 
 /**
  * Classe utilitária para validações sintáticas e semânticas básicas no contexto do SIC/XE.

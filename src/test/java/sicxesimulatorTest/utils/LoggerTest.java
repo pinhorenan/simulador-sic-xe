@@ -1,7 +1,7 @@
 package sicxesimulatorTest.utils;
 
 import org.junit.jupiter.api.Test;
-import sicxesimulator.utils.Logger;
+import sicxesimulator.common.utils.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 

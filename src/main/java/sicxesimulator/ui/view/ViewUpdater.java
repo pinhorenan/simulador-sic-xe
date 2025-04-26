@@ -7,7 +7,7 @@ import sicxesimulator.ui.components.tables.MemoryTable;
 import sicxesimulator.ui.components.tables.RegisterTable;
 import sicxesimulator.ui.components.tables.SymbolTable;
 import sicxesimulator.software.data.ObjectFile;
-import sicxesimulator.utils.Convert;
+import sicxesimulator.common.utils.Convert;
 
 /**
  * Classe responsável por atualizar dinamicamente a interface gráfica (JavaFX).

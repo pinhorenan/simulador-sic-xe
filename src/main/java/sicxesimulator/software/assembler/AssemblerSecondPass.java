@@ -1,5 +1,6 @@
 package sicxesimulator.software.assembler;
 
+import sicxesimulator.common.utils.*;
 import sicxesimulator.software.assembler.data.AssemblyLine;
 import sicxesimulator.software.assembler.data.IntermediateRepresentation;
 import sicxesimulator.software.assembler.util.InstructionSizeCalculator;
@@ -7,7 +8,6 @@ import sicxesimulator.software.assembler.util.Parser;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.data.Symbol;
 import sicxesimulator.software.data.SymbolTable;
-import sicxesimulator.utils.*;
 
 import java.io.IOException;
 import java.util.*;

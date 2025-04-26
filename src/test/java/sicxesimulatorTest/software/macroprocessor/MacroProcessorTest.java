@@ -2,7 +2,7 @@ package sicxesimulatorTest.software.macroprocessor;
 
 import org.junit.jupiter.api.Test;
 import sicxesimulator.software.macroprocessor.MacroProcessor;
-import sicxesimulator.utils.Constants;
+import sicxesimulator.common.utils.Constants;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

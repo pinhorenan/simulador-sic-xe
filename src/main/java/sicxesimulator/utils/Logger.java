@@ -1,11 +1,12 @@
 package sicxesimulator.utils;
 
 import sicxesimulator.hardware.Memory;
-import sicxesimulator.hardware.cpu.RegisterSet;
-import sicxesimulator.hardware.cpu.Register;
+import sicxesimulator.hardware.cpu.core.RegisterSet;
+import sicxesimulator.hardware.cpu.core.Register;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.*;
 
@@ -69,7 +70,7 @@ public class Logger {
      */
     public static void logMachineState(Memory memory, RegisterSet registers, String objectCode,
                                        Map<String, Integer> symbolTable, String sourceCode,
-                                       String executionOutput, String contextMessage) {
+                                       List<String> executionOutput, String contextMessage) {
         StringBuilder sb = new StringBuilder();
         sb.append("========================================================\n");
         sb.append("            ESTADO DETALHADO DA MÁQUINA\n");

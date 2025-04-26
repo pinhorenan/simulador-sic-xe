@@ -3,130 +3,110 @@ package sicxesimulator.hardware;
 import java.util.Arrays;
 
 /**
- * Representa a memória da máquina SIC/XE.
+ * Simula a memória da máquina SIC/XE como um vetor de bytes.
+ * <p>
+ * Suporta leitura/gravação de bytes e palavras (3 bytes), reset
+ * e dump textual em hexadecimal.
  *
- * A memória é tratada como um vetor de bytes, acessível por palavras (3 bytes)
- * ou bytes individuais. Oferece métodos de leitura, escrita, reset e mapeamento.
+ * @author Renan
+ * @since 1.0.0
  */
 public class Memory {
-	private final byte[] memory;
-	private final int memorySize;
 
-	public Memory(int size) {
-		this.memorySize = size;
-		this.memory = new byte[size];
+	private final byte[] data;
+
+	/**
+	 * Cria memória com o tamanho especificado.
+	 *
+	 * @param sizeInBytes número de bytes de memória
+	 */
+	public Memory(int sizeInBytes) {
+		this.data = new byte[sizeInBytes];
 	}
 
 	/**
-	 * Lê uma palavra (3 bytes) a partir do índice especificado.
+	 * Lê uma palavra de 3 bytes (big-endian) a partir do índice de palavra.
 	 *
-	 * @param wordIndex Índice da palavra (base 0).
-	 * @return Vetor de 3 bytes lidos da memória.
-	 * @throws IndexOutOfBoundsException Se a leitura ultrapassar os limites da memória.
+	 * @param wordIndex índice da palavra (0..)
+	 * @return array de 3 bytes lidos
+	 * @throws IndexOutOfBoundsException se ultrapassar limites
 	 */
 	public byte[] readWord(int wordIndex) {
-		if (wordIndex * 3 + 3 > memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memoria.");
+		int pos = wordIndex * 3;
+		if (pos + 3 > data.length) {
+			throw new IndexOutOfBoundsException("Leitura fora dos limites da memória.");
 		}
-		byte[] word = new byte[3];
-		System.arraycopy(memory, wordIndex * 3, word, 0, 3);
-		return word;
+		return Arrays.copyOfRange(data, pos, pos + 3);
 	}
 
 	/**
-	 * Lê um único byte da memória no endereço especificado.
+	 * Lê um byte e retorna como int (0–255).
 	 *
-	 * @param byteAddress Endereço do byte.
-	 * @return Valor do byte lido, como inteiro (0 a 255).
-	 * @throws IndexOutOfBoundsException Se o endereço for inválido.
+	 * @param address endereço do byte (0..)
+	 * @return valor positivo do byte
+	 * @throws IndexOutOfBoundsException se fora do range
 	 */
-	public int readByte(int byteAddress) {
-		if (byteAddress >= memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de ler fora dos limites da memoria.");
+	public int readByte(int address) {
+		if (address < 0 || address >= data.length) {
+			throw new IndexOutOfBoundsException("Leitura fora dos limites da memória.");
 		}
-        // Retorna o byte como valor positivo (0-255)
-        return memory[byteAddress] & 0xFF;
+		return data[address] & 0xFF;
 	}
 
 	/**
-	 * Escreve uma palavra (3 bytes) na memória no índice especificado.
+	 * Grava uma palavra de 3 bytes no índice de palavra.
 	 *
-	 * @param wordIndex Índice da palavra.
-	 * @param word Array de 3 bytes a serem gravados.
-	 * @throws IllegalArgumentException Se o array não tiver exatamente 3 bytes.
-	 * @throws IndexOutOfBoundsException Se a escrita ultrapassar o limite da memória.
+	 * @param wordIndex índice da palavra
+	 * @param word array de exatamente 3 bytes
+	 * @throws IllegalArgumentException se array length ≠ 3
+	 * @throws IndexOutOfBoundsException se fora do range
 	 */
 	public void writeWord(int wordIndex, byte[] word) {
 		if (word.length != 3) {
-			throw new IllegalArgumentException("Uma palavra deve ter exatamente 3 bytes.");
+			throw new IllegalArgumentException("Palavra deve ter 3 bytes.");
 		}
-		if (wordIndex * 3 + 3 > memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memoria.");
+		int pos = wordIndex * 3;
+		if (pos + 3 > data.length) {
+			throw new IndexOutOfBoundsException("Gravação fora dos limites da memória.");
 		}
-		System.arraycopy(word, 0, memory, wordIndex * 3, 3);
+		System.arraycopy(word, 0, data, pos, 3);
 	}
 
 	/**
-	 * Escreve um único byte na memória.
+	 * Grava um único byte (menos significativo) no endereço dado.
 	 *
-	 * @param byteAddress Endereço de escrita.
-	 * @param value Valor a ser escrito (apenas o byte menos significativo será usado).
-	 * @throws IndexOutOfBoundsException Se o endereço for inválido.
+	 * @param address posição do byte
+	 * @param value valor inteiro (só byte baixo é usado)
+	 * @throws IndexOutOfBoundsException se fora do range
 	 */
-	public void writeByte(int byteAddress, int value) {
-		if (byteAddress >= memorySize) {
-			throw new IndexOutOfBoundsException("Tentativa de escrever fora dos limites da memoria.");
+	public void writeByte(int address, int value) {
+		if (address < 0 || address >= data.length) {
+			throw new IndexOutOfBoundsException("Gravação fora dos limites da memória.");
 		}
-		memory[byteAddress] = (byte) (value & 0xFF);  // Armazena apenas o byte
+		data[address] = (byte)(value & 0xFF);
 	}
 
-	/**
-	 * Retorna o tamanho da memória em bytes.
-	 *
-	 * @return Tamanho total da memória.
-	 */
+	/** @return tamanho da memória em bytes */
 	public int getSize() {
-		return memorySize;
+		return data.length;
 	}
 
-	/**
-	 * Retorna a quantidade de palavras de 3 bytes que cabem na memória.
-	 *
-	 * @return Quantidade de palavras (memorySize / 3).
-	 */
-	public int getAddressRange() {
-		return memorySize / 3;
-	}
-
-	/**
-	 * Retorna uma cópia do mapa de memória completo.
-	 *
-	 * @return Array de bytes representando toda a memória.
-	 */
+	/** @return cópia do mapa completo de memória */
 	public byte[] getMemoryMap() {
-		return Arrays.copyOf(memory, memory.length);
+		return Arrays.copyOf(data, data.length);
 	}
 
-	/**
-	 * Zera toda a memória.
-	 */
+	/** Zera toda a memória (todos os bytes = 0). */
 	public void reset() {
-		Arrays.fill(memory, (byte) 0);
+		Arrays.fill(data, (byte)0);
 	}
 
-	/**
-	 * Retorna uma representação em string da memória em formato hexadecimal.
-	 *
-	 * @return String formatada da memória.
-	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < memorySize; i++) {
-			sb.append(String.format("%02X ", memory[i]));
-			if ((i + 1) % 16 == 0) {
-				sb.append("\n");
-			}
+		for (int i = 0; i < data.length; i++) {
+			sb.append(String.format("%02X ", data[i]));
+			if ((i + 1) % 16 == 0) sb.append("\n");
 		}
 		return sb.toString();
 	}

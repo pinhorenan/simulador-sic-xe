@@ -9,13 +9,13 @@ import javafx.collections.ObservableList;
 import javafx.embed.swing.JFXPanel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import sicxesimulator.simulation.controller.Controller;
-import sicxesimulator.simulation.model.Model;
-import sicxesimulator.simulation.view.Layout;
-import sicxesimulator.simulation.view.ViewUpdater;
-import sicxesimulator.simulation.data.records.MemoryEntry;
-import sicxesimulator.simulation.data.records.RegisterEntry;
-import sicxesimulator.simulation.data.records.SymbolEntry;
+import sicxesimulator.ui.controller.Controller;
+import sicxesimulator.ui.model.Model;
+import sicxesimulator.ui.view.Layout;
+import sicxesimulator.ui.view.ViewUpdater;
+import sicxesimulator.ui.data.records.MemoryEntry;
+import sicxesimulator.ui.data.records.RegisterEntry;
+import sicxesimulator.ui.data.records.SymbolEntry;
 
 public class ViewUpdaterTest {
 

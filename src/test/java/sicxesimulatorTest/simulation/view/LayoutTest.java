@@ -6,9 +6,9 @@ import javafx.embed.swing.JFXPanel;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import javafx.scene.layout.BorderPane;
-import sicxesimulator.simulation.model.Model;
-import sicxesimulator.simulation.view.Layout;
-import sicxesimulator.simulation.controller.Controller;
+import sicxesimulator.ui.model.Model;
+import sicxesimulator.ui.view.Layout;
+import sicxesimulator.ui.controller.Controller;
 
 public class LayoutTest {
 

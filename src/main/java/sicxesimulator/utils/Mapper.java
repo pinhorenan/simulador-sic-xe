@@ -1,7 +1,7 @@
 package sicxesimulator.utils;
 
-import sicxesimulator.hardware.cpu.Register;
-import sicxesimulator.hardware.cpu.RegisterSet;
+import sicxesimulator.hardware.cpu.core.Register;
+import sicxesimulator.hardware.cpu.core.RegisterSet;
 
 /**
  * Classe utilitária para mapeamentos relacionados à arquitetura SIC/XE.

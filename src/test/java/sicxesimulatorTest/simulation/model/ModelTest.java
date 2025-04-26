@@ -3,9 +3,9 @@ package sicxesimulatorTest.simulation.model;
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import sicxesimulator.simulation.model.Model;
-import sicxesimulator.simulation.data.records.MemoryEntry;
-import sicxesimulator.simulation.data.records.RegisterEntry;
+import sicxesimulator.ui.model.Model;
+import sicxesimulator.ui.data.records.MemoryEntry;
+import sicxesimulator.ui.data.records.RegisterEntry;
 
 public class ModelTest {
 

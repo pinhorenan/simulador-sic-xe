@@ -1,22 +1,37 @@
 plugins {
     id 'java'
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
 }
+
+group = 'sicxesimulator'
+version = '1.0.0'
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+    withJavadocJar()
 }
 
+tasks.javadoc {
+    options {
+        windowTitle = 'Simulador SIC/XE API'
+        docTitle    = 'Documentação da API do Simulador SIC/XE'
+        author      = true
+        version     = true
+    }
+}
+
+// configuração da aplicação
 application {
-    mainClass = 'src/main/java/sicxesimulator.Main'
+    mainClass.set('sicxesimulator.Main')
 }
 
+// JavaFX
 javafx {
     version = "21"
-    modules = ['javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.swing', 'javafx.media']
+    modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.graphics', 'javafx.swing', 'javafx.media' ]
 }
 
 repositories {
@@ -25,20 +40,11 @@ repositories {
 
 dependencies {
     // testes
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
-    testImplementation 'org.junit.platform:junit-platform-suite-api:1.9.3'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
+    testImplementation  'org.junit.jupiter:junit-jupiter-api:5.9.3'
+    testImplementation  'org.junit.platform:junit-platform-suite-api:1.9.3'
+    testRuntimeOnly     'org.junit.jupiter:junit-jupiter-engine:5.9.3'
 }
 
-test {
+tasks.test {
     useJUnitPlatform()
-}
-
-sourceSets {
-    main {
-        java.srcDirs = ['src/main/java']
-    }
-    test {
-        java.srcDirs = ['src/test/java']
-    }
 }

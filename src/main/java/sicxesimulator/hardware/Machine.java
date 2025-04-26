@@ -1,78 +1,74 @@
 package sicxesimulator.hardware;
 
-import sicxesimulator.hardware.cpu.ControlUnit;
+import sicxesimulator.hardware.cpu.core.ControlUnit;
 import sicxesimulator.utils.Constants;
 
 /**
- * Representa a máquina SIC/XE completa, composta por memória e unidade de controle.
+ * Representa a máquina SIC/XE completa (CPU + memória).
+ * <p>
+ * Oferece métodos para avançar ciclos, resetar estado e ajustar
+ * tamanho de memória dinamicamente.
  *
- * Responsável por executar ciclos, resetar o estado, alterar a memória
- * e expor os principais componentes da arquitetura.
+ * @author Renan
+ * @since 1.0.0
  */
 public class Machine {
-    private final ControlUnit controlUnit;
+
+    private ControlUnit controlUnit;
     private Memory memory;
 
+    /** Cria máquina com tamanho de memória padrão. */
     public Machine() {
-        this.memory = new Memory(Constants.DEFAULT_MEMORY_SIZE_IN_BYTES); // Valor arbitrário, parametrizável.
-        this.controlUnit = new ControlUnit(this.memory);
+        this.memory = new Memory(Constants.DEFAULT_MEMORY_SIZE_IN_BYTES);
+        this.controlUnit = new ControlUnit(memory);
     }
 
     /**
-     * Executa um único ciclo de máquina, avançando a execução em uma instrução.
+     * Cria máquina com memória de tamanho customizado.
      *
-     * Se o processador estiver em estado de parada, o ciclo é ignorado.
-     * Caso ocorra exceção durante a execução da instrução, um erro é reportado no console.
+     * @param sizeInBytes tamanho da memória em bytes
      */
-    public void runCycle() {
-        if (controlUnit.isHalted()) return;
+    @SuppressWarnings("unused")
+    public Machine(int sizeInBytes) {
+        this.memory      = new Memory(sizeInBytes);
+        this.controlUnit = new ControlUnit(memory);
+    }
 
-        try {
-            controlUnit.step();
-        } catch (Exception e) {
-            System.err.println("Erro na execucao! Endereco da instrucao: " + e.getMessage() + "; PC: " + controlUnit.getIntValuePC());
+    /** Avança um ciclo de CPU, a menos que esteja halted. */
+    public void runCycle() {
+        if (!controlUnit.isHalted()) {
+            try {
+                controlUnit.step();
+            } catch (Exception e) {
+                System.err.printf("Erro na execucao em PC=%06X: %s%n",
+                        controlUnit.getIntValuePC(), e.getMessage());
+            }
         }
     }
 
-    /**
-     * Reinicia completamente o estado da máquina:
-     * - Limpa a memória
-     * - Reseta a unidade de controle
-     */
+    /** Restaura máquina ao estado inicial (memória e CPU). */
     public void reset() {
         memory.reset();
         controlUnit.reset();
     }
 
     /**
-     * Aloca nova memória para a máquina com o tamanho especificado.
+     * Ajusta o tamanho da memória, reiniciando-a.
      *
-     * @param newSizeInBytes Novo tamanho da memória, em bytes.
+     * @param newSizeInBytes novo tamanho em bytes
      */
     public void changeMemorySize(int newSizeInBytes) {
         this.memory = new Memory(newSizeInBytes);
+        this.controlUnit = new ControlUnit(memory);
     }
 
-    /**
-     * Retorna a instância atual de memória da máquina.
-     *
-     * @return Objeto {@link Memory} usado pela máquina.
-     */
-    public Memory getMemory() { return this.memory; }
-
-    /**
-     * Retorna o tamanho atual da memória da máquina (em bytes).
-     *
-     * @return Tamanho da memória.
-     */
-    public int getMemorySize() {
-        return memory.getSize();
+    /** @return instância de {@link Memory} atualmente em uso */
+    public Memory getMemory() {
+        return memory;
     }
 
-    /**
-     * Retorna a unidade de controle responsável pela execução de instruções.
-     *
-     * @return Objeto {@link ControlUnit} associado à máquina.
-     */
-    public ControlUnit getControlUnit() { return controlUnit; }
+    /** @return instância de {@link ControlUnit} da CPU */
+    public ControlUnit getControlUnit() {
+        return controlUnit;
+    }
 }

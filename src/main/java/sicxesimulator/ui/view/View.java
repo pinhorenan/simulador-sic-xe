@@ -34,34 +34,28 @@ public class View extends Application {
         primaryStage.setTitle("Simulador SIC/XE");
 
         if (injectedModel == null) {
-            throw new IllegalStateException("O model nao foi injetado! Utilize MainApp.setModel(model) antes de chamar launch().");
+            throw new IllegalStateException("O model nao foi injetado! Utilize View.setModel(model) antes de chamar launch().");
         }
 
-        // Layout e controlador
         Layout mainLayout = new Layout();
         Controller mainController = new Controller(injectedModel, mainLayout);
         mainLayout.setController(mainController);
         mainLayout.updateLabelsPanel();
 
-        // Botões principais da interface
         FileListButtons fileListButtons = new FileListButtons(mainController, mainLayout);
         ExecutionButtons executionButtons = new ExecutionButtons(mainController, mainLayout);
         AssemblerButtons assemblerButtons = new AssemblerButtons(mainController, mainLayout);
 
-        // Passa os botões para o layout
         mainLayout.setButtons(fileListButtons, executionButtons, assemblerButtons);
 
-        // Inicializa visualização de arquivos e tabelas
         mainController.initializeFilesView();
         mainController.updateAllTables();
         mainController.updateAllLabels();
 
-        // Cena principal
         Scene scene = new Scene(mainLayout.getRoot(), 1000, 600);
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // Ativa as bindings dos botões
         fileListButtons.setupBindings();
         executionButtons.setupBindings();
         assemblerButtons.setupBindings();

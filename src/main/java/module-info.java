@@ -3,8 +3,7 @@ module sicxesimulator {
     exports sicxesimulator.common.utils;
 
     // hardware
-    exports sicxesimulator.hardware;
-    exports sicxesimulator.hardware.cpu.core;
+    exports sicxesimulator.hardware.cpu.control;
     exports sicxesimulator.hardware.cpu.decoder;
     exports sicxesimulator.hardware.cpu.exec.arith;
     exports sicxesimulator.hardware.cpu.exec.logic;
@@ -12,7 +11,10 @@ module sicxesimulator {
     exports sicxesimulator.hardware.cpu.exec.jump;
     exports sicxesimulator.hardware.cpu.exec.store;
     exports sicxesimulator.hardware.cpu.exec.sys;
-    exports sicxesimulator.hardware.data;
+    exports sicxesimulator.hardware.cpu.model;
+    exports sicxesimulator.hardware.cpu.register;
+    exports sicxesimulator.hardware.memory;
+    exports sicxesimulator.hardware.system;
 
     //software
     exports sicxesimulator.software.assembler;
@@ -32,6 +34,7 @@ module sicxesimulator {
     exports sicxesimulator.ui.components.tables;
     exports sicxesimulator.ui.interfaces;
     exports sicxesimulator.ui.util;
+    exports sicxesimulator.hardware.cpu.exec;
 
     // requirements
     requires java.logging;

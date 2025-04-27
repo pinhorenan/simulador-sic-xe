@@ -1,8 +1,8 @@
-package sicxesimulator.software.assembler.util;
+package sicxesimulator.software.util;
 
 /**
  * Utilitário responsável por calcular o tamanho de uma instrução ou diretiva.
- *
+ * <p>
  * Considera as diretivas (WORD, BYTE, RESW, RESB) e determina o formato de
  * instruções (1, 2, 3 ou 4) com base no mnemônico.
  */

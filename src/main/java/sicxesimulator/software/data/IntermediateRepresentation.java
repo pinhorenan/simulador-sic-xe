@@ -1,12 +1,11 @@
-package sicxesimulator.software.assembler.data;
+package sicxesimulator.software.data;
 
-import sicxesimulator.software.data.SymbolTable;
 import java.util.List;
 import java.util.Set;
 
 /**
  * Representa o resultado da primeira passagem do montador.
- *
+ * <p>
  * Essa estrutura contém todas as informações necessárias para a segunda
  * passagem, incluindo as linhas de assembly analisadas, tabela de símbolos,
  * símbolos importados, nome do programa e endereço de início.

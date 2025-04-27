@@ -1,4 +1,4 @@
-package sicxesimulator.software.macroprocessor;
+package sicxesimulator.software.data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
  * <p>Armazena o nome, os parâmetros formais e o corpo (linhas de código)
  * da macro conforme definida pelo usuário.</p>
  */
-class MacroDefinition {
+public class MacroDefinition {
     private final String name;
     private final List<String> parameters;
     private final List<String> body;

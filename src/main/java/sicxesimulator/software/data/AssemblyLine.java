@@ -1,8 +1,8 @@
-package sicxesimulator.software.assembler.data;
+package sicxesimulator.software.data;
 
 /**
  * Representa uma linha do código-fonte assembly após a primeira passagem.
- *
+ * <p>
  * Cada linha contém, opcionalmente, um rótulo, um mnemônico, um operando
  * e o endereço de memória correspondente no programa.
  *

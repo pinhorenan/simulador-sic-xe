@@ -1,4 +1,4 @@
-package sicxesimulator.software.assembler.util;
+package sicxesimulator.software.util;
 
 import sicxesimulator.software.data.SymbolTable;
 import sicxesimulator.common.utils.Convert;

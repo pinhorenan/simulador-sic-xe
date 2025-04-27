@@ -1,13 +1,18 @@
 package sicxesimulator.software.assembler;
 
-import sicxesimulator.common.utils.*;
-import sicxesimulator.software.assembler.data.AssemblyLine;
-import sicxesimulator.software.assembler.data.IntermediateRepresentation;
-import sicxesimulator.software.assembler.util.InstructionSizeCalculator;
-import sicxesimulator.software.assembler.util.Parser;
+import sicxesimulator.common.utils.Logger;
+import sicxesimulator.common.utils.Convert;
+import sicxesimulator.common.utils.Checker;
+import sicxesimulator.common.utils.Mapper;
+import sicxesimulator.common.utils.FileUtils;
+import sicxesimulator.common.utils.Constants;
+import sicxesimulator.software.data.AssemblyLine;
+import sicxesimulator.software.data.IntermediateRepresentation;
+import sicxesimulator.software.util.InstructionSizeCalculator;
+import sicxesimulator.software.util.Parser;
 import sicxesimulator.software.data.ObjectFile;
-import sicxesimulator.software.data.Symbol;
 import sicxesimulator.software.data.SymbolTable;
+import sicxesimulator.software.data.Symbol;
 
 import java.io.IOException;
 import java.util.*;
@@ -16,420 +21,378 @@ import static sicxesimulator.software.data.ObjectFile.ObjectFileOrigin.SINGLE_MO
 
 /**
  * Responsável por realizar a segunda passagem do montador SIC/XE.
- *
- * Converte a representação intermediária (gerada pela primeira passagem)
- * em um objeto final com código de máquina, símbolos exportados/importados,
- * e metadados para vinculação.
+ * Converte a representação intermediária em código objeto, gera registros
+ * Text (T), Modification (M) e escreve o arquivo objeto em formato textual (.obj).
  */
 public class AssemblerSecondPass {
 
     /**
-     * Gera o objeto final a partir da representação intermediária.
+     * Gera o {@link ObjectFile} final a partir da representação intermediária.
      *
-     * @param midObject Representação intermediária contendo as informações montadas.
-     * @return Objeto {@link ObjectFile} contendo o código de máquina, símbolos e registros.
+     * @param intermediate representação produzida na primeira passagem do montador
+     * @return instância de {@link ObjectFile} contendo o código de máquina,
+     *         símbolos importados/exportados e metadados para vinculação
      */
-    public ObjectFile generateObjectFile(IntermediateRepresentation midObject) {
-        int startAddress = midObject.startAddress();
-        int programSize = midObject.assemblyLines().stream().mapToInt(this::getInstructionSize).sum();
+    public ObjectFile generateObjectFile(IntermediateRepresentation intermediate) {
+        int startAddress = intermediate.startAddress();
+        int programSize = intermediate.assemblyLines().stream()
+                .mapToInt(this::getInstructionSize)
+                .sum();
         byte[] machineCode = new byte[programSize];
         List<ModificationInfo> modificationList = new ArrayList<>();
 
-        SymbolTable symbolTable = midObject.symbolTable();
-        Set<String> importedSymbols = new HashSet<>(midObject.importedSymbols());
-        String programName = midObject.programName();
-        List<String> rawSource = midObject.rawSourceLines();
+        SymbolTable symbolTable = intermediate.symbolTable();
+        Set<String> importedSymbols = new HashSet<>(intermediate.importedSymbols());
+        String programName = intermediate.programName();
+        List<String> rawSource = intermediate.rawSourceLines();
 
-        // Preenche o array de bytes com o código objeto e gera os M records quando necessário
-        for (AssemblyLine line : midObject.assemblyLines()) {
-            int lineOffset = line.address() - startAddress;
-            if (lineOffset < 0 || lineOffset >= machineCode.length) {
-                Logger.logError("Fora dos limites de endereco: " + line.address(), null);
+        // Preenche o array de bytes e coleta registros M
+        for (AssemblyLine line : intermediate.assemblyLines()) {
+            int offset = line.address() - startAddress;
+            if (offset < 0 || offset >= machineCode.length) {
+                Logger.logError("Endereço fora dos limites: " + line.address(), null);
                 continue;
             }
-
             byte[] code = generateObjectCode(line, symbolTable, importedSymbols);
-            if (lineOffset + code.length <= machineCode.length) {
-                System.arraycopy(code, 0, machineCode, lineOffset, code.length);
-            }
+            int len = Math.min(code.length, machineCode.length - offset);
+            System.arraycopy(code, 0, machineCode, offset, len);
 
             if (shouldGenerateMRecord(line)) {
-                int format = Parser.determineInstructionFormat(line.mnemonic());
-                int nibbleLen = (format == 3) ? 3 : 5;
-                int mOffset = lineOffset + 1; // O campo de endereço geralmente inicia após o opcode
-                String operand = line.operand();
-                // Aqui, a referência é o símbolo (com o sinal +, pois é PC-relativo)
-                String sym = operand.replaceAll("(?i),x", "").trim();
-                modificationList.add(new ModificationInfo(mOffset, nibbleLen, "+" + sym));
+                int fmt = Parser.determineInstructionFormat(line.mnemonic());
+                int nibbleLen = (fmt == 3) ? 3 : 5;
+                String sym = line.operand().replaceAll("(?i),x", "").trim();
+                modificationList.add(new ModificationInfo(offset + 1, nibbleLen, "+" + sym));
             }
         }
 
-        Set<String> imported = midObject.importedSymbols();
-        List<Symbol> exportedList = new ArrayList<>();
-        for (Symbol symbol : symbolTable.getAllSymbols().values()) {
-            if (symbol.isPublic) {
-                exportedList.add(symbol);
-            }
-        }
-
-        ObjectFile metaFile = new ObjectFile(
+        // Cria o ObjectFile binário (.meta)
+        ObjectFile objFile = new ObjectFile(
                 startAddress,
                 machineCode,
                 symbolTable,
                 programName,
                 rawSource,
-                imported,
+                importedSymbols,
                 Collections.emptyList()
         );
-        metaFile.setOrigin(SINGLE_MODULE);
+        objFile.setOrigin(SINGLE_MODULE);
 
+        // Escreve o .obj textual
         try {
-            writeTextualObjectFile(programName + ".obj", programName, startAddress, machineCode, modificationList, exportedList, imported);
-        } catch (Exception e) {
+            writeTextualObjectFile(
+                    programName + ".obj",
+                    programName,
+                    startAddress,
+                    machineCode,
+                    modificationList,
+                    getExportedSymbols(symbolTable),
+                    importedSymbols
+            );
+        } catch (IOException e) {
             Logger.logError("Erro ao gravar arquivo .obj", e);
         }
-        return metaFile;
+        return objFile;
     }
 
     /**
-     * Constrói os registros de texto (T) para o arquivo objeto.
+     * Extrai a lista de símbolos públicos (exportados) da tabela de símbolos.
      *
-     * @param start Endereço inicial do programa.
-     * @param code Array de bytes do código de máquina.
-     * @return Lista de blocos {@link TBlock} com dados agrupados.
+     * @param table tabela de símbolos com definições locais e globais
+     * @return lista de {@link Symbol} cuja flag isPublic está definida
      */
-    private List<TBlock> buildTextRecords(int start, byte[] code) {
-        List<TBlock> blocks = new ArrayList<>();
-        final int MAX_BYTES = 30;
-        int index = 0;
-        while (index < code.length) {
-            int blockLen = Math.min(MAX_BYTES, code.length - index);
-            TBlock block = new TBlock(start + index);
-            for (int i = 0; i < blockLen; i++) {
-                block.data.add(code[index + i]);
+    private List<Symbol> getExportedSymbols(SymbolTable table) {
+        List<Symbol> list = new ArrayList<>();
+        for (Symbol sym : table.getAllSymbols().values()) {
+            if (sym.isPublic) {
+                list.add(sym);
             }
-            blocks.add(block);
-            index += blockLen;
         }
-        return blocks;
+        return list;
     }
 
     /**
-     * Ajusta o nome do programa para 6 caracteres, truncando se necessário.
+     * Gera o código objeto (bytes) para uma única linha de assembly,
+     * tratando diretivas e instruções nos formatos 1–4.
      *
-     * @param name Nome original do programa.
-     * @return Nome com até 6 caracteres.
+     * @param line       linha de assembly contendo mnemônico, operando e endereço
+     * @param table      tabela de símbolos para resolução de endereços
+     * @param imported   conjunto de símbolos importados (externos ao módulo)
+     * @return array de bytes representando o opcode e operandos montados
+     * @throws IllegalArgumentException se o formato ou operandos forem inválidos
      */
-    private String fitProgramName(String name) {
-        if (name == null) return "NONAME";
-        return (name.length() > 6) ? name.substring(0, 6) : name;
-    }
-
-    /**
-     * Gera o código de máquina para uma linha de assembly.
-     *
-     * @param line Linha a ser convertida.
-     * @param symbolTable Tabela de símbolos.
-     * @param importedSymbols Conjunto de símbolos importados (externos).
-     * @return Array de bytes representando o código objeto.
-     */
-    public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable, Set<String> importedSymbols) {
-        String mnemonic = line.mnemonic();
-        String operand = line.operand();
-
-        // Diretivas WORD, BYTE, RESW e RESB
-        if (mnemonic.equalsIgnoreCase("WORD")) {
-            return Convert.intTo3Bytes(Parser.parseNumber(operand));
-        } else if (mnemonic.equalsIgnoreCase("BYTE")) {
-            return Parser.parseByteOperand(operand);
-        } else if (mnemonic.equalsIgnoreCase("RESW") || mnemonic.equalsIgnoreCase("RESB")) {
-            int count = Parser.parseNumber(operand) * (mnemonic.equalsIgnoreCase("RESW") ? 3 : 1);
+    public byte[] generateObjectCode(AssemblyLine line, SymbolTable table, Set<String> imported) {
+        String mnem = line.mnemonic(), op = line.operand();
+        if (mnem.equalsIgnoreCase("WORD")) {
+            return Convert.intTo3Bytes(Parser.parseNumber(op));
+        }
+        if (mnem.equalsIgnoreCase("BYTE")) {
+            return Parser.parseByteOperand(op);
+        }
+        if (mnem.equalsIgnoreCase("RESW") || mnem.equalsIgnoreCase("RESB")) {
+            int count = Parser.parseNumber(op) * (mnem.equalsIgnoreCase("RESW") ? 3 : 1);
             return new byte[count];
         }
-
-        int format = Parser.determineInstructionFormat(mnemonic);
-        return switch (format) {
-            case 1 -> generateInstructionCodeFormat1(mnemonic);
-            case 2 -> generateInstructionCodeFormat2(mnemonic, operand);
-            case 3 -> generateInstructionCodeFormat3(mnemonic, operand, symbolTable, line, importedSymbols);
-            case 4 -> generateInstructionCodeFormat4(mnemonic, operand, symbolTable);
-            default -> throw new IllegalArgumentException("Formato de instrucao desconhecido para " + mnemonic);
+        int fmt = Parser.determineInstructionFormat(mnem);
+        return switch (fmt) {
+            case 1 -> format1(mnem);
+            case 2 -> format2(mnem, op);
+            case 3 -> format3(mnem, op, table, line, imported);
+            case 4 -> format4(mnem, op, table);
+            default -> throw new IllegalArgumentException("Formato desconhecido: " + mnem);
         };
     }
 
     /**
-     * Sobrecarga para testes: gera código objeto sem símbolos importados.
+     * Gera o código objeto para uma linha de assembly sem símbolos importados.
      *
-     * @param line Linha de assembly.
-     * @param symbolTable Tabela de símbolos.
-     * @return Código de máquina correspondente.
+     * @param line  linha de assembly a ser montada
+     * @param table tabela de símbolos para resolução de endereços
+     * @return array de bytes com o código objeto da instrução
      */
-    public byte[] generateObjectCode(AssemblyLine line, SymbolTable symbolTable) {
-        return generateObjectCode(line, symbolTable, new HashSet<>());
+    public byte[] generateObjectCode(AssemblyLine line, SymbolTable table) {
+        return generateObjectCode(line, table, Collections.emptySet());
     }
 
     /**
-     * Grava o arquivo de saída em formato textual (.obj).
+     * Monta uma instrução de formato 1 (opcode de 1 byte).
      *
-     * @param outFileName Nome do arquivo de saída.
-     * @param programName Nome do programa.
-     * @param startAddress Endereço inicial do programa.
-     * @param code Código objeto.
-     * @param modificationList Lista de registros de modificação (M).
-     * @param exportedList Lista de símbolos exportados.
-     * @param imported Conjunto de símbolos importados.
-     * @throws IOException Em caso de erro de escrita.
+     * @param mnem mnemônico da instrução (pode conter '+')
+     * @return vetor de 1 byte contendo o opcode
      */
-    private void writeTextualObjectFile(String outFileName, String programName, int startAddress, byte[] code, List<ModificationInfo> modificationList, List<Symbol> exportedList, Set<String> imported) throws IOException {
-        List<TBlock> tblocks = buildTextRecords(startAddress, code);
-        int programLength = code.length;
-        StringBuilder content = new StringBuilder();
-
-        // Registro H
-        String hRec = String.format("H^%-6s^%06X^%06X", fitProgramName(programName), startAddress, programLength);
-        content.append(hRec).append("\n");
-
-        // Registros D
-        if (!exportedList.isEmpty()) {
-            StringBuilder dRec = new StringBuilder("D");
-            for (Symbol symbol : exportedList) {
-                dRec.append("^").append(symbol.name)
-                        .append("^").append(String.format("%06X", symbol.address));
-            }
-            content.append(dRec).append("\n");
-        }
-
-        // Registros R
-        if (!imported.isEmpty()) {
-            StringBuilder rRec = new StringBuilder("R");
-            for (String symbol : imported) {
-                rRec.append("^").append(symbol);
-            }
-            content.append(rRec).append("\n");
-        }
-
-        // Registros T
-        for (TBlock block : tblocks) {
-            StringBuilder hex = new StringBuilder();
-            for (byte b : block.data) {
-                hex.append(String.format("%02X", b & 0xFF));
-            }
-            int length = block.data.size();
-            String tRec = String.format("T^%06X^%02X^%s", block.startAddr, length, hex);
-            content.append(tRec).append("\n");
-        }
-
-        // Registros M
-        for (ModificationInfo minfo : modificationList) {
-            int address = startAddress + minfo.offset;
-            String lenHex = String.format("%02X", minfo.lengthInHalfBytes & 0xFF);
-            String mRec = String.format("M^%06X^%s^%s", address, lenHex, minfo.reference);
-            content.append(mRec).append("\n");
-        }
-
-        // Registro E
-        String eRec = String.format("E^%06X", startAddress);
-        content.append(eRec).append("\n");
-
-        FileUtils.writeFileInDir(Constants.SAVE_DIR, outFileName, content.toString());
+    private byte[] format1(String mnem) {
+        int opcode = Mapper.mnemonicToOpcode(mnem.replace("+",""));
+        return new byte[]{(byte) opcode};
     }
 
     /**
-     * Gera o código para instruções de formato 1. Apenas por detalhe, já que nosso simulador não suporta.
+     * Monta uma instrução de formato 2 (opcode + registradores).
      *
-     * @param mnemonic Mnemônico da instrução.
-     * @return Byte do opcode.
+     * @param mnem mnemônico da instrução
+     * @param op   string com dois registradores separados por vírgula
+     * @return vetor de 2 bytes [opcode, r1<<4|r2]
+     * @throws IllegalArgumentException se não houver exatamente dois registradores
      */
-    private byte[] generateInstructionCodeFormat1(String mnemonic) {
-        mnemonic = mnemonic.replace("+", "");
-        int opcode = Mapper.mnemonicToOpcode(mnemonic);
-        return new byte[]{ (byte) opcode };
-    }
-
-    /**
-     * Gera o código para instruções de formato 2.
-     *
-     * @param mnemonic Mnemônico.
-     * @param operand Operandos (registradores).
-     * @return Array de bytes com opcode e registradores.
-     */
-    private byte[] generateInstructionCodeFormat2(String mnemonic, String operand) {
-        int opcode = Mapper.mnemonicToOpcode(mnemonic);
-        String[] regs = operand.split(",");
-        if (regs.length != 2) {
-            throw new IllegalArgumentException("Instrucao de formato 2 requer 2 registradores: " + operand);
-        }
+    private byte[] format2(String mnem, String op) {
+        int opcode = Mapper.mnemonicToOpcode(mnem);
+        String[] regs = op.split(",");
+        if (regs.length != 2) throw new IllegalArgumentException("Formato 2 precisa de 2 regs: " + op);
         int r1 = Mapper.registerNameToNumber(regs[0].trim());
         int r2 = Mapper.registerNameToNumber(regs[1].trim());
-        return new byte[]{ (byte) opcode, (byte) ((r1 << 4) | (r2 & 0x0F)) };
+        return new byte[]{(byte) opcode, (byte) ((r1<<4)|(r2&0xF))};
     }
 
     /**
-     * Gera código para instruções de formato 3, com suporte a indexação e imediato.
+     * Monta uma instrução de formato 3 (PC-relativo ou imediato),
+     * ajustando bits n, i, x, p conforme o operando.
      *
-     * @param mnemonic Mnemônico da instrução.
-     * @param operand Operando.
-     * @param symbolTable Tabela de símbolos.
-     * @param line Linha original de assembly.
-     * @param importedSymbols Conjunto de símbolos importados.
-     * @return Bytes da instrução.
+     * @param mnem     mnemônico da instrução (sem '+')
+     * @param operand  operando, que pode indicar imediato ('#') ou indexação (',X')
+     * @param table    tabela de símbolos para lookup de endereços
+     * @param line     metadados da linha (endereço atual)
+     * @param imported símbolos importados para detectar referências externas
+     * @return vetor de 3 bytes representando a instrução formatada
+     * @throws IllegalArgumentException se o deslocamento ou literal estiverem fora de alcance
      */
-    private byte[] generateInstructionCodeFormat3(String mnemonic, String operand, SymbolTable symbolTable, AssemblyLine line, Set<String> importedSymbols) {
-        // Se o operando for null, tratamos como string vazia para evitar NPE
-        String operandString = (operand == null) ? "" : operand.trim();
-        // Verifica se há indexação (caso a string não esteja vazia)
-        boolean indexed = !operandString.isEmpty() && operandString.toUpperCase().endsWith(",X");
-        if (indexed) {
-            // Remove a parte “,X” e elimina espaços em branco
-            operandString = operandString.substring(0, operandString.length() - 2).trim();
-        }
-        // Determina se é imediata
-        boolean isImmediate = operandString.startsWith("#");
-
-        int opcode = Mapper.mnemonicToOpcode(mnemonic);
-        int nBit, iBit;
-        int disp;
-
-        if (isImmediate) {
-            // Para imediato, remove o '#' e converte para número
-            operandString = operandString.substring(1).trim();
-            int literal = Parser.parseNumber(operandString);
-            if (literal < 0 || literal > 0xFFF) {
-                throw new IllegalArgumentException("Literal imediato fora de 12 bits: " + literal);
-            }
-            nBit = 0;
-            iBit = 1;
-            disp = literal;
+    private byte[] format3(String mnem, String operand, SymbolTable table, AssemblyLine line, Set<String> imported) {
+        String opStr = operand==null?"":operand.trim();
+        boolean idx = opStr.toUpperCase().endsWith(",X");
+        if (idx) opStr = opStr.substring(0, opStr.length()-2).trim();
+        boolean imm = opStr.startsWith("#");
+        int opcode = Mapper.mnemonicToOpcode(mnem);
+        int n=1, i=1, disp;
+        if (imm) {
+            n=0;
+            int lit = Parser.parseNumber(opStr.substring(1));
+            if (lit<0||lit>0xFFF) throw new IllegalArgumentException("Literal fora de 12 bits: "+lit);
+            disp = lit;
         } else {
-            // Instrução não imediata
-            nBit = 1;
-            iBit = 1;
-            // Se o operando estiver vazio ou for considerado externo, deixa o campo de deslocamento zerado (placeholder)
-            if (operandString.isEmpty() || isExternal(operandString, importedSymbols)) {
-                disp = 0;
-            } else {
-                int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
-                disp = calculateDisplacement(line, operandAddress);
+            if (opStr.isEmpty()||imported.contains(opStr.toUpperCase())) disp=0;
+            else {
+                int addr = Parser.resolveOperandAddress(opStr, table);
+                disp = calculateDisplacement(line, addr);
             }
         }
-
-        byte firstByte = (byte) ((opcode & 0xFC) | (nBit << 1) | iBit);
-        byte secondByte = 0;
-        if (indexed) {
-            secondByte |= (byte) 0x80; // bit x = 1
-        }
-        if (!isImmediate) {
-            secondByte |= 0x20; // p = 1 para PC-relativo
-        }
-        secondByte |= (byte) ((disp >> 8) & 0x0F);
-        byte thirdByte = (byte) (disp & 0xFF);
-
-        return new byte[]{ firstByte, secondByte, thirdByte };
+        byte b1 = (byte)((opcode&0xFC)|(n<<1)|i);
+        byte b2 = (byte)((idx?0x80:0)|(imm?0:0x20)|((disp>>>8)&0xF));
+        byte b3 = (byte)(disp&0xFF);
+        return new byte[]{b1,b2,b3};
     }
 
     /**
-     * Gera código para instruções de formato 4 (endereçamento direto de 20 bits).
+     * Monta uma instrução de formato 4 (endereçamento direto de 20 bits),
+     * incluindo o bit e=1 e indexação se aplicável.
      *
-     * @param mnemonic Mnemônico.
-     * @param operand Operando.
-     * @param symbolTable Tabela de símbolos.
-     * @return Array de 4 bytes representando a instrução.
+     * @param mnem    mnemônico da instrução (prefixado com '+')
+     * @param operand operando que pode terminar com ',X' para indexação
+     * @param table   tabela de símbolos para resolver endereços absolutos
+     * @return vetor de 4 bytes representando a instrução de formato 4
      */
-    private byte[] generateInstructionCodeFormat4(String mnemonic, String operand, SymbolTable symbolTable) {
-        mnemonic = mnemonic.replace("+", "");
-        int opcode = Mapper.mnemonicToOpcode(mnemonic);
-        String operandString = (operand == null) ? "" : operand.trim();
-        boolean indexed = !operandString.isEmpty() && operandString.toUpperCase().endsWith(",X");
-        if (indexed) {
-            operandString = operandString.substring(0, operandString.length() - 2).trim();
-        }
-        int operandAddress = Parser.resolveOperandAddress(operandString, symbolTable);
-        int firstByte = (opcode & 0xFC) | 0x03;
-        int secondByte = (indexed ? 0x80 : 0) | 0x10 | ((operandAddress >> 16) & 0x0F);
-        return new byte[]{
-                (byte) firstByte,
-                (byte) secondByte,
-                (byte) ((operandAddress >> 8) & 0xFF),
-                (byte) (operandAddress & 0xFF)
-        };
+    private byte[] format4(String mnem, String operand, SymbolTable table) {
+        String m = mnem.replace("+","");
+        int opcode = Mapper.mnemonicToOpcode(m);
+        String opStr = operand==null?"":operand.trim();
+        boolean idx = opStr.toUpperCase().endsWith(",X");
+        if (idx) opStr = opStr.substring(0,opStr.length()-2).trim();
+        int addr = Parser.resolveOperandAddress(opStr, table);
+        byte b1 = (byte)((opcode&0xFC)|0x3);
+        byte b2 = (byte)((idx?0x80:0)|0x10|((addr>>16)&0xF));
+        return new byte[]{ b1, b2, (byte)((addr>>8)&0xFF), (byte)(addr&0xFF) };
     }
 
     /**
-     * Verifica se o operando refere-se a um símbolo externo.
+     * Escreve o arquivo objeto em formato textual (.obj), incluindo:
+     * registros H, D, R, T, M e E, conforme o layout SIC/XE.
      *
-     * @param operandString Nome do operando.
-     * @param importedSymbols Conjunto de símbolos importados.
-     * @return true se é externo; false caso contrário.
+     * @param fileName nome do arquivo de saída (com extensão .obj)
+     * @param progName nome do programa (para o header H)
+     * @param start    endereço inicial do programa (record E e T)
+     * @param code     array de bytes do código de máquina completo
+     * @param mlist    lista de registros de modificação (M-records)
+     * @param exports  símbolos exportados para o D-record
+     * @param imports  símbolos importados para o R-record
+     * @throws IOException em caso de falha ao gravar o arquivo em disco
      */
-    private boolean isExternal(String operandString, Set<String> importedSymbols) {
-        String sym = operandString.toUpperCase();
-        return importedSymbols.contains(sym);
+    private void writeTextualObjectFile(String fileName, String progName, int start, byte[] code, List<ModificationInfo> mlist, List<Symbol> exports, Set<String> imports) throws IOException {
+        StringBuilder sb = new StringBuilder();
+
+        // Header
+        sb.append(String.format("H^%-6s^%06X^%06X%n", fitName(progName), start, code.length));
+        // D-records
+        if (!exports.isEmpty()) {
+            sb.append("D");
+            for (Symbol s: exports) {
+                sb.append("^").append(s.name)
+                        .append("^").append(String.format("%06X", s.address));
+            }
+            sb.append("\n");
+        }
+        // R-records
+        if (!imports.isEmpty()) {
+            sb.append("R");
+            for (String imp: imports) sb.append("^").append(imp);
+            sb.append("\n");
+        }
+        // T-records
+        for (TBlock blk: buildTextRecords(start, code)) {
+            StringBuilder hex = new StringBuilder();
+            for (byte b: blk.data) hex.append(String.format("%02X", b));
+            sb.append(String.format("T^%06X^%02X^%s%n", blk.startAddr, blk.data.size(), hex));
+        }
+        // M-records
+        for (ModificationInfo mi: mlist) {
+            sb.append(String.format("M^%06X^%02X^%s%n",
+                    start + mi.offset, mi.lengthInHalfBytes, mi.reference));
+        }
+        // End record
+        sb.append(String.format("E^%06X%n", start));
+
+        FileUtils.writeFileInDir(Constants.SAVE_DIR, fileName, sb.toString());
     }
 
     /**
-     * Determina se a linha de instrução precisa gerar um registro de modificação.
+     * Agrupa o array de bytes do programa em blocos de até 30 bytes
+     * para composição dos registros T.
      *
-     * @param line Linha a ser analisada.
-     * @return true se deve gerar M record; false caso contrário.
+     * @param start endereço base do primeiro byte de cada bloco
+     * @param code  vetor completo de bytes do código objeto
+     * @return lista de blocos {@link TBlock} prontos para gerar T-records
+     */
+    private List<TBlock> buildTextRecords(int start, byte[] code) {
+        final int MAX = 30;
+        List<TBlock> lst = new ArrayList<>();
+        for (int i=0; i<code.length; i+=MAX) {
+            int len = Math.min(MAX, code.length - i);
+            TBlock b = new TBlock(start + i);
+            for (int j=0; j<len; j++) b.data.add(code[i+j]);
+            lst.add(b);
+        }
+        return lst;
+    }
+
+    /**
+     * Ajusta um nome de programa para ter no máximo 6 caracteres,
+     * truncando ou substituindo por 'NONAME' em caso de nulo.
+     *
+     * @param n nome original do programa
+     * @return nome ajustado para até 6 caracteres
+     */
+    private String fitName(String n) {
+        if (n==null) return "NONAME";
+        return n.length()>6? n.substring(0,6): n;
+    }
+
+    /**
+     * Determina se uma linha de assembly deve gerar
+     * um registro de modificação (M-record) no .obj.
+     *
+     * @param line linha de código analisada
+     * @return true se for instrução formato 3 ou 4 e referenciar símbolo externo
      */
     private boolean shouldGenerateMRecord(AssemblyLine line) {
-        int format = Parser.determineInstructionFormat(line.mnemonic());
-        if (format != 3 && format != 4) {
-            return false;
-        }
+        int fmt = Parser.determineInstructionFormat(line.mnemonic());
         String op = line.operand();
-        if (op == null || op.trim().isEmpty() || op.startsWith("#")) {
+        if ((fmt!=3 && fmt!=4) || op==null || op.trim().isEmpty() || op.startsWith("#"))
             return false;
-        }
-        String cleaned = op.replaceAll("(?i),x", "").trim();
-        // Geramos o M record se o operando não for um literal numérico
-        return !Checker.isNumericLiteral(cleaned);
+        return !Checker.isNumericLiteral(op.replaceAll("(?i),x","").trim());
     }
 
     /**
-     * Retorna o tamanho da instrução com base no mnemônico e operando.
+     * Calcula o tamanho em bytes de uma instrução ou diretiva,
+     * conforme definido em {@link InstructionSizeCalculator}.
      *
-     * @param line Linha de assembly.
-     * @return Tamanho em bytes.
+     * @param line linha de código com mnemônico e operando
+     * @return tamanho em bytes da instrução/diretiva
      */
     private int getInstructionSize(AssemblyLine line) {
         return InstructionSizeCalculator.calculateSize(line.mnemonic(), line.operand());
     }
 
     /**
-     * Calcula o deslocamento PC-relativo entre a instrução e o operando.
+     * Calcula o deslocamento PC-relativo (12 bits com sinal)
+     * entre a instrução atual e o endereço do operando.
      *
-     * @param line Linha atual.
-     * @param operandByteAddr Endereço do operando.
-     * @return Deslocamento em 12 bits.
+     * @param line linha com o endereço atual da instrução
+     * @param addr endereço absoluto do operando
+     * @return valor de deslocamento de 12 bits (mascarado)
+     * @throws IllegalArgumentException se o deslocamento estiver fora do intervalo [-2048,2047]
      */
-    private int calculateDisplacement(AssemblyLine line, int operandByteAddr) {
-        int currentInstructionByteAddr = line.address();
-        int nextInstructionByteAddr = currentInstructionByteAddr + getInstructionSize(line);
-        int disp = operandByteAddr - nextInstructionByteAddr;
-        if (disp < -2048 || disp > 2047) {
-            throw new IllegalArgumentException("Deslocamento PC-relativo invalido: " + disp);
-        }
+    private int calculateDisplacement(AssemblyLine line, int addr) {
+        int cur = line.address();
+        int next = cur + getInstructionSize(line);
+        int disp = addr - next;
+        if (disp < -2048 || disp > 2047)
+            throw new IllegalArgumentException("Deslocamento inválido: " + disp);
         return disp & 0xFFF;
     }
 
     /**
-     * Informações de modificação para registros M do arquivo objeto.
+     * Registro de modificação para registros M,
+     * contendo deslocamento, tamanho em meio-nibbles e referência ao símbolo.
      *
-     * @param offset Posição relativa no código.
-     * @param lengthInHalfBytes Tamanho do campo em "nibbles".
-     * @param reference Nome do símbolo de referência (com sinal).
+     * @param offset           deslocamento relativo em bytes dentro do código
+     * @param lengthInHalfBytes tamanho do campo em "nibbles" (3 para formato 3, 5 para 4)
+     * @param reference        símbolo referenciado (prefixado com '+' se PC-relativo)
      */
-    record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {}
+    private record ModificationInfo(int offset, int lengthInHalfBytes, String reference) {}
 
     /**
-     * Bloco de dados usado para registros T (text) no arquivo objeto.
+     * Bloco de dados para registros T no arquivo objeto,
+     * contendo endereço inicial e bytes do bloco.
      */
-    static class TBlock {
-        int startAddr;
-        List<Byte> data = new ArrayList<>();
-        TBlock(int start) {
-            this.startAddr = start;
+    private static class TBlock {
+        /** Endereço do primeiro byte do bloco de texto. */
+        final int startAddr;
+        /** Lista de bytes a serem emitidos no T-record. */
+        final List<Byte> data = new ArrayList<>();
+
+        /**
+         * Cria um novo bloco de texto para registros T.
+         *
+         * @param startAddr endereço do primeiro byte do bloco
+         */
+        TBlock(int startAddr) {
+            this.startAddr = startAddr;
         }
     }
+
 }

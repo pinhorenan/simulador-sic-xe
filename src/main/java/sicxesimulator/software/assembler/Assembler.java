@@ -1,68 +1,80 @@
 package sicxesimulator.software.assembler;
 
-import sicxesimulator.software.assembler.data.IntermediateRepresentation;
-import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.common.utils.Constants;
+import sicxesimulator.software.data.IntermediateRepresentation;
+import sicxesimulator.software.data.ObjectFile;
 
 import java.io.File;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Classe principal responsável por orquestrar o processo completo de montagem.
- *
- * Executa a primeira e segunda passagens do montador e gera os arquivos de
- * saída (como .meta e .obj) a partir do código-fonte assembly fornecido.
+ * Orquestra o processo de montagem de código SIC/XE:
+ * executa a primeira e a segunda passagem,
+ * e persiste o resultado em arquivo .meta.
  */
 public class Assembler {
+
     private final AssemblerFirstPass firstPass;
     private final AssemblerSecondPass secondPass;
 
+    /**
+     * Inicializa os componentes de montagem.
+     */
     public Assembler() {
-        firstPass = new AssemblerFirstPass();
-        secondPass = new AssemblerSecondPass();
+        this.firstPass = new AssemblerFirstPass();
+        this.secondPass = new AssemblerSecondPass();
     }
 
     /**
-     * Executa o processo completo de montagem.
+     * Executa a montagem completa e grava o arquivo meta.
      *
-     * @param originalSource Código-fonte original (sem macros expandidas).
-     * @param expandedSource Código-fonte com macros expandidas.
-     * @return {@link ObjectFile} representando o código objeto final.
+     * @param originalSourceLines Código-fonte original (sem expansão de macros).
+     * @param expandedSourceLines Código-fonte com macros expandidas.
+     * @return {@link ObjectFile} com o código objeto gerado.
+     * @throws IllegalArgumentException se alguma lista de linhas for nula.
      */
-    public ObjectFile assemble(List<String> originalSource, List<String> expandedSource) {
-        // 1ª passagem
-        IntermediateRepresentation midCode = firstPass(originalSource, expandedSource);
+    public ObjectFile assemble(List<String> originalSourceLines, List<String> expandedSourceLines) {
+        Objects.requireNonNull(originalSourceLines, "originalSourceLines não pode ser nulo");
+        Objects.requireNonNull(expandedSourceLines, "expandedSourceLines não pode ser nulo");
 
-        // 2ª passagem
-        ObjectFile meta = secondPass(midCode);
+        IntermediateRepresentation intermediate = runFirstPass(originalSourceLines, expandedSourceLines);
+        ObjectFile result = runSecondPass(intermediate);
+        persistMetaFile(intermediate.programName(), result);
 
-        // Serializa o ObjectFile binário (.meta)
-        String metaFileName = midCode.programName() + ".meta";
-        File metaFile = new File(Constants.SAVE_DIR, metaFileName);
-        meta.saveToFile(metaFile);
-
-        return meta;
+        return result;
     }
 
     /**
-     * Executa a primeira passagem, gerando a representação intermediária.
+     * Executa a primeira passagem do montador.
      *
-     * @param originalSourceCode Código original (exibição e referência).
-     * @param sourceCodeWithMacrosExpanded Código com macros resolvidas.
-     * @return {@link IntermediateRepresentation} gerada.
+     * @param originalSourceLines Linhas originais do código-fonte.
+     * @param expandedSourceLines Linhas após expansão de macros.
+     * @return {@link IntermediateRepresentation} com dados para a segunda passagem.
      */
-    public IntermediateRepresentation firstPass(List<String> originalSourceCode, List<String> sourceCodeWithMacrosExpanded) {
-        return firstPass.process(originalSourceCode, sourceCodeWithMacrosExpanded);
+    public IntermediateRepresentation runFirstPass(List<String> originalSourceLines, List<String> expandedSourceLines) {
+        return firstPass.process(originalSourceLines, expandedSourceLines);
     }
 
+    /**
+     * Executa a segunda passagem do montador.
+     *
+     * @param intermediate Representação intermediária gerada na primeira passagem.
+     * @return {@link ObjectFile} final contendo o código de máquina e metadados.
+     */
+    public ObjectFile runSecondPass(IntermediateRepresentation intermediate) {
+        return secondPass.generateObjectFile(intermediate);
+    }
 
     /**
-     * Executa a segunda passagem a partir da representação intermediária.
+     * Persiste o arquivo .meta no diretório configurado.
      *
-     * @param midCode {@link IntermediateRepresentation} gerada na primeira passagem.
-     * @return {@link ObjectFile} final.
+     *  @param programName Nome base para o arquivo meta.
+     * @param objectFile Instância de {@link ObjectFile} a ser serializada.
      */
-    public ObjectFile secondPass(IntermediateRepresentation midCode) {
-        return secondPass.generateObjectFile(midCode);
+    private void persistMetaFile(String programName, ObjectFile objectFile) {
+        String fileName = programName + ".meta";
+        File metaFile = new File(Constants.SAVE_DIR, fileName);
+        objectFile.saveToFile(metaFile);
     }
 }

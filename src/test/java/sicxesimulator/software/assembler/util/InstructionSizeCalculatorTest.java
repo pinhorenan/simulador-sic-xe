@@ -1,7 +1,6 @@
-package sicxesimulatorTest.software.assembler.util;
+package sicxesimulator.software.assembler.util;
 
 import org.junit.jupiter.api.Test;
-import sicxesimulator.software.assembler.util.InstructionSizeCalculator;
 
 import static org.junit.jupiter.api.Assertions.*;
 

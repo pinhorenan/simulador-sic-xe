@@ -1,7 +1,7 @@
 package sicxesimulator.hardware.cpu.exec.store;
 
-import sicxesimulator.hardware.cpu.core.BaseExecutor;
-import sicxesimulator.hardware.cpu.core.ExecutionContext;
+import sicxesimulator.hardware.cpu.exec.BaseExecutor;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
 import sicxesimulator.common.utils.Convert;
 
 public final class STX extends BaseExecutor {

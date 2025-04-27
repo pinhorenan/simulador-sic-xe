@@ -1,8 +1,8 @@
 package sicxesimulator.hardware.cpu.exec.logic;
 
-import sicxesimulator.hardware.cpu.core.BaseExecutor;
-import sicxesimulator.hardware.cpu.core.ExecutionContext;
-import sicxesimulator.hardware.cpu.core.Register;
+import sicxesimulator.hardware.cpu.exec.BaseExecutor;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
+import sicxesimulator.hardware.cpu.register.Register;
 
 public final class OR extends BaseExecutor {
     @Override

@@ -1,7 +1,7 @@
 package sicxesimulator.hardware.cpu.exec.sys;
 
-import sicxesimulator.hardware.cpu.core.BaseExecutor;
-import sicxesimulator.hardware.cpu.core.ExecutionContext;
+import sicxesimulator.hardware.cpu.exec.BaseExecutor;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
 
 /**
  * SIO – Start I/O: aqui não há dispositivo, mas sinalizamos o início.

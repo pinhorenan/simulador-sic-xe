@@ -1,7 +1,7 @@
 package sicxesimulator.hardware.cpu.exec.load;
 
-import sicxesimulator.hardware.cpu.core.BaseExecutor;
-import sicxesimulator.hardware.cpu.core.ExecutionContext;
+import sicxesimulator.hardware.cpu.exec.BaseExecutor;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
 
 public final class LDA extends BaseExecutor {
     @Override

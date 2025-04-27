@@ -1,7 +1,7 @@
 package sicxesimulator.hardware.cpu.exec.sys;
 
-import sicxesimulator.hardware.cpu.core.BaseExecutor;
-import sicxesimulator.hardware.cpu.core.ExecutionContext;
+import sicxesimulator.hardware.cpu.exec.BaseExecutor;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
 
 /**
  * TIO – Test I/O: alias de TD.

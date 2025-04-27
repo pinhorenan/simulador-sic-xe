@@ -1,7 +1,7 @@
 package sicxesimulator.hardware.cpu.exec.sys;
 
-import sicxesimulator.hardware.cpu.core.BaseExecutor;
-import sicxesimulator.hardware.cpu.core.ExecutionContext;
+import sicxesimulator.hardware.cpu.exec.BaseExecutor;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
 
 /**
  * WD – Write to Device: escreve o byte menos significativo de A na saída padrão.

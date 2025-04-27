@@ -1,8 +1,8 @@
 package sicxesimulator.hardware.cpu.decoder;
 
-import sicxesimulator.hardware.Memory;
-import sicxesimulator.hardware.cpu.core.RegisterSet;
-import sicxesimulator.hardware.data.Instruction;
+import sicxesimulator.hardware.memory.Memory;
+import sicxesimulator.hardware.cpu.register.RegisterSet;
+import sicxesimulator.hardware.cpu.model.Instruction;
 import sicxesimulator.common.utils.Convert;
 
 /**

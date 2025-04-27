@@ -1,10 +1,10 @@
 package sicxesimulator.software.loader;
 
-import sicxesimulator.hardware.Memory;
+import sicxesimulator.hardware.memory.Memory;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.data.Symbol;
 import sicxesimulator.software.data.SymbolTable;
-import sicxesimulator.software.data.records.RelocationRecord;
+import sicxesimulator.software.data.RelocationRecord;
 
 /**
  * Responsável por carregar um {@link ObjectFile} na memória principal,

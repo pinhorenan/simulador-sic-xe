@@ -1,6 +1,5 @@
 package sicxesimulator.software.data;
 
-import sicxesimulator.software.data.records.RelocationRecord;
 import sicxesimulator.common.utils.Constants;
 import sicxesimulator.common.utils.Logger;
 

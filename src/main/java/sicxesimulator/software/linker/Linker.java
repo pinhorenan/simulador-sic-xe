@@ -3,7 +3,7 @@ package sicxesimulator.software.linker;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.data.Symbol;
 import sicxesimulator.software.data.SymbolTable;
-import sicxesimulator.software.data.records.RelocationRecord;
+import sicxesimulator.software.data.RelocationRecord;
 import sicxesimulator.software.loader.Loader;
 import sicxesimulator.common.utils.Constants;
 import sicxesimulator.common.utils.FileUtils;

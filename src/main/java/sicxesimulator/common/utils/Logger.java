@@ -1,8 +1,8 @@
 package sicxesimulator.common.utils;
 
-import sicxesimulator.hardware.Memory;
-import sicxesimulator.hardware.cpu.core.RegisterSet;
-import sicxesimulator.hardware.cpu.core.Register;
+import sicxesimulator.hardware.memory.Memory;
+import sicxesimulator.hardware.cpu.register.RegisterSet;
+import sicxesimulator.hardware.cpu.register.Register;
 
 import java.io.File;
 import java.io.IOException;

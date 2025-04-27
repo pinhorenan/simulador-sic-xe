@@ -1,4 +1,4 @@
-package sicxesimulator.hardware;
+package sicxesimulator.hardware.memory;
 
 import java.util.Arrays;
 
@@ -89,11 +89,6 @@ public class Memory {
 	/** @return tamanho da memória em bytes */
 	public int getSize() {
 		return data.length;
-	}
-
-	/** @return cópia do mapa completo de memória */
-	public byte[] getMemoryMap() {
-		return Arrays.copyOf(data, data.length);
 	}
 
 	/** Zera toda a memória (todos os bytes = 0). */

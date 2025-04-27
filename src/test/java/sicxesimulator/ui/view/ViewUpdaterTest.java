@@ -1,4 +1,4 @@
-package sicxesimulatorTest.simulation.view;
+package sicxesimulator.ui.view;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
@@ -11,8 +11,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import sicxesimulator.ui.controller.Controller;
 import sicxesimulator.ui.model.Model;
-import sicxesimulator.ui.view.Layout;
-import sicxesimulator.ui.view.ViewUpdater;
 import sicxesimulator.ui.data.records.MemoryEntry;
 import sicxesimulator.ui.data.records.RegisterEntry;
 import sicxesimulator.ui.data.records.SymbolEntry;

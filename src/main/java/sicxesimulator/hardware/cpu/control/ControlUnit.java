@@ -1,8 +1,10 @@
-package sicxesimulator.hardware.cpu.core;
+package sicxesimulator.hardware.cpu.control;
 
-import sicxesimulator.hardware.Memory;
+import sicxesimulator.hardware.memory.Memory;
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
 import sicxesimulator.hardware.cpu.decoder.InstructionDecoder;
-import sicxesimulator.hardware.data.Instruction;
+import sicxesimulator.hardware.cpu.register.RegisterSet;
+import sicxesimulator.hardware.cpu.model.Instruction;
 
 import java.util.ArrayList;
 import java.util.List;

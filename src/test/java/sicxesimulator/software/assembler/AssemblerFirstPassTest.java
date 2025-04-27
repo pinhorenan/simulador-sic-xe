@@ -1,7 +1,6 @@
-package sicxesimulatorTest.software.assembler;
+package sicxesimulator.software.assembler;
 
 import org.junit.jupiter.api.Test;
-import sicxesimulator.software.assembler.AssemblerFirstPass;
 import sicxesimulator.software.assembler.data.AssemblyLine;
 import sicxesimulator.software.assembler.data.IntermediateRepresentation;
 import sicxesimulator.software.data.SymbolTable;

@@ -1,4 +1,4 @@
-package sicxesimulator.software.data.records;
+package sicxesimulator.software.data;
 
 import java.io.Serializable;
 

@@ -1,9 +1,8 @@
-package sicxesimulatorTest.simulation.model;
+package sicxesimulator.ui.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import sicxesimulator.ui.model.Model;
 import sicxesimulator.ui.data.records.MemoryEntry;
 import sicxesimulator.ui.data.records.RegisterEntry;
 

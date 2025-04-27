@@ -1,7 +1,6 @@
-package sicxesimulatorTest.software.macroprocessor;
+package sicxesimulator.software.macroprocessor;
 
 import org.junit.jupiter.api.Test;
-import sicxesimulator.software.macroprocessor.MacroProcessor;
 import sicxesimulator.common.utils.Constants;
 
 import java.io.IOException;

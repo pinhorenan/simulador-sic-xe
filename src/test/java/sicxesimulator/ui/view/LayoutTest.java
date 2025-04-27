@@ -1,4 +1,4 @@
-package sicxesimulatorTest.simulation.view;
+package sicxesimulator.ui.view;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -7,7 +7,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import javafx.scene.layout.BorderPane;
 import sicxesimulator.ui.model.Model;
-import sicxesimulator.ui.view.Layout;
 import sicxesimulator.ui.controller.Controller;
 
 public class LayoutTest {

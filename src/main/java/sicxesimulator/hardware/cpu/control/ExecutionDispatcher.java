@@ -1,5 +1,7 @@
-package sicxesimulator.hardware.cpu.core;
+package sicxesimulator.hardware.cpu.control;
 
+import sicxesimulator.hardware.cpu.model.ExecutionContext;
+import sicxesimulator.hardware.cpu.exec.InstructionExecutor;
 import sicxesimulator.hardware.cpu.exec.arith.*;
 import sicxesimulator.hardware.cpu.exec.jump.*;
 import sicxesimulator.hardware.cpu.exec.load.*;

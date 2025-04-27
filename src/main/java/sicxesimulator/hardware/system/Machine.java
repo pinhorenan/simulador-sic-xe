@@ -1,6 +1,7 @@
-package sicxesimulator.hardware;
+package sicxesimulator.hardware.system;
 
-import sicxesimulator.hardware.cpu.core.ControlUnit;
+import sicxesimulator.hardware.memory.Memory;
+import sicxesimulator.hardware.cpu.control.ControlUnit;
 import sicxesimulator.common.utils.Constants;
 
 /**

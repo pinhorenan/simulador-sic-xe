@@ -1,12 +1,11 @@
-package sicxesimulatorTest.software.loader;
+package sicxesimulator.software.loader;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import sicxesimulator.software.data.ObjectFile;
 import sicxesimulator.software.data.SymbolTable;
-import sicxesimulator.software.data.records.RelocationRecord;
-import sicxesimulator.hardware.Memory;
-import sicxesimulator.software.loader.Loader;
+import sicxesimulator.software.data.RelocationRecord;
+import sicxesimulator.hardware.memory.Memory;
 
 import java.util.Collections;
 import java.util.List;

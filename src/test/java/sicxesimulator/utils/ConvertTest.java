@@ -1,4 +1,4 @@
-package sicxesimulatorTest.utils;
+package sicxesimulator.utils;
 
 import org.junit.jupiter.api.Test;
 import sicxesimulator.common.utils.Convert;

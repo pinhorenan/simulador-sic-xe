@@ -1,10 +1,8 @@
-package sicxesimulatorTest.software.data;
+package sicxesimulator.software.data;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-import sicxesimulator.software.data.ObjectFile;
-import sicxesimulator.software.data.SymbolTable;
-import sicxesimulator.software.data.records.RelocationRecord;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.*;

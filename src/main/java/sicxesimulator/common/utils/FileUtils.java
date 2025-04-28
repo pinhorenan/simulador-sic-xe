@@ -4,54 +4,30 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
- * Classe utilitária para operações de leitura e escrita de arquivos.
+ * Operações básicas de I/O (UTF-8).
  */
-public abstract class FileUtils {
+public final class FileUtils {
 
-    /**
-     * Garante que o diretório especificado existe, criando-o se necessário.
-     * @param directoryPath O caminho do diretório.
-     * @throws IOException  Se ocorrer erro na criação.
-     */
-    public static void ensureDirectoryExists(String directoryPath) throws IOException {
-        Files.createDirectories(Path.of(directoryPath));
+    /* ------------------------------------------------------------------ */
+
+    public static void ensureDirectoryExists(String dir) throws IOException {
+        Files.createDirectories(Path.of(dir));
     }
 
-    /**
-     * Lê o conteúdo inteiro de um arquivo como uma única string.
-     *
-     * @param filePath O caminho do arquivo.
-     * @return O conteúdo do arquivo como string.
-     * @throws IOException Se ocorrer um erro de I/O.
-     */
-    public static String readFile(String filePath) throws IOException {
-        return Files.readString(Path.of(filePath), StandardCharsets.UTF_8);
+    public static String readFile(String file) throws IOException {
+        return Files.readString(Path.of(file), StandardCharsets.UTF_8);
     }
 
-    /**
-     * Escreve o conteúdo fornecido em um arquivo, usando UTF-8.
-     * Se o arquivo não existir, ele será criado.
-     *
-     * @param filePath O caminho do arquivo.
-     * @param content  O conteúdo a ser escrito.
-     * @throws IOException Se ocorrer um erro de I/O.
-     */
-    public static void writeFile(String filePath, String content) throws IOException {
-        Files.writeString(Path.of(filePath), content, StandardCharsets.UTF_8);
+    public static void writeFile(String file, String content) throws IOException {
+        Files.writeString(Path.of(file), content, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
-    /**
-     * Escreve o conteúdo em um arquivo dentro do diretório especificado.
-     *
-     * @param directoryPath O caminho do diretório.
-     * @param fileName      O nome do arquivo.
-     * @param content       O conteúdo a ser escrito.
-     * @throws IOException Se ocorrer erro de I/O.
-     */
-    public static void writeFileInDir(String directoryPath, String fileName, String content) throws IOException {
-        ensureDirectoryExists(directoryPath);
-        writeFile(directoryPath + "/" + fileName, content);
+    public static void writeFileInDir(String dir, String fileName, String content) throws IOException {
+        ensureDirectoryExists(dir);
+        writeFile(Path.of(dir, fileName).toString(), content);
     }
 }

@@ -4,68 +4,51 @@ import sicxesimulator.hardware.cpu.register.Register;
 import sicxesimulator.hardware.cpu.register.RegisterSet;
 
 /**
- * Classe utilitária para mapeamentos relacionados à arquitetura SIC/XE.
- * <p>
- * Inclui:
- * - Conversão entre nomes de registradores e seus índices.
- * - Acesso a registradores por número.
- * - Mapeamento de mnemônicos para opcodes.
- * - Conversão de velocidades de simulação.
+ * Mapas de conversão convenientes para o simulador SIC/XE.
  */
-public abstract class Mapper {
+public final class Mapper {
+    private Mapper() {}
 
-    /**
-     * Retorna o Opcode correspondente ao mnemônico.
-     * @param mnemonic Mnemônico da instrução.
-     * @return Opcode correspondente.
-     */
+    /* --------------------------------------------------------- */
+    /* Mnemonic → opcode                                         */
+    /* --------------------------------------------------------- */
     public static int mnemonicToOpcode(String mnemonic) {
-        if (!Constants.OPCODES.containsKey(mnemonic.toUpperCase()))
+        Integer op = Constants.OPCODES.get(mnemonic.toUpperCase());
+        if (op == null)
             throw new IllegalArgumentException("Instrução desconhecida: " + mnemonic);
-        return Constants.OPCODES.get(mnemonic.toUpperCase());
+        return op;
     }
 
-    /**
-     * Converte o nome do registrador para seu número correspondente.
-     * Exemplo: "A" -> 0, "X" -> 1, "L" -> 2, "B" -> 3, "S" -> 4, "T" -> 5.
-     *
-     * @param regName Nome do registrador (case insensitive).
-     * @return Número do registrador.
-     */
-    public static int registerNameToNumber(String regName) {
-        return switch (regName.toUpperCase()) {
-            case "A" -> 0;
-            case "X" -> 1;
-            case "L" -> 2;
-            case "B" -> 3;
-            case "S" -> 4;
-            case "T" -> 5;
-            case "F" -> 6;
+    /* --------------------------------------------------------- */
+    /* Register name / number                                    */
+    /* --------------------------------------------------------- */
+    public static int registerNameToNumber(String name) {
+        return switch (name.toUpperCase()) {
+            case "A"  -> 0;
+            case "X"  -> 1;
+            case "L"  -> 2;
+            case "B"  -> 3;
+            case "S"  -> 4;
+            case "T"  -> 5;
+            case "F"  -> 6;
             case "PC" -> 8;
             case "SW" -> 9;
-            default -> throw new IllegalArgumentException("Registrador inválido: " + regName);
+            default   -> throw new IllegalArgumentException("Registrador inválido: " + name);
         };
     }
 
-    /**
-     * Retorna o objeto Register correspondente ao número fornecido, usando o conjunto de registradores.
-     *
-     * @param num Número do registrador (0 a 5).
-     * @param registers Conjunto de registradores.
-     * @return O objeto Register correspondente.
-     */
-    public static Register getRegisterByNumber(int num, RegisterSet registers) {
+    public static Register getRegisterByNumber(int num, RegisterSet set) {
         return switch (num) {
-            case 0 -> registers.getRegister("A");
-            case 1 -> registers.getRegister("X");
-            case 2 -> registers.getRegister("L");
-            case 3 -> registers.getRegister("B");
-            case 4 -> registers.getRegister("S");
-            case 5 -> registers.getRegister("T");
-            case 6 -> registers.getRegister("F");
-            case 8 -> registers.getRegister("PC");
-            case 9 -> registers.getRegister("SW");
-            default -> throw new IllegalArgumentException("Registrador inválido: " + num);
+            case 0  -> set.getRegister("A");
+            case 1  -> set.getRegister("X");
+            case 2  -> set.getRegister("L");
+            case 3  -> set.getRegister("B");
+            case 4  -> set.getRegister("S");
+            case 5  -> set.getRegister("T");
+            case 6  -> set.getRegister("F");
+            case 8  -> set.getRegister("PC");
+            case 9  -> set.getRegister("SW");
+            default -> throw new IllegalArgumentException("Número de registrador inválido: " + num);
         };
     }
 }

@@ -5,8 +5,8 @@ import sicxesimulator.ui.view.View;
 
 public class Main {
     public static void main(String[] args) {
-        Model model = new Model();  // Crie e configure seu Model aqui
-        View.setModel(model);           // Injete o Model na MainApp
+        Model model = new Model();
+        View.setModel(model);
         javafx.application.Application.launch(View.class, args);
     }
 }

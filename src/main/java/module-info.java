@@ -1,14 +1,15 @@
 module sicxesimulator {
-    // common
+    // Common utilities
     exports sicxesimulator.common.utils;
 
-    // hardware
+    // Hardware
     exports sicxesimulator.hardware.cpu.control;
     exports sicxesimulator.hardware.cpu.decoder;
+    exports sicxesimulator.hardware.cpu.exec;
     exports sicxesimulator.hardware.cpu.exec.arith;
-    exports sicxesimulator.hardware.cpu.exec.logic;
-    exports sicxesimulator.hardware.cpu.exec.load;
     exports sicxesimulator.hardware.cpu.exec.jump;
+    exports sicxesimulator.hardware.cpu.exec.load;
+    exports sicxesimulator.hardware.cpu.exec.logic;
     exports sicxesimulator.hardware.cpu.exec.store;
     exports sicxesimulator.hardware.cpu.exec.sys;
     exports sicxesimulator.hardware.cpu.model;
@@ -16,31 +17,30 @@ module sicxesimulator {
     exports sicxesimulator.hardware.memory;
     exports sicxesimulator.hardware.system;
 
-    //software
+    // Software
     exports sicxesimulator.software.assembler;
-    exports sicxesimulator.software.assembler.data;
-    exports sicxesimulator.software.assembler.util;
-    exports sicxesimulator.software.data;
+    exports sicxesimulator.software.macroprocessor;
     exports sicxesimulator.software.linker;
     exports sicxesimulator.software.loader;
-    exports sicxesimulator.software.macroprocessor;
+    exports sicxesimulator.software.data;
+    exports sicxesimulator.software.util;
 
-    // ui
-    exports sicxesimulator.ui.controller;
-    exports sicxesimulator.ui.model;
-    exports sicxesimulator.ui.view;
+    // UI
     exports sicxesimulator.ui.components.buttons;
     exports sicxesimulator.ui.components.panels;
     exports sicxesimulator.ui.components.tables;
+    exports sicxesimulator.ui.controller;
+    exports sicxesimulator.ui.data.records;
     exports sicxesimulator.ui.interfaces;
+    exports sicxesimulator.ui.model;
     exports sicxesimulator.ui.util;
-    exports sicxesimulator.hardware.cpu.exec;
+    exports sicxesimulator.ui.view;
 
-    // requirements
+    // Dependencies
     requires java.logging;
     requires javafx.base;
     requires javafx.controls;
     requires javafx.graphics;
-    requires javafx.swing;
     requires javafx.media;
+    requires javafx.swing;
 }

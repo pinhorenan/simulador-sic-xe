@@ -50,7 +50,7 @@ public class AssemblerSecondPass {
         for (AssemblyLine line : intermediate.assemblyLines()) {
             int offset = line.address() - startAddress;
             if (offset < 0 || offset >= machineCode.length) {
-                Logger.logError("Endereço fora dos limites: " + line.address(), null);
+                Logger.error("Endereço fora dos limites: " + line.address(), null);
                 continue;
             }
             byte[] code = generateObjectCode(line, symbolTable, importedSymbols);
@@ -89,7 +89,7 @@ public class AssemblerSecondPass {
                     importedSymbols
             );
         } catch (IOException e) {
-            Logger.logError("Erro ao gravar arquivo .obj", e);
+            Logger.error("Erro ao gravar arquivo .obj", e);
         }
         return objFile;
     }

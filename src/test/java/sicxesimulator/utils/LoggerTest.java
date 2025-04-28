@@ -11,7 +11,7 @@ class LoggerTest {
 
     @Test
     void testLogError() {
-        Logger.logError("Test error", new Exception("Test exception"));
+        Logger.error("Test error", new Exception("Test exception"));
         // Verifica se o arquivo de log criado existe.
         // Como o FileHandler está configurado com COUNT=10, o primeiro arquivo geralmente é "logging/detailed.log.0"
         File logFile = new File("logging/detailed.log.0");

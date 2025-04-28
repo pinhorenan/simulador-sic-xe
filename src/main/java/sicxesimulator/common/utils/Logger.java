@@ -1,130 +1,182 @@
 package sicxesimulator.common.utils;
 
-import sicxesimulator.hardware.memory.Memory;
-import sicxesimulator.hardware.cpu.register.RegisterSet;
 import sicxesimulator.hardware.cpu.register.Register;
+import sicxesimulator.hardware.cpu.register.RegisterSet;
+import sicxesimulator.hardware.memory.Memory;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.*;
 
-public class Logger {
-    private static final int LIMIT = 10 * 1024 * 1024;
-    private static final int COUNT = 10;
+/**
+ * <h2>Logger central do simulador SIC/XE</h2>
+ *
+ * <p>Grava saídas de depuração em &nbsp;<code>logging/detailed.log</code>&nbsp;
+ * (rotação - 10 MB por arquivo / 10 arquivos).</p>
+ *
+ * <p>Principais facilidades:</p>
+ * <ul>
+ *   <li>{@link #info(String)} mensagens informativas rápidas;</li>
+ *   <li>{@link #error(String, Throwable)} erros/exceções;</li>
+ *   <li>{@link #logMachineState(Memory, RegisterSet, String, Map, String, List, String)}
+ *        captura completa do estado da máquina (para depuração “post-mortem”).</li>
+ * </ul>
+ *
+ * <p>A classe é <em>final</em> e não-instanciável.</p>
+ */
+@SuppressWarnings("unused")
+public final class Logger {
 
-    private static final java.util.logging.Logger detailedLogger = java.util.logging.Logger.getLogger("DetailedLogger");
+    /* ====================================================================== */
+    /*  Configuração do java.util.logging                                     */
+    /* ====================================================================== */
+
+    private static final int FILE_LIMIT  = 10 * 1024 * 1024;    // 10 MB
+    private static final int FILE_COUNT  = 10;                  // rotação
+
+    /** Logger sub-sistema (não polui o root). */
+    private static final java.util.logging.Logger LOG =
+            java.util.logging.Logger.getLogger("SICXE.Detailed");
 
     static {
         try {
-            File logDir = new File("logging");
-            if (!logDir.exists()) {
-                boolean ok = logDir.mkdirs();
-                if (!ok) {
-                    System.err.println("Unable to create logging directory: " + logDir.getAbsolutePath());
-                }
+            /* diretório de logs */
+            File dir = new File("logging");
+            if (!dir.exists() && !dir.mkdirs()) {
+                System.err.println("Falha ao criar diretório de logs: " + dir.getAbsolutePath());
             }
 
-            FileHandler detailedHandler = new FileHandler("logging/detailed.log", LIMIT, COUNT, false);
-            detailedHandler.setFormatter(new SimpleFormatter());
-            detailedLogger.addHandler(detailedHandler);
-            detailedLogger.setLevel(Level.ALL);
+            /* FileHandler com rotação fixa */
+            FileHandler fh = new FileHandler("logging/detailed.log",
+                    FILE_LIMIT, FILE_COUNT, /*append=*/false);
+            fh.setFormatter(new SimpleFormatter());
+            LOG.addHandler(fh);
+            LOG.setLevel(Level.ALL);
 
-            java.util.logging.Logger rootLogger = java.util.logging.Logger.getLogger("");
-            for (Handler handler : rootLogger.getHandlers()) {
-                if (handler instanceof ConsoleHandler) {
-                    rootLogger.removeHandler(handler);
-                }
+            /* remove console-handler default */
+            java.util.logging.Logger root = java.util.logging.Logger.getLogger("");
+            for (Handler h : root.getHandlers()) {
+                if (h instanceof ConsoleHandler) root.removeHandler(h);
             }
-        } catch (IOException e) {
-            System.err.println("Erro ao inicializar DetailedLogger: " + e.getMessage());
+        } catch (IOException ex) {
+            System.err.println("Erro ao inicializar logger: " + ex.getMessage());
         }
     }
 
-    public static void logError(String message, Throwable throwable) {
-        detailedLogger.log(Level.SEVERE, message, throwable);
+    /* impede instanciação */
+    private Logger() { throw new AssertionError(); }
+
+    /* ====================================================================== */
+    /*  API pública curta                                                     */
+    /* ====================================================================== */
+
+    /** Mensagem simples <code>INFO</code>. */
+    public static void info(String msg) {
+        LOG.info(msg);
     }
+
+    /** Erro/severe com exceção opcional. */
+    public static void error(String msg, Throwable t) {
+        LOG.log(Level.SEVERE, msg, t);
+    }
+
+    /* ====================================================================== */
+    /*  Dump completo do estado da máquina                                    */
+    /* ====================================================================== */
 
     /**
-     * Loga o estado detalhado da máquina para auxiliar na depuração.
-     * São registrados:
-     * - A memória: endereços (a cada 3 bytes) que possuem valor diferente de zero,
-     *   no formato "Endereço ⇾ Valor".
-     * - O estado de todos os registradores.
-     * - O código objeto carregado (texto).
-     * - A tabela de símbolos: mapeamento do símbolo para seu endereço.
-     * - O código-fonte, conforme o rawSourceCode do ObjectFile.
-     * - A saída de execução (histórico).
+     * Captura detalhada do estado da máquina.
      *
-     * @param memory         Instância da memória.
-     * @param registers      Conjunto de registradores (RegisterSet).
-     * @param objectCode     Código objeto (texto) carregado na máquina.
-     * @param symbolTable    Tabela de símbolos (mapa de símbolo para endereço).
-     * @param sourceCode     Código-fonte (raw source) como texto.
-     * @param executionOutput Histórico ou saída da execução.
-     * @param contextMessage Contexto da captura do log.
+     * <p>Inclui memória (apenas palavras&nbsp; ≠&nbsp; 0), registradores, object-code,
+     * tabela de símbolos, fonte original e histórico de execução.</p>
+     *
+     * @param memory          instância da memória
+     * @param registers       conjunto de registradores
+     * @param objectCodeText  texto do ficheiro <code>.obj</code> carregado
+     * @param symbolTable     mapa símbolo&nbsp;→&nbsp; endereço (já realocado)
+     * @param sourceCode      fonte RAW concatenado
+     * @param executionOutput lista/trace de mensagens da execução
+     * @param context         rótulo livre indicando o momento da captura
      */
-    public static void logMachineState(Memory memory, RegisterSet registers, String objectCode,
-                                       Map<String, Integer> symbolTable, String sourceCode,
-                                       List<String> executionOutput, String contextMessage) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("========================================================\n");
-        sb.append("            ESTADO DETALHADO DA MÁQUINA\n");
-        sb.append("            Contexto: ").append(contextMessage).append("\n");
-        sb.append("========================================================\n\n");
+    public static void logMachineState(Memory memory,
+                                       RegisterSet registers,
+                                       String objectCodeText,
+                                       Map<String, Integer> symbolTable,
+                                       String sourceCode,
+                                       List<String> executionOutput,
+                                       String context) {
 
-        sb.append("Memória (endereços com valor != 0):\n");
-        sb.append(String.format("%-8s | %-8s\n", "Endereço", "Valor"));
-        sb.append("----------------------------------------\n");
-        int numWords = memory.getSize() / 3;
-        for (int i = 0; i < numWords; i++) {
-            byte[] word = memory.readWord(i);
-            int value = Convert.bytesToInt(word);
-            if (value != 0) {
-                int address = i * 3;
-                sb.append(String.format("%06X  | %06X\n", address, value));
-            }
+        StringBuilder sb = new StringBuilder(12_000);
+
+        sb.append("═════════════════════════════════════════════════════════════\n")
+                .append("          DUMP COMPLETO DA MÁQUINA  @ ")
+                .append(LocalDateTime.now())
+                .append("\n          Contexto: ").append(context).append('\n')
+                .append("═════════════════════════════════════════════════════════════\n\n");
+
+        /* -------------------------------------------------- */
+        /* Memória                                            */
+        /* -------------------------------------------------- */
+        sb.append("Memória (palavras de 3 bytes ≠ 0)\n")
+                .append(String.format("%-8s | %-8s%n", "End.", "Valor"))
+                .append("-------------------------------\n");
+
+        for (int word = 0; word < memory.getSize() / 3; word++) {
+            int val = Convert.bytesToInt(memory.readWord(word));
+            if (val != 0) sb.append(String.format("%06X   | %06X%n", word * 3, val));
         }
-        sb.append("\n");
+        sb.append('\n');
 
-        sb.append("Registradores:\n");
-        sb.append(String.format("%-4s | %-12s\n", "Reg", "Valor"));
-        sb.append("-----------------------------\n");
-        for (Register reg : registers.getAllRegisters()) {
-            if ("F".equals(reg.getName())) {
-                sb.append(String.format("%-4s | %012X\n", reg.getName(), reg.getLongValue()));
-            } else {
-                sb.append(String.format("%-4s | %06X\n", reg.getName(), reg.getIntValue()));
-            }
+        /* -------------------------------------------------- */
+        /* Registradores                                      */
+        /* -------------------------------------------------- */
+        sb.append("Registradores\n")
+                .append(String.format("%-3s | %-12s%n", "Reg", "Valor"))
+                .append("----------------------\n");
+        for (Register r : registers.getAllRegisters()) {
+            String val = "F".equals(r.getName())
+                    ? String.format("%012X", r.getLongValue())
+                    : String.format("%06X" , r.getIntValue());
+            sb.append(String.format("%-3s | %s%n", r.getName(), val));
         }
-        sb.append("\n");
+        sb.append('\n');
 
-        sb.append("Código Objeto Carregado:\n");
-        sb.append("--------------------------------------------------------\n");
-        sb.append(objectCode).append("\n");
-        sb.append("--------------------------------------------------------\n\n");
+        /* -------------------------------------------------- */
+        /* Object-code                                        */
+        /* -------------------------------------------------- */
+        sb.append("--- Object-code ------------------------------------------------\n")
+                .append(objectCodeText).append('\n')
+                .append("----------------------------------------------------------------\n\n");
 
-        sb.append("Tabela de Símbolos:\n");
-        sb.append(String.format("%-15s | %-8s\n", "Símbolo", "Endereço"));
-        sb.append("----------------------------------------\n");
-        for (Map.Entry<String, Integer> entry : symbolTable.entrySet()) {
-            sb.append(String.format("%-15s | %06X\n", entry.getKey(), entry.getValue()));
-        }
-        sb.append("\n");
+        /* -------------------------------------------------- */
+        /* Símbolos                                           */
+        /* -------------------------------------------------- */
+        sb.append("Tabela de símbolos (exportados + locais)\n")
+                .append(String.format("%-15s | %-8s%n", "Símbolo", "End."))
+                .append("---------------------------------------\n");
+        symbolTable.forEach((s, addr) ->
+                sb.append(String.format("%-15s | %06X%n", s, addr)));
+        sb.append('\n');
 
-        sb.append("Código Fonte:\n");
-        sb.append("--------------------------------------------------------\n");
-        sb.append(sourceCode).append("\n");
-        sb.append("--------------------------------------------------------\n\n");
+        /* -------------------------------------------------- */
+        /* Fonte                                              */
+        /* -------------------------------------------------- */
+        sb.append("--- Source ----------------------------------------------------\n")
+                .append(sourceCode).append('\n')
+                .append("----------------------------------------------------------------\n\n");
 
-        sb.append("Saída da Execução:\n");
-        sb.append("--------------------------------------------------------\n");
-        sb.append(executionOutput).append("\n");
-        sb.append("--------------------------------------------------------\n");
+        /* -------------------------------------------------- */
+        /* Saída de execução                                  */
+        /* -------------------------------------------------- */
+        sb.append("--- Execution output -----------------------------------------\n")
+                .append(executionOutput).append('\n')
+                .append("----------------------------------------------------------------\n");
 
-        sb.append("========================================================\n");
+        sb.append("═════════════════════════════════════════════════════════════\n");
 
-        detailedLogger.severe(sb.toString());
+        LOG.severe(sb.toString());
     }
 }

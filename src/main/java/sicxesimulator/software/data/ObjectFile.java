@@ -77,7 +77,7 @@ public class ObjectFile implements Serializable {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            Logger.logError("Erro ao salvar ObjectFile em " + file.getAbsolutePath(), e);
+            Logger.error("Erro ao salvar ObjectFile em " + file.getAbsolutePath(), e);
         }
     }
     public static ObjectFile loadFromFile(File file) throws IOException {

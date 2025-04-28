@@ -6,161 +6,94 @@ import sicxesimulator.common.utils.Logger;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
- * Representa um módulo objeto gerado pelo montador,
- * contendo o code, a tabela de símbolos local, e:
- * - importedSymbols: símbolos externos (nome -> offset? Ou contagem?)
- * - relocationRecords: lista de posições a corrigir
+ * Representa um módulo objeto serializável (resultante do assembler ou linker).
+ * Contém bytes de código, tabela de símbolos, registros de relocação e metadados.
  */
 public class ObjectFile implements Serializable {
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
-    private final int startAddress;
-    private final byte[] machineCode;
-    private final String fileName;
-    private final List<String> rawSourceCode;
-    private final SymbolTable symbolTable;
-
-    private boolean fullyRelocated;
-
-    // Símbolos importados. Por definição eles não têm endereço, apenas nome, logo fica mais fácil armazenar como um conjunto de String.
-    private final Set<String> importedSymbols;
-
-    // Lista de registros de reloc, indicando quais bytes do machineCode precisam ser ajustados
+    /* campos imutáveis ---------------------------------------------------- */
+    private final int           startAddress;
+    private final byte[]        machineCode;          // cópia defensiva
+    private final SymbolTable   symbolTable;
+    private final String        programName;
+    private final List<String>  rawSourceCode;
+    private final Set<String>   importedSymbols;
     private final List<RelocationRecord> relocationRecords;
 
-    private ObjectFileOrigin origin;
+    /* mutáveis ------------------------------------------------------------ */
+    private boolean            fullyRelocated = false;
+    private ObjectFileOrigin   origin         = ObjectFileOrigin.SINGLE_MODULE;
+
+    /* -------------------------------------------------------------------- */
 
     public ObjectFile(int startAddress,
                       byte[] machineCode,
                       SymbolTable symbolTable,
-                      String fileName,
+                      String programName,
                       List<String> rawSourceCode,
                       Set<String> importedSymbols,
                       List<RelocationRecord> relocationRecords) {
-        if (machineCode == null || symbolTable == null || fileName == null) {
-            throw new IllegalArgumentException("Nenhum parametro pode ser nulo.");
-        }
-        this.startAddress = startAddress;
-        this.machineCode = machineCode;
-        this.symbolTable = symbolTable;
-        this.fileName = fileName;
-        this.rawSourceCode = rawSourceCode;
-        this.fullyRelocated = false;
-        this.importedSymbols = importedSymbols;
+
+        this.startAddress      = startAddress;
+        this.machineCode       = machineCode.clone();          // defensive
+        this.symbolTable       = Objects.requireNonNull(symbolTable, "symbolTable");
+        this.programName       = Objects.requireNonNull(programName, "programName");
+        this.rawSourceCode     = rawSourceCode;
+        this.importedSymbols   = importedSymbols;
         this.relocationRecords = relocationRecords;
     }
 
-    /// ===== Métodos Getters ===== ///
+    /* getters ------------------------------------------------------------- */
+    public int                 getStartAddress()     { return startAddress; }
+    public int                 getProgramLength()    { return machineCode.length; }
+    public byte[]              getObjectCode()       { return machineCode.clone(); }   // defensive copy
+    public String              getProgramName()      { return programName; }
+    public SymbolTable         getSymbolTable()      { return symbolTable; }
+    public boolean             isFullyRelocated()    { return fullyRelocated; }
+    public Set<String>         getImportedSymbols()  { return importedSymbols; }
+    public List<String>        getRawSourceCode()    { return rawSourceCode; }
+    public List<RelocationRecord> getRelocationRecords() { return relocationRecords; }
+    public ObjectFileOrigin    getOrigin()           { return origin; }
 
-    public int getStartAddress() {
-        return startAddress;
-    }
+    /* setters mutáveis ---------------------------------------------------- */
+    public void setFullyRelocated(boolean value)     { fullyRelocated = value; }
+    public void setOrigin(ObjectFileOrigin origin)   { this.origin = origin; }
 
-    public int getProgramLength() {
-        return machineCode.length;
-    }
-
-    public byte[] getObjectCode() {
-        return machineCode;
-    }
-
+    /* util ---------------------------------------------------------------- */
     public String getObjectCodeAsString() {
-        File objFile = new File(Constants.SAVE_DIR, this.getProgramName() + ".obj");
-        if (!objFile.exists()) {
-            return "Arquivo .obj nao encontrado.";
-        }
-        try {
-            return Files.readString(objFile.toPath());
-        } catch (IOException e) {
-            return "Erro ao ler o arquivo .obj: " + e.getMessage();
-        }
+        File obj = new File(Constants.SAVE_DIR, programName + ".obj");
+        if (!obj.exists()) return "Arquivo .obj não encontrado.";
+        try { return Files.readString(obj.toPath()); }
+        catch (IOException e) { return "Erro ao ler .obj: " + e.getMessage(); }
     }
 
-    public boolean isFullyRelocated() {
-        return fullyRelocated;
-    }
-
-    public SymbolTable getSymbolTable() {
-        return symbolTable;
-    }
-
-    public String getProgramName() {
-        return fileName;
-    }
-
-    public Set<String> getImportedSymbols() {
-        return importedSymbols;
-    }
-
-    public List<String> getRawSourceCode() {
-        return rawSourceCode;
-    }
-
-    public List<RelocationRecord> getRelocationRecords() {
-        return relocationRecords;
-    }
-
-    public ObjectFileOrigin getOrigin() {
-        return origin;
-    }
-
-    /// ===== Métodos Setter ===== ///
-
-    public void setFullyRelocated(boolean relocated) {
-        fullyRelocated = relocated;
-    }
-
-    public void setOrigin(ObjectFileOrigin origin) {
-        this.origin = origin;
-    }
-
-    /// ===== Métodos de Serialização ===== ///
-
-    /**
-     * Lê um objeto ObjectFile serializado a partir de um arquivo .obj.
-     *
-     * @param file O arquivo .obj a ser carregado
-     * @return instância de ObjectFile
-     * @throws IOException se houver erro de E/S ou se a classe não for encontrada
-     */
-    public static ObjectFile loadFromFile(File file) throws IOException {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            return (ObjectFile) ois.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException("Formato do arquivo invalido ou classe nao encontrada ao ler ObjectFile.", e);
-        }
-    }
-
-    /**
-     * Salva o objeto ObjectFile serializado em um arquivo .obj.
-     *
-     * @param file O arquivo .obj a ser salvo
-     */
+    /* serialização -------------------------------------------------------- */
     public void saveToFile(File file) {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(this);
         } catch (IOException e) {
-            Logger.logError("Erro ao salvar ObjectFile em: " + file.getAbsolutePath(), e);
+            Logger.logError("Erro ao salvar ObjectFile em " + file.getAbsolutePath(), e);
+        }
+    }
+    public static ObjectFile loadFromFile(File file) throws IOException {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            return (ObjectFile) ois.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Falha ao desserializar ObjectFile", e);
         }
     }
 
-
-    @Override
-    public String toString() {
-        return "Nome: " + fileName
-                + "\nEndereco de inicio = " + String.format("%04X", startAddress)
-                + "\nTamanho = " + machineCode.length + " bytes";
+    @Override public String toString() {
+        return "ObjectFile[" + programName +
+                ", start=0x" + Integer.toHexString(startAddress).toUpperCase() +
+                ", size=" + machineCode.length + "]";
     }
 
-    /**
-     * Enumeração para indicar a origem de um arquivo-objeto.
-     */
-    public enum ObjectFileOrigin {
-        SINGLE_MODULE,
-        LINKED_MODULES
-    }
+    /* origem -------------------------------------------------------------- */
+    public enum ObjectFileOrigin { SINGLE_MODULE, LINKED_MODULES }
 }

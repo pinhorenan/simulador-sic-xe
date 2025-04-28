@@ -1,18 +1,22 @@
 package sicxesimulator.software.data;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * Representa um registro de relocação para corrigir endereços no machineCode.
- * Offset: posição em bytes no machineCode onde há um valor a corrigir
- * Symbol: nome do símbolo (local ou importado)
- * Length: tamanho em bytes do campo que representa o endereço
- * PcRelative: se true, pode haver ajustes específicos (ex: subtrair 3 bytes, etc. no caso do SIC/XE)
+ * Registro de relocação:
+ * <ul>
+ *   <li>{@code offset} – posição no array de bytes que requer ajuste;</li>
+ *   <li>{@code symbol} – nome do símbolo cujo endereço será somado;</li>
+ *   <li>{@code length} – tamanho do campo em bytes (1–4);</li>
+ *   <li>{@code pcRelative} – se true, loader subtrai o deslocamento PC (-3) após somar símbolo.</li>
+ * </ul>
  */
-public record RelocationRecord(int offset, String symbol, int length, boolean pcRelative) implements Serializable {
-
-    @Override
-    public String toString() {
-        return String.format("RelocRecord{offset=%04X, sym=%s, len=%d, pcRel=%b}", offset, symbol, length, pcRelative);
+public record RelocationRecord(int offset, String symbol, int length, boolean pcRelative)
+        implements Serializable {
+    @Serial private static final long serialVersionUID = 1L;
+    @Override public String toString() {
+        return String.format("Reloc{off=%04X, sym=%s, len=%d, pcRel=%b}",
+                offset, symbol, length, pcRelative);
     }
 }

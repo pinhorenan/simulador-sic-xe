@@ -1,64 +1,66 @@
 package sicxesimulator.software.data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Representa a definição de uma macro no pré-processador do montador SIC/XE.
+ * Representa uma macro definida no código-fonte SIC/XE.
  *
- * <p>Armazena o nome, os parâmetros formais e o corpo (linhas de código)
- * da macro conforme definida pelo usuário.</p>
+ * <p>Cada macro mantém:</p>
+ * <ul>
+ *   <li><b>name</b> – identificador único (armazenado em CAIXA ALTA);</li>
+ *   <li><b>parameters</b> – lista imutável de parâmetros formais (ex.: <code>A,B,C</code>);</li>
+ *   <li><b>body</b> – linhas de código que compõem o corpo da macro.<br>
+ *       O corpo é construído incrementalmente pelo pré-processador,
+ *       mas é exposto externamente como coleção <em>somente-leitura</em>.</li>
+ * </ul>
+ *
+ * <p>Após criada, apenas o corpo pode receber novas linhas através de
+ * {@link #addLine(String)}. Nome e parâmetros permanecem imutáveis.</p>
  */
-public class MacroDefinition {
-    private final String name;
-    private final List<String> parameters;
-    private final List<String> body;
+public final class MacroDefinition implements Serializable {
+    @Serial private static final long serialVersionUID = 1L;
+
+    private final String       name;
+    private final List<String> parameters;          // lista imutável
+    private final List<String> body = new ArrayList<>();
 
     /**
-     * Cria uma nova definição de macro.
+     * Cria uma macro vazia.
      *
-     * @param name Nome da macro.
-     * @param parameters Lista de parâmetros formais (pode estar vazia).
+     * @param name       nome da macro (não nulo)
+     * @param parameters lista de parâmetros formais; se {@code null} equivale a lista vazia
+     * @throws NullPointerException se {@code name} for nulo
      */
     public MacroDefinition(String name, List<String> parameters) {
-        this.name = name;
-        this.parameters = parameters;
-        this.body = new ArrayList<>();
+        this.name       = Objects.requireNonNull(name, "name");
+        this.parameters = List.copyOf(parameters == null ? List.of() : parameters);
     }
 
-    /**
-     * Retorna o nome da macro.
-     *
-     * @return Nome da macro.
-     */
-    public String getName() {
-        return name;
-    }
+    /* ------------------------------------------------------------------ */
+    /*  Getters                                                           */
+    /* ------------------------------------------------------------------ */
 
-    /**
-     * Retorna o corpo da macro, composto por uma lista de linhas.
-     *
-     * @return Corpo da macro.
-     */
-    public List<String> getBody() {
-        return body;
-    }
+    public String        getName()        { return name; }
+    public List<String>  getParameters()  { return parameters; }
+    public List<String>  getBody()        { return Collections.unmodifiableList(body); }
 
-    /**
-     * Retorna a lista de parâmetros da macro.
-     *
-     * @return Lista de nomes de parâmetros.
-     */
-    public List<String> getParameters() {
-        return parameters;
-    }
+    /* ------------------------------------------------------------------ */
+    /*  Mutação controlada                                                */
+    /* ------------------------------------------------------------------ */
 
-    /**
-     * Adiciona uma linha ao corpo da macro.
-     *
-     * @param line Linha de código a ser adicionada.
-     */
-    public void addLine(String line) {
-        body.add(line);
+    /** Adiciona uma linha crua ao corpo da macro. */
+    public void addLine(String line)      { body.add(line); }
+
+    /* ------------------------------------------------------------------ */
+
+    @Override public String toString() {
+        return "Macro[" + name +
+                ", params=" + parameters +
+                ", lines="  + body.size() + ']';
     }
 }

@@ -29,12 +29,15 @@ module sicxesimulator {
     exports sicxesimulator.ui.components.buttons;
     exports sicxesimulator.ui.components.panels;
     exports sicxesimulator.ui.components.tables;
-    exports sicxesimulator.ui.controller;
-    exports sicxesimulator.ui.data.records;
-    exports sicxesimulator.ui.interfaces;
-    exports sicxesimulator.ui.model;
+    exports sicxesimulator.ui.components.factories;
+    exports sicxesimulator.ui.core.bindings;
+    exports sicxesimulator.ui.core.controller;
+    exports sicxesimulator.ui.core.listeners;
+    exports sicxesimulator.ui.core.model;
+    exports sicxesimulator.ui.core.view;
+    exports sicxesimulator.ui.data.memory;
+    exports sicxesimulator.ui.dialogs;
     exports sicxesimulator.ui.util;
-    exports sicxesimulator.ui.view;
 
     // Dependencies
     requires java.logging;

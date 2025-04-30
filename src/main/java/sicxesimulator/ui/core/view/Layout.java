@@ -1,11 +1,11 @@
-package sicxesimulator.ui.view;
+package sicxesimulator.ui.core.view;
 
 import javafx.geometry.Insets;
 import javafx.scene.layout.*;
 import sicxesimulator.ui.components.buttons.AssemblerButtons;
 import sicxesimulator.ui.components.buttons.ExecutionButtons;
 import sicxesimulator.ui.components.buttons.FileListButtons;
-import sicxesimulator.ui.controller.Controller;
+import sicxesimulator.ui.core.controller.Controller;
 import sicxesimulator.ui.components.panels.*;
 
 /**
@@ -26,9 +26,6 @@ public class Layout {
     private final InputPanel inputPanel;
     private final HBox leftPane;
 
-    private StackPane executionStackPane;
-    private VBox splashContainer;
-
     private LabelsPanel labelsPanel;
     private FileListPanel objectFilePanel;
 
@@ -44,9 +41,9 @@ public class Layout {
 
         HBox memoryAndRegisterTables = new HBox(10, memoryPanel.getPane(), registerPanel.getPane());
 
-        VBox.setVgrow(executionStackPane, Priority.ALWAYS);
+        HBox executionPanelBox = new HBox(executionPanel.getPane());
 
-        VBox rightPane = new VBox(5, executionStackPane, memoryAndRegisterTables);
+        VBox rightPane = new VBox(5, executionPanelBox, memoryAndRegisterTables);
         rightPane.setPrefWidth(400);
         VBox.setVgrow(executionPanel.getPane(), Priority.ALWAYS);
 

@@ -1,6 +1,6 @@
 package sicxesimulator.ui.components.tables;
 
-import sicxesimulator.ui.data.records.RegisterEntry;
+import sicxesimulator.ui.data.memory.RegisterEntry;
 
 public class RegisterTable extends BaseTableView<RegisterEntry> {
     public RegisterTable() {

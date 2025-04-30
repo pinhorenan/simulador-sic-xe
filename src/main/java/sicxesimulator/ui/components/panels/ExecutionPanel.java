@@ -1,46 +1,25 @@
 package sicxesimulator.ui.components.panels;
 
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import sicxesimulator.ui.components.buttons.ExecutionButtons;
+import sicxesimulator.ui.components.factories.TextAreaFactory;
+import sicxesimulator.ui.components.factories.HBoxFactory;
 
 public class ExecutionPanel {
-    private final BorderPane pane;
-    private final TextArea machineOutput;
-    private final HBox controlsPane;
+    private final BorderPane pane = new BorderPane();
+    private final TextArea machineOutput =
+            TextAreaFactory.codeArea(false, "O trabalho duro supera o talento natural!", "green");
+    private final HBox controls = HBoxFactory.createCenteredHBox(5, new Insets(10,0,0,0));
 
     public ExecutionPanel() {
-        pane = new BorderPane();
-
-        // Área de saída da máquina
-        machineOutput = new TextArea();
-        machineOutput.setPromptText("O trabalho duro supera o talento natural!");
-        machineOutput.setEditable(false);
-        machineOutput.setWrapText(true);
-        machineOutput.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-text-fill: green;");
         pane.setCenter(machineOutput);
-
-        // Painel inferior para os botões de controle
-        controlsPane = new HBox(5);
-        controlsPane.setPadding(new Insets(10, 0, 0, 0));
-        controlsPane.setAlignment(Pos.CENTER);
-        pane.setBottom(controlsPane);
+        pane.setBottom(controls);
     }
-
-    /**
-     * Configura os botões de execução
-     * Utiliza os botões definidos na classe MainButtons
-     * @param executionButtons Instância de ExecutionButtons
-     */
-    public void setButtons(ExecutionButtons executionButtons) {
-        Button nextButton = executionButtons.getNextButton();
-        Button loadButton = executionButtons.getLoadButton();
-        Button restartButton = executionButtons.getRestartButton();
-        controlsPane.getChildren().setAll(loadButton, restartButton, nextButton);
+    public void setButtons(ExecutionButtons b) {
+        controls.getChildren().setAll(b.getLoadButton(), b.getRestartButton(), b.getNextButton());
     }
 
     public BorderPane getPane() {

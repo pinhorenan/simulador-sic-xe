@@ -1,7 +1,7 @@
 package sicxesimulator.ui.components.panels;
 
 import javafx.scene.control.*;
-import sicxesimulator.ui.controller.Controller;
+import sicxesimulator.ui.core.controller.Controller;
 
 
 public class ToolbarPanel {

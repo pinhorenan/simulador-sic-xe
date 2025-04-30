@@ -1,10 +1,10 @@
 package sicxesimulator.ui.components.buttons;
 
 import javafx.scene.control.Button;
-import sicxesimulator.ui.controller.Controller;
-import sicxesimulator.ui.interfaces.ButtonBinding;
-import sicxesimulator.ui.util.ButtonFactory;
-import sicxesimulator.ui.view.Layout;
+import sicxesimulator.ui.components.factories.ButtonFactory;
+import sicxesimulator.ui.core.controller.Controller;
+import sicxesimulator.ui.core.bindings.ButtonBinding;
+import sicxesimulator.ui.core.view.Layout;
 
 public class AssemblerButtons implements ButtonBinding {
     private final Layout mainLayout;

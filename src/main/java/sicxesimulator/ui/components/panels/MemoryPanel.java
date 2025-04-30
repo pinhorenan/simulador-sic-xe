@@ -1,24 +1,16 @@
 package sicxesimulator.ui.components.panels;
 
 import javafx.scene.control.TitledPane;
+import sicxesimulator.ui.components.factories.TablePanelFactory;
 import sicxesimulator.ui.components.tables.MemoryTable;
 
 public class MemoryPanel {
-    private final TitledPane memoryPane;
-    private final MemoryTable memoryTable;
-
+    private final TitledPane pane;
+    private final MemoryTable table = new MemoryTable();
     public MemoryPanel() {
-        this.memoryTable = new MemoryTable();
-        this.memoryPane = new TitledPane("Memória", memoryTable);
-        memoryPane.setCollapsible(false);
-        memoryPane.setPrefHeight(150);
+        pane = TablePanelFactory.build("Memória", table, 150);
     }
-
-    public TitledPane getPane() {
-        return memoryPane;
-    }
-
-    public MemoryTable getMemoryTable() {
-        return memoryTable;
-    }
+    public TitledPane getPane()   { return pane; }
+    public MemoryTable getTable() { return table; }
 }
+

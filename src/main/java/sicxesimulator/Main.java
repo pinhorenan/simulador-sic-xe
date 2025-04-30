@@ -1,7 +1,7 @@
 package sicxesimulator;
 
-import sicxesimulator.ui.model.Model;
-import sicxesimulator.ui.view.View;
+import sicxesimulator.ui.core.model.Model;
+import sicxesimulator.ui.core.view.View;
 
 public class Main {
     public static void main(String[] args) {

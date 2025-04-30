@@ -1,4 +1,4 @@
-package sicxesimulator.ui.view;
+package sicxesimulator.ui.core.view;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -6,8 +6,8 @@ import javafx.stage.Stage;
 import sicxesimulator.ui.components.buttons.AssemblerButtons;
 import sicxesimulator.ui.components.buttons.ExecutionButtons;
 import sicxesimulator.ui.components.buttons.FileListButtons;
-import sicxesimulator.ui.controller.Controller;
-import sicxesimulator.ui.model.Model;
+import sicxesimulator.ui.core.controller.Controller;
+import sicxesimulator.ui.core.model.Model;
 
 
 /**

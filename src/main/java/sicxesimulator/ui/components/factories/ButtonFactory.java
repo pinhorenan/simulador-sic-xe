@@ -1,4 +1,4 @@
-package sicxesimulator.ui.util;
+package sicxesimulator.ui.components.factories;
 
 import javafx.scene.control.Button;
 
@@ -9,7 +9,9 @@ import javafx.scene.control.Button;
  *
  * <p>Esta classe é utilitária e não deve ser instanciada.</p>
  */
-public class ButtonFactory {
+public final class ButtonFactory {
+    public ButtonFactory() {}
+
     public static Button createButton(String text, Runnable action) {
         Button button = new Button(text);
         button.setPrefSize(80, 25);

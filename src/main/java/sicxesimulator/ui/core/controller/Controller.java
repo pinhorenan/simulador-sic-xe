@@ -1,4 +1,4 @@
-package sicxesimulator.ui.controller;
+package sicxesimulator.ui.core.controller;
 
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -12,15 +12,15 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import sicxesimulator.ui.util.DialogUtil;
-import sicxesimulator.ui.view.Layout;
-import sicxesimulator.ui.view.ViewUpdater;
+import sicxesimulator.ui.core.view.Layout;
+import sicxesimulator.ui.core.view.ViewUpdater;
 import sicxesimulator.software.data.ObjectFile;
-import sicxesimulator.ui.model.Model;
-import sicxesimulator.ui.data.ObjectFileTableItem;
-import sicxesimulator.ui.data.records.MemoryEntry;
+import sicxesimulator.ui.core.model.Model;
+import sicxesimulator.ui.components.tables.ObjectFileTableItem;
+import sicxesimulator.ui.data.memory.MemoryEntry;
 
-import sicxesimulator.ui.data.records.RegisterEntry;
-import sicxesimulator.ui.data.records.SymbolEntry;
+import sicxesimulator.ui.data.memory.RegisterEntry;
+import sicxesimulator.ui.data.memory.SymbolEntry;
 import sicxesimulator.common.utils.Constants;
 import sicxesimulator.common.utils.FileUtils;
 
@@ -434,10 +434,7 @@ public class Controller {
 
 
         Optional<Model.LinkerMode> result = dialog.showAndWait();
-        if (result.isPresent()) {
-            Model.LinkerMode newMode = result.get();
-            setLinkerMode(newMode);
-        }
+        result.ifPresent(this::setLinkerMode);
     }
 
     /**

@@ -1,11 +1,11 @@
-package sicxesimulator.ui.model;
+package sicxesimulator.ui.core.model;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import sicxesimulator.ui.interfaces.ModelListener;
-import sicxesimulator.ui.data.records.MemoryEntry;
-import sicxesimulator.ui.data.records.RegisterEntry;
-import sicxesimulator.ui.data.records.SymbolEntry;
+import sicxesimulator.ui.core.listeners.ModelListener;
+import sicxesimulator.ui.data.memory.MemoryEntry;
+import sicxesimulator.ui.data.memory.RegisterEntry;
+import sicxesimulator.ui.data.memory.SymbolEntry;
 import sicxesimulator.ui.util.DialogUtil;
 import sicxesimulator.hardware.cpu.register.Register;
 import sicxesimulator.software.data.ObjectFile;

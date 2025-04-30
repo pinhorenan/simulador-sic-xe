@@ -1,8 +1,8 @@
-package sicxesimulator.ui.view;
+package sicxesimulator.ui.core.view;
 
 import javafx.application.Platform;
-import sicxesimulator.ui.controller.Controller;
-import sicxesimulator.ui.data.records.SymbolEntry;
+import sicxesimulator.ui.core.controller.Controller;
+import sicxesimulator.ui.data.memory.SymbolEntry;
 import sicxesimulator.ui.components.tables.MemoryTable;
 import sicxesimulator.ui.components.tables.RegisterTable;
 import sicxesimulator.ui.components.tables.SymbolTable;
@@ -37,7 +37,7 @@ public class ViewUpdater {
     }
 
     public void updateMemoryTableView() {
-        MemoryTable memoryTable = mainLayout.getMemoryPanel().getMemoryTable();
+        MemoryTable memoryTable = mainLayout.getMemoryPanel().getTable();
         memoryTable.getItems().clear();
         memoryTable.getItems().addAll(controller.getMemoryEntries());
     }

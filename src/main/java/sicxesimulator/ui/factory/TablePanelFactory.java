@@ -1,4 +1,4 @@
-package sicxesimulator.ui.components.factories;
+package sicxesimulator.ui.factory;
 
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.TableView;

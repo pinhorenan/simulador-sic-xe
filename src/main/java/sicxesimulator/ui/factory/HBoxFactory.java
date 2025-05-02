@@ -1,4 +1,4 @@
-package sicxesimulator.ui.components.factories;
+package sicxesimulator.ui.factory;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
